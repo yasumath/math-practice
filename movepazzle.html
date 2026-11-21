@@ -1,0 +1,2601 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>図形タイリング・パズル</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-light: #334155;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --player: #38bdf8;
+    --player-dark: #0284c7;
+    --goal: #f43f5e;
+    --rotate: #a855f7;
+    --reflect: #22c55e;
+    --gold: #facc15;
+    --ta: #fb923c;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100dvh;
+    padding: 10px 12px 24px;
+  }
+  .screen {
+    width: 100%;
+    max-width: 540px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hidden { display: none !important; }
+
+  /* 共通トップナビ */
+  .top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .nav-btn {
+    background: #0f172a;
+    color: var(--text);
+    border: 1px solid #475569;
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .nav-btn:hover { border-color: var(--player); background: #1e293b; }
+  .nav-btn:active { transform: scale(0.97); }
+
+  /* タイトル＆モード切替 */
+  .hero-box {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 14px 16px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .hero-box h1 {
+    margin: 0;
+    font-size: 1.32rem;
+    letter-spacing: 0.03em;
+    color: #f8fafc;
+  }
+  .hero-box p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+  }
+
+  .main-mode-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    background: var(--panel);
+    padding: 6px;
+    border-radius: 14px;
+    border: 1px solid #334155;
+  }
+  .main-tab {
+    background: #0f172a;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 9px 4px;
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    transition: all 0.15s;
+  }
+  .main-tab.active[data-tab="basic"] {
+    border-color: var(--player);
+    background: rgba(56, 189, 248, 0.16);
+    color: #7dd3fc;
+  }
+  .main-tab.active[data-tab="free"] {
+    border-color: var(--rotate);
+    background: rgba(168, 85, 247, 0.18);
+    color: #e9d5ff;
+  }
+  .main-tab.active[data-tab="random"] {
+    border-color: var(--reflect);
+    background: rgba(34, 197, 94, 0.16);
+    color: #86efac;
+  }
+  .main-tab.active[data-tab="timeattack"] {
+    border-color: var(--ta);
+    background: rgba(251, 146, 60, 0.18);
+    color: #fed7aa;
+  }
+
+  .mode-banner {
+    background: var(--panel);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+  }
+  .mode-banner-desc {
+    color: #cbd5e1;
+    line-height: 1.4;
+  }
+
+  /* ステージ一覧グリッド */
+  .stage-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 360px) {
+    .stage-grid { grid-template-columns: 1fr; }
+  }
+  .stage-card {
+    background: var(--panel);
+    border: 2px solid #334155;
+    border-radius: 14px;
+    padding: 12px;
+    text-align: left;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    transition: transform 0.12s, border-color 0.15s;
+  }
+  .stage-card:hover {
+    border-color: var(--player);
+    transform: translateY(-2px);
+  }
+  .stage-card:active { transform: scale(0.98); }
+  .stage-card.par-cleared {
+    border-color: rgba(250, 204, 21, 0.75);
+    background: linear-gradient(180deg, rgba(250, 204, 21, 0.08) 0%, var(--panel) 100%);
+  }
+  .stage-card.cleared {
+    border-color: rgba(56, 189, 248, 0.65);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+  }
+  .stage-num {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--player);
+    background: rgba(56, 189, 248, 0.14);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .stage-num.free-num {
+    color: #d8b4fe;
+    background: rgba(168, 85, 247, 0.18);
+  }
+  .status-badge {
+    font-size: 0.71rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 6px;
+  }
+  .status-unplayed { background: #0f172a; color: var(--muted); }
+  .status-clear { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; }
+  .status-par { background: rgba(250, 204, 21, 0.22); color: var(--gold); border: 1px solid rgba(250, 204, 21, 0.45); }
+  .card-title {
+    font-size: 0.89rem;
+    font-weight: 800;
+    line-height: 1.35;
+    color: #f8fafc;
+    margin-top: 6px;
+  }
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.76rem;
+    color: #cbd5e1;
+    border-top: 1px solid #334155;
+    padding-top: 6px;
+  }
+  .par-tag { color: var(--gold); font-weight: 800; }
+
+  /* ランダム・タイムアタック設定パネル */
+  .setup-card {
+    background: var(--panel);
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .setup-card h2 {
+    margin: 0;
+    font-size: 1.12rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .option-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .option-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .pill-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .choice-pill {
+    flex: 1;
+    min-width: 72px;
+    padding: 10px 8px;
+    background: #0f172a;
+    border: 2px solid #334155;
+    border-radius: 10px;
+    color: #cbd5e1;
+    font-size: 0.84rem;
+    font-weight: 800;
+    cursor: pointer;
+    text-align: center;
+    transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .choice-pill.selected {
+    border-color: var(--player);
+    background: rgba(56, 189, 248, 0.16);
+    color: #fff;
+  }
+  .choice-pill.selected.ta-sel {
+    border-color: var(--ta);
+    background: rgba(251, 146, 60, 0.18);
+  }
+  .choice-pill:disabled {
+    opacity: 0.28;
+    cursor: not-allowed;
+    border-color: #1e293b;
+    color: #64748b;
+  }
+  .option-hint {
+    font-size: 0.74rem;
+    color: #94a3b8;
+    min-height: 1.1em;
+  }
+  .record-box {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+  }
+
+  /* ゲーム画面ヘッダー */
+  .header-card {
+    background: var(--panel);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .stage-heading {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #f8fafc;
+    line-height: 1.35;
+  }
+  .move-counter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.84rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .par-badge {
+    background: rgba(250, 204, 21, 0.15);
+    color: var(--gold);
+    border: 1px solid rgba(250, 204, 21, 0.4);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .timer-badge {
+    background: rgba(251, 146, 60, 0.18);
+    color: #fdba74;
+    border: 1px solid rgba(251, 146, 60, 0.5);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .stage-desc {
+    font-size: 0.82rem;
+    color: #cbd5e1;
+    line-height: 1.45;
+  }
+  .constraint-tag {
+    display: inline-block;
+    background: rgba(56, 189, 248, 0.15);
+    color: #7dd3fc;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 2px;
+  }
+  .constraint-tag.free-tag {
+    background: rgba(168, 85, 247, 0.18);
+    color: #e9d5ff;
+    border-color: rgba(168, 85, 247, 0.45);
+  }
+
+  /* キャンバス領域 */
+  .board-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 6px;
+    border: 2px solid #334155;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 10px;
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+  .guide-pill {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid #475569;
+    color: #f8fafc;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+    max-width: 94%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .legend-bar {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    color: #cbd5e1;
+    pointer-events: none;
+  }
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(15, 23, 42, 0.85);
+    padding: 2px 7px;
+    border-radius: 6px;
+    border: 1px solid rgba(51, 65, 85, 0.75);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+
+  /* コントロールパネル */
+  .controls {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 10px;
+    border: 1px solid #334155;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .tab-btn {
+    padding: 10px 4px;
+    border: 2px solid #334155;
+    border-radius: 10px;
+    background: #0f172a;
+    color: var(--text);
+    font-weight: 800;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .tab-btn.active[data-mode="translate"] { border-color: #38bdf8; background: rgba(56,189,248,0.18); color: #7dd3fc; }
+  .tab-btn.active[data-mode="rotate"] { border-color: #a855f7; background: rgba(168,85,247,0.2); color: #d8b4fe; }
+  .tab-btn.active[data-mode="reflect"] { border-color: #22c55e; background: rgba(34,197,94,0.18); color: #86efac; }
+
+  .sub-controls {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .act-btn {
+    padding: 8px 11px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: var(--panel-light);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+  .act-btn:active { transform: scale(0.96); }
+  .act-btn:disabled { opacity: 0.32; pointer-events: none; }
+  .act-btn.rotate-btn { background: #7e22ce; border-color: #a855f7; }
+  .act-btn.reflect-btn { background: #15803d; border-color: #4ade80; font-size: 0.85rem; padding: 8px 14px; }
+
+  .bottom-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .sub-link {
+    flex: 1;
+    background: #0f172a;
+    border: 1px solid #475569;
+    color: #cbd5e1;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .sub-link:disabled { opacity: 0.35; pointer-events: none; }
+
+  /* モーダル */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.86);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 50;
+  }
+  .modal {
+    background: var(--panel);
+    border: 2px solid #475569;
+    border-radius: 18px;
+    padding: 22px 18px;
+    width: 100%;
+    max-width: 390px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+  }
+  .modal h2 { margin: 0; font-size: 1.32rem; }
+  .modal p { margin: 0; font-size: 0.88rem; color: #cbd5e1; line-height: 1.55; }
+  .result-box {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-around;
+    font-size: 0.92rem;
+  }
+  .modal-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .primary-btn {
+    padding: 12px;
+    border: none;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #0284c7, #38bdf8);
+    color: #fff;
+    font-size: 0.98rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .primary-btn.ta-btn {
+    background: linear-gradient(135deg, #ea580c, #fb923c);
+  }
+  .primary-btn.rand-btn {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+  }
+  .secondary-btn {
+    padding: 10px;
+    border: 1px solid #475569;
+    border-radius: 11px;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== ステージ選択・モード選択画面 ==================== -->
+<div class="screen" id="selectScreen">
+  <div class="top-nav">
+    <span style="font-weight:800; font-size:0.9rem; color:#38bdf8;">中学1年 数学｜平面図形</span>
+    <button type="button" class="nav-btn mute-toggle-btn" id="muteBtnSelect">🔊 音あり</button>
+  </div>
+
+  <div class="hero-box">
+    <h1>図形タイリング・パズル</h1>
+    <p>敷き詰められた合同な正三角形の1つを<strong>平行移動・回転移動・対称移動</strong>で動かし、赤いゴール枠と旗の向きまでぴったり重ねよう！</p>
+  </div>
+
+  <!-- 4つのゲームモードタブ -->
+  <div class="main-mode-tabs">
+    <button type="button" class="main-tab active" data-tab="basic">
+      <span>📐 ベーシック</span>
+      <span style="font-size:0.68rem; opacity:0.85;">自分の頂点・辺</span>
+    </button>
+    <button type="button" class="main-tab" data-tab="free">
+      <span>✨ 何でもあり</span>
+      <span style="font-size:0.68rem; opacity:0.85;">全点・全直線</span>
+    </button>
+    <button type="button" class="main-tab" data-tab="random">
+      <span>🎲 ランダム</span>
+      <span style="font-size:0.68rem; opacity:0.85;">無限練習</span>
+    </button>
+    <button type="button" class="main-tab" data-tab="timeattack">
+      <span>⏱️ タイム</span>
+      <span style="font-size:0.68rem; opacity:0.85;">5問連続</span>
+    </button>
+  </div>
+
+  <!-- ベーシック／何でもあり用 ステージ一覧パネル -->
+  <div id="stageListPanel" style="display:flex; flex-direction:column; gap:10px;">
+    <div class="mode-banner">
+      <div class="mode-banner-desc" id="modeBannerDesc"></div>
+      <div style="text-align:right; flex-shrink:0; font-size:0.78rem; font-weight:800;">
+        <div style="color:#7dd3fc;">クリア: <span id="clearCountText">0/8</span></div>
+        <div style="color:#facc15;">★最短: <span id="parCountText">0/8</span></div>
+      </div>
+    </div>
+    <div class="stage-grid" id="stageGrid"></div>
+  </div>
+
+  <!-- ランダム練習モード設定パネル -->
+  <div id="randomPanel" class="setup-card hidden">
+    <h2>🎲 ランダム練習モード</h2>
+    <p style="margin:0; font-size:0.84rem; color:#cbd5e1; line-height:1.5;">毎回新しい配置とゴールの問題を自動生成します。すべて最短手数が保証された問題です。</p>
+
+    <div class="option-group">
+      <div class="option-label">移動ルールの範囲</div>
+      <div class="pill-row" id="randRuleGroup">
+        <button type="button" class="choice-pill selected" data-val="basic">📐 ベーシック<br><span style="font-size:0.7rem; font-weight:600;">自分の頂点・辺のみ</span></button>
+        <button type="button" class="choice-pill" data-val="free">✨ 何でもあり<br><span style="font-size:0.7rem; font-weight:600;">盤面全体の点・直線</span></button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">目標の最短手数</div>
+      <div class="pill-row" id="randStepsGroup">
+        <button type="button" class="choice-pill selected" data-val="0">おまかせ</button>
+        <button type="button" class="choice-pill" data-val="1">1手</button>
+        <button type="button" class="choice-pill" data-val="2">2手</button>
+        <button type="button" class="choice-pill" data-val="3" id="randStep3Btn">3手</button>
+      </div>
+      <div class="option-hint" id="randStepsHint"></div>
+    </div>
+
+    <button type="button" class="primary-btn rand-btn" id="startRandomBtn">🎲 ランダム問題をスタート！</button>
+  </div>
+
+  <!-- タイムアタックモード設定パネル -->
+  <div id="timeAttackPanel" class="setup-card hidden">
+    <h2>⏱️ タイムアタック（5問連続）</h2>
+    <p style="margin:0; font-size:0.84rem; color:#cbd5e1; line-height:1.5;">連続で出題される5問をどれだけ速くクリアできるか挑戦しよう！（手数に関わらずゴールに重ねれば次の問題へ進みます）</p>
+
+    <div class="option-group">
+      <div class="option-label">コース選択</div>
+      <div class="pill-row" id="taRuleGroup">
+        <button type="button" class="choice-pill selected ta-sel" data-val="basic">📐 ベーシック 5問<br><span style="font-size:0.7rem; font-weight:600;">すべて最短2手以上</span></button>
+        <button type="button" class="choice-pill ta-sel" data-val="free">✨ 何でもあり 5問<br><span style="font-size:0.7rem; font-weight:600;">全点・全直線で突破</span></button>
+      </div>
+    </div>
+
+    <div class="record-box">
+      <span style="color:var(--muted); font-weight:700;">自己ベスト記録（<span id="taBestCourseLabel">ベーシック</span>）</span>
+      <strong id="taBestTimeText" style="color:#fdba74; font-size:1.05rem;">記録なし</strong>
+    </div>
+
+    <button type="button" class="primary-btn ta-btn" id="startTimeAttackBtn">⏱️ タイムアタック開始！</button>
+  </div>
+</div>
+
+<!-- ==================== パズルプレイ画面 ==================== -->
+<div class="screen hidden" id="gameScreen">
+  <div class="top-nav">
+    <button type="button" class="nav-btn" id="backToListBtn">◀ メニューへ</button>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span class="timer-badge hidden" id="taTimerBadge">⏱️ 0.0秒</span>
+      <button type="button" class="nav-btn mute-toggle-btn" id="muteBtnGame">🔊 音あり</button>
+    </div>
+  </div>
+
+  <div class="header-card">
+    <div class="header-top">
+      <div class="stage-heading" id="stageHeading">第1問</div>
+      <div class="move-counter">
+        <span id="moveCountLabel">手数: 0</span>
+        <span class="par-badge" id="parLabel">最短: -手</span>
+      </div>
+    </div>
+    <div class="stage-desc" id="stageDesc"></div>
+    <div id="constraintArea"></div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="guide-pill" id="guidePill">青い図形を赤いゴールに重ねよう</div>
+    <canvas id="board" width="640" height="640"></canvas>
+    <div class="legend-bar">
+      <span class="legend-item"><span class="dot" style="background:#38bdf8;"></span>動かす図形</span>
+      <span class="legend-item"><span class="dot" style="background:#f43f5e;"></span>ゴール</span>
+      <span class="legend-item"><span class="dot" style="background:#a855f7;"></span>回転の中心</span>
+      <span class="legend-item"><span class="dot" style="background:#22c55e;"></span>対称の軸</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="mode-tabs">
+      <button type="button" class="tab-btn active" data-mode="translate" id="tabTranslate">平行移動</button>
+      <button type="button" class="tab-btn" data-mode="rotate" id="tabRotate">回転移動</button>
+      <button type="button" class="tab-btn" data-mode="reflect" id="tabReflect">対称移動</button>
+    </div>
+    <div class="sub-controls" id="subControls"></div>
+    <div class="bottom-actions">
+      <button type="button" class="sub-link" id="undoBtn">↩ 1手もどす</button>
+      <button type="button" class="sub-link" id="resetBtn">↻ 最初からやり直す</button>
+      <button type="button" class="sub-link hidden" id="nextRandomQuickBtn">🎲 別の問題へ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== クリアモーダル ==================== -->
+<div class="overlay hidden" id="clearModal">
+  <div class="modal">
+    <h2 id="clearTitle">クリア！</h2>
+    <p id="clearMsg"></p>
+    <div class="result-box" id="clearStatsBox">
+      <div>あなたの手数: <strong id="resMoves" style="color:#38bdf8;">-</strong></div>
+      <div>最短手数: <strong id="resPar" style="color:#facc15;">-</strong></div>
+    </div>
+    <div class="modal-btns">
+      <button type="button" class="primary-btn" id="nextStageBtn">次の問題へ進む</button>
+      <button type="button" class="secondary-btn" id="retryStageBtn">同じ問題にもう一度挑戦する</button>
+      <button type="button" class="secondary-btn" id="modalBackBtn">メニューへ戻る</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ==========================================
+  // 1. Web Audio API 効果音モジュール
+  // ==========================================
+  const SoundFX = (() => {
+    let audioCtx = null;
+    let muted = false;
+
+    function ensureContext() {
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) audioCtx = new AudioCtx();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+    }
+
+    function playTone(freq, duration, type = 'sine', volume = 0.14, delay = 0) {
+      if (muted) return;
+      ensureContext();
+      if (!audioCtx) return;
+      try {
+        const now = audioCtx.currentTime + delay;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(volume, now + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+      } catch (e) {}
+    }
+
+    return {
+      unlock: ensureContext,
+      toggleMute() {
+        muted = !muted;
+        ensureContext();
+        document.querySelectorAll('.mute-toggle-btn').forEach(btn => {
+          btn.textContent = muted ? '🔇 消音' : '🔊 音あり';
+        });
+        if (!muted) playTone(660, 0.12, 'triangle', 0.12);
+      },
+      playSelect() { playTone(587.33, 0.09, 'sine', 0.10); },
+      playMove() {
+        playTone(523.25, 0.12, 'triangle', 0.15, 0);
+        playTone(783.99, 0.16, 'sine', 0.13, 0.055);
+      },
+      playUndo() {
+        playTone(440.00, 0.10, 'sine', 0.11, 0);
+        playTone(349.23, 0.14, 'sine', 0.11, 0.05);
+      },
+      playClearNormal() {
+        playTone(523.25, 0.18, 'triangle', 0.16, 0);
+        playTone(659.25, 0.18, 'triangle', 0.16, 0.10);
+        playTone(783.99, 0.32, 'triangle', 0.18, 0.20);
+      },
+      playClearPar() {
+        playTone(523.25, 0.16, 'triangle', 0.17, 0);
+        playTone(659.25, 0.16, 'triangle', 0.17, 0.09);
+        playTone(783.99, 0.16, 'triangle', 0.17, 0.18);
+        playTone(1046.50, 0.42, 'triangle', 0.20, 0.27);
+        playTone(659.25, 0.38, 'sine', 0.10, 0.27);
+      }
+    };
+  })();
+
+  window.addEventListener('pointerdown', () => SoundFX.unlock(), { once: true });
+
+  // ==========================================
+  // 2. 幾何学タイリング座標・変換エンジン
+  // ==========================================
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  const SQ3_2 = Math.sqrt(3) / 2;
+
+  function toWorld(u, v) {
+    return { x: u + 0.5 * v, y: v * SQ3_2 };
+  }
+
+  function makeTileVerts(u, v, type) {
+    if (type === 'U') {
+      return [toWorld(u, v), toWorld(u + 1, v), toWorld(u, v + 1)];
+    } else {
+      return [toWorld(u + 1, v + 1), toWorld(u, v + 1), toWorld(u + 1, v)];
+    }
+  }
+
+  function centroid(verts) {
+    return {
+      x: (verts[0].x + verts[1].x + verts[2].x) / 3,
+      y: (verts[0].y + verts[1].y + verts[2].y) / 3
+    };
+  }
+
+  function dist(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  }
+
+  function distToLine(p, A, B) {
+    const vx = B.x - A.x;
+    const vy = B.y - A.y;
+    const len = Math.hypot(vx, vy);
+    if (len < 1e-6) return Infinity;
+    return Math.abs((p.x - A.x) * vy - (p.y - A.y) * vx) / len;
+  }
+
+  function stateKey(verts) {
+    return verts.map(p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join('|');
+  }
+
+  function sameState(v1, v2) {
+    return (
+      dist(v1[0], v2[0]) < 0.03 &&
+      dist(v1[1], v2[1]) < 0.03 &&
+      dist(v1[2], v2[2]) < 0.03
+    );
+  }
+
+  function buildShapeTiles(shapeType) {
+    const tiles = [];
+    if (shapeType === 'hexagon') {
+      for (let v = -2; v <= 1; v++) {
+        for (let u = -2; u <= 1; u++) {
+          for (const type of ['U', 'D']) {
+            const verts = makeTileVerts(u, v, type);
+            const c = centroid(verts);
+            const p1 = Math.abs(c.y);
+            const p2 = Math.abs(SQ3_2 * c.x + 0.5 * c.y);
+            const p3 = Math.abs(-SQ3_2 * c.x + 0.5 * c.y);
+            if (p1 < 2 * SQ3_2 - 1e-4 && p2 < 2 * SQ3_2 - 1e-4 && p3 < 2 * SQ3_2 - 1e-4) {
+              tiles.push({ id: `${u},${v},${type}`, u, v, type, verts, center: c });
+            }
+          }
+        }
+      }
+    } else if (shapeType === 'triangle') {
+      for (let v = 0; v < 4; v++) {
+        for (let u = 0; u < 4; u++) {
+          for (const type of ['U', 'D']) {
+            const verts = makeTileVerts(u, v, type);
+            const sum = (type === 'U') ? (u + v) : (u + v + 1);
+            if (sum < 4) {
+              tiles.push({ id: `${u},${v},${type}`, u, v, type, verts, center: centroid(verts) });
+            }
+          }
+        }
+      }
+    } else if (shapeType === 'rhombus') {
+      for (let v = 0; v < 3; v++) {
+        for (let u = 0; u < 3; u++) {
+          for (const type of ['U', 'D']) {
+            const verts = makeTileVerts(u, v, type);
+            tiles.push({ id: `${u},${v},${type}`, u, v, type, verts, center: centroid(verts) });
+          }
+        }
+      }
+    }
+    return tiles;
+  }
+
+  // Canvas座標系（+x:右, +y:下）: 時計回り = +deg, 反時計回り = -deg
+  function rotatePoint(p, center, deg) {
+    const rad = (deg * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const dx = p.x - center.x;
+    const dy = p.y - center.y;
+    return {
+      x: center.x + dx * cos - dy * sin,
+      y: center.y + dx * sin + dy * cos
+    };
+  }
+
+  function reflectPoint(p, A, B) {
+    const vx = B.x - A.x;
+    const vy = B.y - A.y;
+    const len2 = vx * vx + vy * vy;
+    const t = ((p.x - A.x) * vx + (p.y - A.y) * vy) / len2;
+    const projX = A.x + t * vx;
+    const projY = A.y + t * vy;
+    return {
+      x: 2 * projX - p.x,
+      y: 2 * projY - p.y
+    };
+  }
+
+  function translateVerts(verts, dx, dy) {
+    return verts.map(p => ({ x: p.x + dx, y: p.y + dy }));
+  }
+
+  function rotateVerts(verts, center, deg) {
+    return verts.map(p => rotatePoint(p, center, deg));
+  }
+
+  function reflectVerts(verts, A, B) {
+    return verts.map(p => reflectPoint(p, A, B));
+  }
+
+  function matchTile(verts, tiles, blockedIds) {
+    const c = centroid(verts);
+    for (const tile of tiles) {
+      if (blockedIds && blockedIds.has(tile.id)) continue;
+      if (dist(c, tile.center) < 0.05) {
+        let ok = true;
+        for (const vp of verts) {
+          if (!tile.verts.some(tv => dist(vp, tv) < 0.05)) {
+            ok = false;
+            break;
+          }
+        }
+        if (ok) return tile;
+      }
+    }
+    return null;
+  }
+
+  function extractBoardGeometry(tiles) {
+    const points = [];
+    const addPoint = (pt, kind) => {
+      const existing = points.find(ep => dist(ep, pt) < 0.03);
+      if (!existing) {
+        points.push({ x: pt.x, y: pt.y, kind });
+      } else if (kind === 'vertex') {
+        existing.kind = 'vertex';
+      }
+    };
+
+    for (const t of tiles) {
+      for (let i = 0; i < 3; i++) {
+        const p1 = t.verts[i];
+        const p2 = t.verts[(i + 1) % 3];
+        addPoint(p1, 'vertex');
+        addPoint({ x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }, 'midpoint');
+      }
+    }
+
+    const lines = [];
+    const addLine = (A, B) => {
+      const dx = B.x - A.x;
+      const dy = B.y - A.y;
+      const len = Math.hypot(dx, dy);
+      if (len < 1e-4) return;
+      let nx = -dy / len;
+      let ny = dx / len;
+      if (nx < -1e-5 || (Math.abs(nx) <= 1e-5 && ny < 0)) {
+        nx = -nx;
+        ny = -ny;
+      }
+      const d = nx * A.x + ny * A.y;
+      if (!lines.some(l => Math.abs(l.nx - nx) < 1e-3 && Math.abs(l.ny - ny) < 1e-3 && Math.abs(l.d - d) < 1e-3)) {
+        lines.push({ A, B, nx, ny, d });
+      }
+    };
+
+    for (const t of tiles) {
+      addLine(t.verts[0], t.verts[1]);
+      addLine(t.verts[1], t.verts[2]);
+      addLine(t.verts[2], t.verts[0]);
+      for (let i = 0; i < 3; i++) {
+        const p0 = t.verts[i];
+        const p1 = t.verts[(i + 1) % 3];
+        const p2 = t.verts[(i + 2) % 3];
+        addLine(p0, { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 });
+      }
+    }
+    return { points, lines };
+  }
+
+  function getCandidateRotCenters(verts, boardObj, rulesObj) {
+    if (rulesObj.localOnly) {
+      const list = verts.map(v => ({ x: v.x, y: v.y, kind: 'vertex' }));
+      if (rulesObj.includeOwnMidpoints) {
+        for (let i = 0; i < 3; i++) {
+          const p1 = verts[i], p2 = verts[(i + 1) % 3];
+          list.push({ x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2, kind: 'midpoint' });
+        }
+      }
+      return list;
+    }
+    return boardObj.points;
+  }
+
+  function getUsableRotCenters(verts, boardObj, rulesObj) {
+    const candidates = getCandidateRotCenters(verts, boardObj, rulesObj);
+    const allowedAngles = rulesObj.allowedAngles || [60, -60, 120, -120, 180];
+    return candidates.filter(center => {
+      return allowedAngles.some(deg => {
+        const nv = rotateVerts(verts, center, deg);
+        return !sameState(nv, verts) && matchTile(nv, boardObj.tiles, boardObj.blockedSet);
+      });
+    });
+  }
+
+  function getCandidateReflectLines(verts, boardObj, rulesObj) {
+    if (rulesObj.localOnly) {
+      const list = [
+        { A: verts[0], B: verts[1] },
+        { A: verts[1], B: verts[2] },
+        { A: verts[2], B: verts[0] }
+      ];
+      if (rulesObj.includeOwnAltitudes) {
+        for (let i = 0; i < 3; i++) {
+          const p0 = verts[i], p1 = verts[(i + 1) % 3], p2 = verts[(i + 2) % 3];
+          list.push({ A: p0, B: { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 } });
+        }
+      }
+      return list;
+    }
+    return boardObj.lines;
+  }
+
+  function getLegalMoves(verts, boardObj, rulesObj) {
+    const moves = [];
+    const { tiles } = boardObj;
+    const blocked = rulesObj.blockedSet || new Set();
+    const allowedModes = rulesObj.allowedModes || ['translate', 'rotate', 'reflect'];
+    const allowedAngles = rulesObj.allowedAngles || [60, -60, 120, -120, 180];
+    const localOnly = !!rulesObj.localOnly;
+    const stepOneOnly = !!rulesObj.stepOneOnly;
+
+    if (allowedModes.includes('translate')) {
+      const c = centroid(verts);
+      for (const tile of tiles) {
+        if (blocked.has(tile.id)) continue;
+        const dx = tile.center.x - c.x;
+        const dy = tile.center.y - c.y;
+        if (Math.hypot(dx, dy) < 0.05) continue;
+        if ((localOnly || stepOneOnly) && Math.hypot(dx, dy) > 1.05) continue;
+        const nv = translateVerts(verts, dx, dy);
+        if (matchTile(nv, tiles, blocked)) {
+          moves.push({ type: 'translate', verts: nv });
+        }
+      }
+    }
+
+    if (allowedModes.includes('rotate')) {
+      const centers = getCandidateRotCenters(verts, boardObj, rulesObj);
+      for (const center of centers) {
+        for (const deg of allowedAngles) {
+          const nv = rotateVerts(verts, center, deg);
+          if (!sameState(nv, verts) && matchTile(nv, tiles, blocked)) {
+            moves.push({ type: 'rotate', verts: nv, center, deg });
+          }
+        }
+      }
+    }
+
+    if (allowedModes.includes('reflect')) {
+      const candidateLines = getCandidateReflectLines(verts, boardObj, rulesObj);
+      for (const ln of candidateLines) {
+        const nv = reflectVerts(verts, ln.A, ln.B);
+        if (!sameState(nv, verts) && matchTile(nv, tiles, blocked)) {
+          moves.push({ type: 'reflect', verts: nv, line: ln });
+        }
+      }
+    }
+
+    return moves;
+  }
+
+  function computeShortestSteps(sVerts, gVerts, boardObj, rulesObj) {
+    if (!sVerts || !gVerts || !boardObj) return 1;
+    if (sameState(sVerts, gVerts)) return 0;
+    const queue = [{ verts: sVerts, dist: 0 }];
+    const visited = new Set([stateKey(sVerts)]);
+    while (queue.length > 0) {
+      const cur = queue.shift();
+      if (cur.dist >= 8) continue;
+      for (const mv of getLegalMoves(cur.verts, boardObj, rulesObj)) {
+        if (sameState(mv.verts, gVerts)) return cur.dist + 1;
+        const k = stateKey(mv.verts);
+        if (!visited.has(k)) {
+          visited.add(k);
+          queue.push({ verts: mv.verts, dist: cur.dist + 1 });
+        }
+      }
+    }
+    return 1;
+  }
+
+  function findVerifiedGoal(sVerts, boardObj, rulesObj, criteria) {
+    const desiredSteps = criteria.desiredSteps || 1;
+    const queue = [{ verts: sVerts, path: [] }];
+    const visited = new Set([stateKey(sVerts)]);
+    const candidates = [];
+
+    while (queue.length > 0) {
+      const cur = queue.shift();
+      if (cur.path.length === desiredSteps) {
+        const types = cur.path.map(m => m.type);
+        const hasAllRequired = (criteria.requireTypes || []).every(t => types.includes(t));
+
+        let condOk = true;
+        if (criteria.requireAngle) {
+          condOk = cur.path.some(m => m.type === 'rotate' && Math.abs(m.deg) === criteria.requireAngle);
+        }
+        if (condOk && criteria.requireRemoteCenter) {
+          condOk = cur.path.some((m, idx) => {
+            if (m.type !== 'rotate') return false;
+            const prevVerts = idx === 0 ? sVerts : cur.path[idx - 1].verts;
+            return !prevVerts.some(v => dist(v, m.center) < 0.03);
+          });
+        }
+        if (condOk && criteria.requireMidpointCenter) {
+          condOk = cur.path.some(m => m.type === 'rotate' && m.center.kind === 'midpoint');
+        }
+        if (condOk && criteria.requireRemoteAxis) {
+          condOk = cur.path.some((m, idx) => {
+            if (m.type !== 'reflect') return false;
+            const prevVerts = idx === 0 ? sVerts : cur.path[idx - 1].verts;
+            const onOwnEdge = [0, 1, 2].some(i => {
+              const p1 = prevVerts[i], p2 = prevVerts[(i + 1) % 3];
+              return distToLine(p1, m.line.A, m.line.B) < 0.03 && distToLine(p2, m.line.A, m.line.B) < 0.03;
+            });
+            return !onOwnEdge;
+          });
+        }
+        if (condOk && criteria.requireCrossingAxis) {
+          condOk = cur.path.some((m, idx) => {
+            if (m.type !== 'reflect') return false;
+            const prevVerts = idx === 0 ? sVerts : cur.path[idx - 1].verts;
+            const onVertices = prevVerts.filter(v => distToLine(v, m.line.A, m.line.B) < 0.03);
+            return onVertices.length === 1;
+          });
+        }
+
+        if (hasAllRequired && condOk) {
+          candidates.push({ verts: cur.verts, path: cur.path });
+        }
+        continue;
+      }
+
+      for (const mv of getLegalMoves(cur.verts, boardObj, rulesObj)) {
+        const k = stateKey(mv.verts);
+        if (!visited.has(k)) {
+          visited.add(k);
+          queue.push({ verts: mv.verts, path: [...cur.path, mv] });
+        }
+      }
+    }
+
+    if (candidates.length > 0) {
+      const startC = centroid(sVerts);
+      candidates.sort((a, b) => dist(centroid(b.verts), startC) - dist(centroid(a.verts), startC));
+      return candidates[0].verts;
+    }
+
+    // フォールバック：指定手数で到達できる最遠のマス
+    const fallbackQueue = [{ verts: sVerts, dist: 0 }];
+    const fallbackVisited = new Set([stateKey(sVerts)]);
+    let farthest = sVerts;
+    while (fallbackQueue.length > 0) {
+      const cur = fallbackQueue.shift();
+      if (cur.dist > 0) farthest = cur.verts;
+      if (cur.dist >= desiredSteps) continue;
+      for (const mv of getLegalMoves(cur.verts, boardObj, rulesObj)) {
+        const k = stateKey(mv.verts);
+        if (!fallbackVisited.has(k)) {
+          fallbackVisited.add(k);
+          fallbackQueue.push({ verts: mv.verts, dist: cur.dist + 1 });
+        }
+      }
+    }
+    return farthest;
+  }
+
+  // ==========================================
+  // 3. 重複ゼロのステージ定義（ベーシック8問 ／ 何でもあり8問）
+  // ==========================================
+  const SHAPE_NAMES = {
+    hexagon: '正六角形',
+    rhombus: 'ひし形',
+    triangle: '大正三角形'
+  };
+
+  const STAGE_SETS = {
+    basic: [
+      {
+        num: 1,
+        topic: '平行移動の基本',
+        shape: 'hexagon',
+        start: { u: -2, v: 0, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 1, requireTypes: ['translate'] },
+        rules: { localOnly: true, allowedModes: ['translate'] },
+        descTpl: (par) => `向きを変えずに隣り合う同じ向きのマスへスライドさせ、最短${par}手で赤いゴールに重ねよう。`,
+        baseConstraint: 'ベーシック：平行移動のみ'
+      },
+      {
+        num: 2,
+        topic: '自分の頂点を中心に60°回転',
+        shape: 'hexagon',
+        start: { u: 0, v: 0, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 1, requireTypes: ['rotate'], requireAngle: 60 },
+        rules: { localOnly: true, allowedModes: ['rotate'], allowedAngles: [60, -60] },
+        descTpl: (par) => `自分の三角形の3つの頂点から1つを回転の中心に選び、60°回転させて最短${par}手で重ねよう。`,
+        baseConstraint: 'ベーシック：自分の頂点で60°回転'
+      },
+      {
+        num: 3,
+        topic: '自分の辺を軸に対称移動',
+        shape: 'hexagon',
+        start: { u: 0, v: 0, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 1, requireTypes: ['reflect'] },
+        rules: { localOnly: true, allowedModes: ['reflect'] },
+        descTpl: (par) => `自分の三角形の辺を対称の軸に選び、隣のマスへパタンと鏡映しに反転させて最短${par}手で重ねよう。`,
+        baseConstraint: 'ベーシック：自分の辺を軸に対称移動'
+      },
+      {
+        num: 4,
+        topic: '自分の頂点を中心に120°回転',
+        shape: 'triangle',
+        start: { u: 1, v: 1, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 1, requireTypes: ['rotate'], requireAngle: 120 },
+        rules: { localOnly: true, allowedModes: ['rotate'], allowedAngles: [120, -120] },
+        descTpl: (par) => `60°ではなく120°回転を使うと1つ飛ばしのマスへ大きく旋回できます。最短${par}手でゴールに重ねよう。`,
+        baseConstraint: 'ベーシック：自分の頂点で120°回転'
+      },
+      {
+        num: 5,
+        topic: '対称移動＋平行移動の2手コンボ',
+        shape: 'rhombus',
+        start: { u: 0, v: 0, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 2, requireTypes: ['reflect', 'translate'] },
+        rules: { localOnly: true },
+        descTpl: (par) => `自分の辺での対称移動で旗の向きを合わせてから、平行移動でスライドして最短${par}手で重ねよう。`,
+        baseConstraint: 'ベーシック：自分の頂点・辺のみ'
+      },
+      {
+        num: 6,
+        topic: '回転移動＋対称移動の2手コンボ',
+        shape: 'triangle',
+        start: { u: 0, v: 0, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 2, requireTypes: ['rotate', 'reflect'] },
+        rules: { localOnly: true },
+        descTpl: (par) => `自分の頂点を中心にした回転移動と、自分の辺を軸にした対称移動を組み合わせて最短${par}手で重ねよう。`,
+        baseConstraint: 'ベーシック：自分の頂点・辺のみ'
+      },
+      {
+        num: 7,
+        topic: '黒マスを迂回する2手ルート',
+        shape: 'hexagon',
+        start: { u: -1, v: 0, type: 'U', perm: [0, 1, 2] },
+        blocked: ['0,0,U', '-1,0,D', '0,-1,D'],
+        criteria: { desiredSteps: 2 },
+        rules: { localOnly: true },
+        descTpl: (par) => `黒い壁マスには入れません。自分の頂点・辺を使って壁を迂回し、最短${par}手でゴールに到達しよう。`,
+        baseConstraint: 'ベーシック：自分の頂点・辺のみ ／ 黒マス禁止'
+      },
+      {
+        num: 8,
+        topic: '60°回転と1マス平行移動の3手挑戦',
+        shape: 'rhombus',
+        start: { u: 0, v: 0, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 3, requireTypes: ['rotate', 'translate'] },
+        rules: {
+          localOnly: true,
+          allowedModes: ['translate', 'rotate'],
+          allowedAngles: [60, -60]
+        },
+        descTpl: (par) => `自分の頂点での60°回転と隣接マスへの平行移動を駆使して、最短${par}手のルートを見つけよう！`,
+        baseConstraint: 'ベーシック：頂点±60°回転 ／ 1マス平行移動'
+      }
+    ],
+    free: [
+      {
+        num: 1,
+        topic: '離れた格子点を中心に180°回転',
+        shape: 'hexagon',
+        start: { u: -2, v: 0, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 1, requireTypes: ['rotate'], requireRemoteCenter: true, requireAngle: 180 },
+        rules: { localOnly: false, allowedModes: ['rotate'], allowedAngles: [180] },
+        descTpl: (par) => `自分の図形から離れた「六角形の中心」などを回転の中心に選び、180°点対称に回転させて最短${par}手で重ねよう。`,
+        baseConstraint: '何でもあり：離れた格子点を選択可'
+      },
+      {
+        num: 2,
+        topic: '離れた直線を軸に大きく対称移動',
+        shape: 'hexagon',
+        start: { u: -2, v: 1, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 1, requireTypes: ['reflect'], requireRemoteAxis: true },
+        rules: { localOnly: false, allowedModes: ['reflect'] },
+        descTpl: (par) => `図形から離れた対称の軸（緑の点線）を選び、反対側のエリアへ一気に鏡映しに移動させて最短${par}手で重ねよう。`,
+        baseConstraint: '何でもあり：離れた対称の軸を選択可'
+      },
+      {
+        num: 3,
+        topic: '辺の中点を回転の中心にする180°回転',
+        shape: 'rhombus',
+        start: { u: 0, v: 0, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 1, requireTypes: ['rotate'], requireMidpointCenter: true },
+        rules: { localOnly: false, allowedModes: ['rotate'], allowedAngles: [180] },
+        descTpl: (par) => `格子点だけでなく「辺の中点（小さな紫の点）」も回転の中心に選べます。辺の中点で180°回転して最短${par}手で重ねよう。`,
+        baseConstraint: '何でもあり：辺の中点を回転中心に選択可'
+      },
+      {
+        num: 4,
+        topic: '図形を横切る垂線を軸に対称移動',
+        shape: 'triangle',
+        start: { u: 1, v: 0, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 1, requireTypes: ['reflect'], requireCrossingAxis: true },
+        rules: { localOnly: false, allowedModes: ['reflect'] },
+        descTpl: (par) => `自分の図形の真ん中を横切る直線（高さの線）を対称の軸に選び、その場で反転させて最短${par}手で重ねよう。`,
+        baseConstraint: '何でもあり：図形を横切る直線を選択可'
+      },
+      {
+        num: 5,
+        topic: '離れた回転中心＋平行移動の2手',
+        shape: 'rhombus',
+        start: { u: 0, v: 0, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 2, requireTypes: ['rotate', 'translate'], requireRemoteCenter: true },
+        rules: { localOnly: false },
+        descTpl: (par) => `離れた格子点を中心に回転させて向きを合わせてから、ゴールまで平行移動して最短${par}手で重ねよう。`,
+        baseConstraint: '何でもあり：全格子点・全直線を選択可'
+      },
+      {
+        num: 6,
+        topic: '離れた対称軸＋回転移動の2手',
+        shape: 'hexagon',
+        start: { u: -2, v: 1, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 2, requireTypes: ['reflect', 'rotate'], requireRemoteAxis: true },
+        rules: { localOnly: false },
+        descTpl: (par) => `離れた直線での対称移動と、好きな点を中心にした回転移動を組み合わせて最短${par}手で重ねよう。`,
+        baseConstraint: '何でもあり：全格子点・全直線を選択可'
+      },
+      {
+        num: 7,
+        topic: '黒マスの壁を越える自由跳躍ルート',
+        shape: 'hexagon',
+        start: { u: -2, v: 0, type: 'U', perm: [0, 1, 2] },
+        blocked: ['-1,0,D', '-1,0,U', '0,0,U', '0,0,D', '-1,-1,D', '0,-1,U'],
+        criteria: { desiredSteps: 2 },
+        rules: { localOnly: false },
+        descTpl: (par) => `黒マスに囲まれていても、離れた回転中心や対称軸を使えば壁を飛び越えられます！最短${par}手でゴールしよう。`,
+        baseConstraint: '何でもあり：全点・全直線可 ／ 黒マス禁止'
+      },
+      {
+        num: 8,
+        topic: '60°回転限定・盤面横断3手チャレンジ',
+        shape: 'rhombus',
+        start: { u: 0, v: 0, type: 'U', perm: [0, 1, 2] },
+        criteria: { desiredSteps: 3, requireTypes: ['rotate', 'translate'] },
+        rules: {
+          localOnly: false,
+          allowedModes: ['translate', 'rotate'],
+          allowedAngles: [60, -60],
+          stepOneOnly: true
+        },
+        descTpl: (par) => `盤面上の好きな点を中心に選べますが、角度は±60°のみ・平行移動は1マスずつです。最短${par}手を見つけよう！`,
+        baseConstraint: '何でもあり：中心自由（±60°）／ 1マス平行移動'
+      }
+    ]
+  };
+
+  function buildVertsFromSpec(spec) {
+    const base = makeTileVerts(spec.u, spec.v, spec.type);
+    return [
+      { ...base[spec.perm[0]] },
+      { ...base[spec.perm[1]] },
+      { ...base[spec.perm[2]] }
+    ];
+  }
+
+  const stageCache = {
+    basic: new Array(STAGE_SETS.basic.length).fill(null),
+    free: new Array(STAGE_SETS.free.length).fill(null)
+  };
+
+  function getVerifiedStage(rulesetKey, idx) {
+    if (stageCache[rulesetKey][idx]) return stageCache[rulesetKey][idx];
+    const st = STAGE_SETS[rulesetKey][idx];
+    const tiles = buildShapeTiles(st.shape);
+    const geom = extractBoardGeometry(tiles);
+    const blockedSet = new Set(st.blocked || []);
+    const b = { tiles, points: geom.points, lines: geom.lines, blockedSet };
+    const r = { ...st.rules, blockedSet };
+    const s = buildVertsFromSpec(st.start);
+    const g = findVerifiedGoal(s, b, r, st.criteria);
+    const actualPar = computeShortestSteps(s, g, b, r);
+
+    const verified = {
+      rulesetKey,
+      idx,
+      num: st.num,
+      shape: st.shape,
+      board: b,
+      rules: r,
+      startVerts: s,
+      goalVerts: g,
+      parSteps: actualPar,
+      cardTitle: st.topic,
+      fullTitle: `第${st.num}問（最短${actualPar}手）：${st.topic}`,
+      desc: st.descTpl(actualPar),
+      constraintText: `${st.baseConstraint}（実際の最短：${actualPar}手）`
+    };
+    stageCache[rulesetKey][idx] = verified;
+    return verified;
+  }
+
+  // ランダム問題生成関数（minSteps指定時は確実にminSteps以上の最短手数問題を生成）
+  function generateRandomStage(rulesetKey, targetSteps, minSteps = 1) {
+    const shapes = ['hexagon', 'rhombus', 'triangle'];
+    const isLocal = rulesetKey === 'basic';
+    const perms = [[0,1,2], [1,2,0], [2,0,1], [0,2,1], [2,1,0], [1,0,2]];
+
+    // 何でもありモードは全点・全直線が使えるため数学的に最大2手以内になる
+    const effectiveTarget = (!isLocal && targetSteps >= 3) ? 2 : targetSteps;
+    const effectiveMin = Math.max(1, minSteps);
+
+    for (let attempt = 0; attempt < 25; attempt++) {
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      const tiles = buildShapeTiles(shape);
+      const geom = extractBoardGeometry(tiles);
+      const blockedSet = new Set();
+      const b = { tiles, points: geom.points, lines: geom.lines, blockedSet };
+
+      const r = {
+        localOnly: isLocal,
+        allowedModes: ['translate', 'rotate', 'reflect'],
+        allowedAngles: [60, -60, 120, -120, 180],
+        blockedSet
+      };
+
+      const startTile = tiles[Math.floor(Math.random() * tiles.length)];
+      const perm = perms[Math.floor(Math.random() * perms.length)];
+      const s = [
+        { ...startTile.verts[perm[0]] },
+        { ...startTile.verts[perm[1]] },
+        { ...startTile.verts[perm[2]] }
+      ];
+
+      let steps = effectiveTarget;
+      if (steps <= 0) {
+        if (effectiveMin >= 2) {
+          steps = isLocal ? (2 + Math.floor(Math.random() * 2)) : 2;
+        } else {
+          steps = 1 + Math.floor(Math.random() * 2);
+        }
+      }
+      steps = Math.max(effectiveMin, steps);
+
+      const g = findVerifiedGoal(s, b, r, { desiredSteps: steps });
+      const actualPar = computeShortestSteps(s, g, b, r);
+
+      if (actualPar >= effectiveMin && (effectiveTarget <= 0 || actualPar === effectiveTarget)) {
+        const modeLabel = isLocal ? 'ベーシック' : '何でもあり';
+        return {
+          rulesetKey,
+          shape,
+          board: b,
+          rules: r,
+          startVerts: s,
+          goalVerts: g,
+          parSteps: actualPar,
+          cardTitle: `${SHAPE_NAMES[shape]}・ランダム`,
+          fullTitle: `ランダム問題（${modeLabel}・最短${actualPar}手）`,
+          desc: `${SHAPE_NAMES[shape]}の敷き詰め模様の中で、最短${actualPar}手で赤いゴール枠に重ねよう！`,
+          constraintText: isLocal ? 'ベーシック：自分の頂点・辺のみ' : '何でもあり：盤面全体の点・直線を選択可'
+        };
+      }
+    }
+
+    // フォールバック：条件に合う既定ステージを返す
+    const fallbackIdx = isLocal ? 4 : 4;
+    return getVerifiedStage(rulesetKey, fallbackIdx);
+  }
+
+  // ==========================================
+  // 4. 進行状況保存・タイムアタック記録
+  // ==========================================
+  const PROGRESS_KEY = 'zukei_tiling_progress_v4';
+  const TA_BEST_KEY = 'zukei_tiling_ta_best_v1';
+
+  let progressData = { basic: {}, free: {} };
+  try {
+    const raw = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
+    if (raw.basic) progressData.basic = raw.basic;
+    if (raw.free) progressData.free = raw.free;
+  } catch (e) {}
+
+  function saveStageProgress(rulesetKey, idx, isPar) {
+    if (!progressData[rulesetKey]) progressData[rulesetKey] = {};
+    const prev = progressData[rulesetKey][idx];
+    if (prev === 'par') return;
+    progressData[rulesetKey][idx] = isPar ? 'par' : 'clear';
+    try {
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(progressData));
+    } catch (e) {}
+  }
+
+  let taBestData = { basic: null, free: null };
+  try {
+    const raw = JSON.parse(localStorage.getItem(TA_BEST_KEY) || '{}');
+    if (typeof raw.basic === 'number') taBestData.basic = raw.basic;
+    if (typeof raw.free === 'number') taBestData.free = raw.free;
+  } catch (e) {}
+
+  function saveTaBest(rulesetKey, ms) {
+    if (taBestData[rulesetKey] === null || ms < taBestData[rulesetKey]) {
+      taBestData[rulesetKey] = ms;
+      try {
+        localStorage.setItem(TA_BEST_KEY, JSON.stringify(taBestData));
+      } catch (e) {}
+      return true;
+    }
+    return false;
+  }
+
+  function formatSeconds(ms) {
+    return `${(ms / 1000).toFixed(1)}秒`;
+  }
+
+  // ==========================================
+  // 5. メニュー画面・モードタブ制御
+  // ==========================================
+  let currentMenuTab = 'basic';
+  let randSelectedRule = 'basic';
+  let randSelectedSteps = 0;
+  let taSelectedRule = 'basic';
+
+  function updateRandomStepOptionsUI() {
+    const step3Btn = document.getElementById('randStep3Btn');
+    const hintEl = document.getElementById('randStepsHint');
+    if (!step3Btn) return;
+
+    if (randSelectedRule === 'free') {
+      step3Btn.disabled = true;
+      if (randSelectedSteps === 3) {
+        randSelectedSteps = 0;
+        document.querySelectorAll('#randStepsGroup .choice-pill').forEach(b => {
+          b.classList.toggle('selected', Number(b.dataset.val) === 0);
+        });
+      }
+      hintEl.textContent = '※「何でもあり」では全点・全直線が使えるため最大2手で解けます（3手は選択不可）';
+    } else {
+      step3Btn.disabled = false;
+      hintEl.textContent = '';
+    }
+  }
+
+  function switchMenuTab(tabName) {
+    SoundFX.playSelect();
+    currentMenuTab = tabName;
+    document.querySelectorAll('.main-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+
+    const stagePanel = document.getElementById('stageListPanel');
+    const randPanel = document.getElementById('randomPanel');
+    const taPanel = document.getElementById('timeAttackPanel');
+
+    stagePanel.classList.add('hidden');
+    randPanel.classList.add('hidden');
+    taPanel.classList.add('hidden');
+
+    if (tabName === 'basic' || tabName === 'free') {
+      stagePanel.classList.remove('hidden');
+      const descEl = document.getElementById('modeBannerDesc');
+      if (tabName === 'basic') {
+        descEl.innerHTML = '<strong style="color:#7dd3fc;">ベーシックモード</strong>：回転の中心は「自分の三角形の頂点」、対称の軸は「自分の辺」だけを選べます。';
+      } else {
+        descEl.innerHTML = '<strong style="color:#e9d5ff;">何でもありモード</strong>：盤面全体の格子点・辺の中点・離れた直線を自由に選んで大きく移動できます。';
+      }
+      renderStageGrid(tabName);
+    } else if (tabName === 'random') {
+      randPanel.classList.remove('hidden');
+      updateRandomStepOptionsUI();
+    } else if (tabName === 'timeattack') {
+      taPanel.classList.remove('hidden');
+      updateTaRecordDisplay();
+    }
+  }
+
+  function renderStageGrid(rulesetKey) {
+    const grid = document.getElementById('stageGrid');
+    grid.innerHTML = '';
+    const list = STAGE_SETS[rulesetKey];
+    let clearCount = 0;
+    let parCount = 0;
+
+    list.forEach((st, idx) => {
+      const verified = getVerifiedStage(rulesetKey, idx);
+      const status = (progressData[rulesetKey] || {})[idx];
+      if (status === 'clear' || status === 'par') clearCount++;
+      if (status === 'par') parCount++;
+
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'stage-card';
+      let badgeHtml = '<span class="status-badge status-unplayed">未クリア</span>';
+      if (status === 'par') {
+        card.classList.add('par-cleared');
+        badgeHtml = '<span class="status-badge status-par">★最短クリア</span>';
+      } else if (status === 'clear') {
+        card.classList.add('cleared');
+        badgeHtml = '<span class="status-badge status-clear">クリア済</span>';
+      }
+
+      card.innerHTML = `
+        <div>
+          <div class="card-top">
+            <span class="stage-num ${rulesetKey === 'free' ? 'free-num' : ''}">第${st.num}問</span>
+            ${badgeHtml}
+          </div>
+          <div class="card-title">${verified.cardTitle}</div>
+        </div>
+        <div class="card-meta">
+          <span style="color:#94a3b8; font-weight:700;">${SHAPE_NAMES[st.shape]}</span>
+          <span class="par-tag">最短 ${verified.parSteps}手</span>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        startCampaignStage(rulesetKey, idx);
+      });
+      grid.appendChild(card);
+    });
+
+    document.getElementById('clearCountText').textContent = `${clearCount}/${list.length}`;
+    document.getElementById('parCountText').textContent = `${parCount}/${list.length}`;
+  }
+
+  function updateTaRecordDisplay() {
+    document.getElementById('taBestCourseLabel').textContent = taSelectedRule === 'basic' ? 'ベーシック' : '何でもあり';
+    const best = taBestData[taSelectedRule];
+    document.getElementById('taBestTimeText').textContent = best !== null ? formatSeconds(best) : '記録なし';
+  }
+
+  // ==========================================
+  // 6. パズル進行・タイムアタック・操作ロジック
+  // ==========================================
+  let playSession = {
+    kind: 'campaign', // 'campaign' | 'random' | 'timeattack'
+    rulesetKey: 'basic',
+    stageIdx: 0,
+    taProblems: [],
+    taCurrentIndex: 0,
+    taStartTime: 0,
+    taTimerId: null
+  };
+
+  let board = null;
+  let rules = {};
+  let startVerts = null;
+  let goalVerts = null;
+  let playerVerts = null;
+  let parSteps = 1;
+  let history = [];
+
+  let mode = 'translate';
+  let selectedRotCenter = null;
+  let selectedReflectLine = null;
+  let hoverTarget = null;
+  let anim = null;
+  let viewTransform = { scale: 1, offsetX: 0, offsetY: 0 };
+
+  function stopTaTimer() {
+    if (playSession.taTimerId) {
+      clearInterval(playSession.taTimerId);
+      playSession.taTimerId = null;
+    }
+  }
+
+  function showSelectScreen() {
+    stopTaTimer();
+    SoundFX.playSelect();
+    document.getElementById('clearModal').classList.add('hidden');
+    document.getElementById('gameScreen').classList.add('hidden');
+    document.getElementById('selectScreen').classList.remove('hidden');
+    switchMenuTab(currentMenuTab);
+  }
+
+  function enterGameScreen() {
+    document.getElementById('selectScreen').classList.add('hidden');
+    document.getElementById('gameScreen').classList.remove('hidden');
+    document.getElementById('clearModal').classList.add('hidden');
+  }
+
+  function startCampaignStage(rulesetKey, idx) {
+    stopTaTimer();
+    SoundFX.playSelect();
+    playSession = { kind: 'campaign', rulesetKey, stageIdx: idx };
+    document.getElementById('taTimerBadge').classList.add('hidden');
+    document.getElementById('nextRandomQuickBtn').classList.add('hidden');
+    enterGameScreen();
+    applyStageData(getVerifiedStage(rulesetKey, idx));
+  }
+
+  function launchRandomStage() {
+    stopTaTimer();
+    SoundFX.playSelect();
+    playSession = { kind: 'random', rulesetKey: randSelectedRule };
+    document.getElementById('taTimerBadge').classList.add('hidden');
+    document.getElementById('nextRandomQuickBtn').classList.remove('hidden');
+    enterGameScreen();
+    applyStageData(generateRandomStage(randSelectedRule, randSelectedSteps, 1));
+  }
+
+  function launchTimeAttack() {
+    stopTaTimer();
+    SoundFX.playSelect();
+
+    const problems = [];
+    if (taSelectedRule === 'basic') {
+      // ベーシック選択時：必ず最短2手以上の問題を5問連続で用意
+      const multiStepIndices = STAGE_SETS.basic
+        .map((_, idx) => idx)
+        .filter(idx => getVerifiedStage('basic', idx).parSteps >= 2);
+      for (let i = multiStepIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [multiStepIndices[i], multiStepIndices[j]] = [multiStepIndices[j], multiStepIndices[i]];
+      }
+      multiStepIndices.slice(0, 4).forEach(idx => {
+        problems.push(getVerifiedStage('basic', idx));
+      });
+      while (problems.length < 5) {
+        problems.push(generateRandomStage('basic', 2, 2));
+      }
+      // 出題順をシャッフル
+      for (let i = problems.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [problems[i], problems[j]] = [problems[j], problems[i]];
+      }
+    } else {
+      const pool = [0, 1, 2, 3, 4, 5, 6];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      pool.slice(0, 5).forEach(idx => {
+        problems.push(getVerifiedStage('free', idx));
+      });
+    }
+
+    playSession = {
+      kind: 'timeattack',
+      rulesetKey: taSelectedRule,
+      taProblems: problems,
+      taCurrentIndex: 0,
+      taStartTime: performance.now(),
+      taTimerId: null
+    };
+
+    const timerBadge = document.getElementById('taTimerBadge');
+    timerBadge.classList.remove('hidden');
+    timerBadge.textContent = '⏱️ 0.0秒';
+    document.getElementById('nextRandomQuickBtn').classList.add('hidden');
+
+    playSession.taTimerId = setInterval(() => {
+      const elapsed = performance.now() - playSession.taStartTime;
+      timerBadge.textContent = `⏱️ ${formatSeconds(elapsed)}`;
+    }, 100);
+
+    enterGameScreen();
+    loadTimeAttackQuestion(0);
+  }
+
+  function loadTimeAttackQuestion(qIdx) {
+    playSession.taCurrentIndex = qIdx;
+    const baseStage = playSession.taProblems[qIdx];
+    const cloned = {
+      ...baseStage,
+      fullTitle: `タイムアタック [${qIdx + 1} / 5問目]（最短${baseStage.parSteps}手）：${baseStage.cardTitle}`
+    };
+    applyStageData(cloned);
+  }
+
+  function applyStageData(stageObj) {
+    board = stageObj.board;
+    rules = stageObj.rules;
+    startVerts = stageObj.startVerts.map(p => ({ ...p }));
+    goalVerts = stageObj.goalVerts.map(p => ({ ...p }));
+    parSteps = stageObj.parSteps;
+
+    document.getElementById('stageHeading').textContent = stageObj.fullTitle;
+    document.getElementById('stageDesc').textContent = stageObj.desc;
+    document.getElementById('parLabel').textContent = `最短: ${parSteps}手`;
+
+    const cArea = document.getElementById('constraintArea');
+    const tagClass = rules.localOnly ? 'constraint-tag' : 'constraint-tag free-tag';
+    cArea.innerHTML = stageObj.constraintText
+      ? `<span class="${tagClass}">${stageObj.constraintText}</span>`
+      : '';
+
+    const allowed = rules.allowedModes || ['translate', 'rotate', 'reflect'];
+    document.getElementById('tabTranslate').disabled = !allowed.includes('translate');
+    document.getElementById('tabRotate').disabled = !allowed.includes('rotate');
+    document.getElementById('tabReflect').disabled = !allowed.includes('reflect');
+
+    if (!allowed.includes(mode)) {
+      mode = allowed[0];
+    }
+
+    computeViewTransform();
+    resetStage(false);
+  }
+
+  function computeViewTransform() {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const t of board.tiles) {
+      for (const p of t.verts) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      }
+    }
+    const pad = 0.55;
+    minX -= pad; maxX += pad; minY -= pad; maxY += pad;
+    const span = Math.max(maxX - minX, maxY - minY);
+    const scale = canvas.width / span;
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    viewTransform = {
+      scale,
+      offsetX: canvas.width / 2 - cx * scale,
+      offsetY: canvas.height / 2 - cy * scale
+    };
+  }
+
+  function worldToCanvas(p) {
+    return {
+      x: p.x * viewTransform.scale + viewTransform.offsetX,
+      y: p.y * viewTransform.scale + viewTransform.offsetY
+    };
+  }
+
+  function canvasToWorld(cx, cy) {
+    return {
+      x: (cx - viewTransform.offsetX) / viewTransform.scale,
+      y: (cy - viewTransform.offsetY) / viewTransform.scale
+    };
+  }
+
+  function ensureValidSelectedRotCenter() {
+    const usable = getUsableRotCenters(playerVerts, board, rules);
+    if (usable.length === 0) {
+      selectedRotCenter = null;
+      return;
+    }
+    if (!selectedRotCenter || !usable.some(p => dist(p, selectedRotCenter) < 0.03)) {
+      selectedRotCenter = { ...usable[0] };
+    }
+  }
+
+  function resetStage(withSound = false) {
+    if (withSound) SoundFX.playUndo();
+    playerVerts = startVerts.map(p => ({ ...p }));
+    history = [];
+    selectedRotCenter = null;
+    ensureValidSelectedRotCenter();
+    selectedReflectLine = null;
+    hoverTarget = null;
+    anim = null;
+    updateMoveUI();
+    setMode(mode, false);
+    draw();
+  }
+
+  function updateMoveUI() {
+    document.getElementById('moveCountLabel').textContent = `手数: ${history.length}`;
+    document.getElementById('undoBtn').disabled = history.length === 0;
+  }
+
+  function setMode(m, withSound = false) {
+    if (withSound) SoundFX.playSelect();
+    mode = m;
+    hoverTarget = null;
+    selectedReflectLine = null;
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === m);
+    });
+
+    const sub = document.getElementById('subControls');
+    const pill = document.getElementById('guidePill');
+
+    if (m === 'translate') {
+      pill.textContent = '移動先の青い点線マスをタップして平行移動';
+      sub.innerHTML = `<span style="font-size:0.82rem; color:#7dd3fc; font-weight:700;">向きを変えずにスライドできるマスが点線で表示されます</span>`;
+    } else if (m === 'rotate') {
+      ensureValidSelectedRotCenter();
+      pill.textContent = selectedRotCenter
+        ? '紫の「●回転の中心」を選び、下のボタンで回転'
+        : 'この位置から回転できる中心がありません（他の移動を選ぼう）';
+      renderRotateControls();
+    } else if (m === 'reflect') {
+      pill.textContent = '緑の点線（対称の軸）をタップして鏡映しに移動';
+      renderReflectControls();
+    }
+    draw();
+  }
+
+  function renderRotateControls() {
+    const sub = document.getElementById('subControls');
+    sub.innerHTML = '';
+    const angles = rules.allowedAngles || [-120, -60, 180, 60, 120];
+    const labels = {
+      '-120': '↺ 反時計 120°',
+      '-60':  '↺ 反時計 60°',
+      '180':  '↻ 180°回転',
+      '60':   '↻ 時計 60°',
+      '120':  '↻ 時計 120°'
+    };
+    const order = [-120, -60, 180, 60, 120].filter(a => angles.includes(a));
+    order.forEach(deg => {
+      const nv = selectedRotCenter ? rotateVerts(playerVerts, selectedRotCenter, deg) : null;
+      const valid = nv && !sameState(nv, playerVerts) && matchTile(nv, board.tiles, board.blockedSet);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'act-btn rotate-btn';
+      btn.disabled = !valid;
+      btn.textContent = labels[String(deg)];
+      btn.addEventListener('click', () => executeRotation(deg));
+      btn.addEventListener('mouseenter', () => previewRotation(deg));
+      btn.addEventListener('mouseleave', clearPreview);
+      sub.appendChild(btn);
+    });
+  }
+
+  function renderReflectControls() {
+    const sub = document.getElementById('subControls');
+    sub.innerHTML = '';
+    if (selectedReflectLine) {
+      const okBtn = document.createElement('button');
+      okBtn.type = 'button';
+      okBtn.className = 'act-btn reflect-btn';
+      okBtn.textContent = '✓ この軸で対称移動する';
+      okBtn.addEventListener('click', confirmReflection);
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'act-btn';
+      cancelBtn.textContent = 'キャンセル';
+      cancelBtn.addEventListener('click', cancelReflection);
+
+      sub.appendChild(okBtn);
+      sub.appendChild(cancelBtn);
+    } else {
+      sub.innerHTML = `<span style="font-size:0.82rem; color:#86efac; font-weight:700;">緑の点線（対称の軸）をタップして移動先を確認しよう</span>`;
+    }
+  }
+
+  function previewRotation(deg) {
+    if (!selectedRotCenter) return;
+    const nv = rotateVerts(playerVerts, selectedRotCenter, deg);
+    if (!sameState(nv, playerVerts) && matchTile(nv, board.tiles, board.blockedSet)) {
+      hoverTarget = { type: 'rotate', verts: nv, center: selectedRotCenter, deg };
+    } else {
+      hoverTarget = null;
+    }
+    draw();
+  }
+
+  function clearPreview() {
+    if (!selectedReflectLine) {
+      hoverTarget = null;
+      draw();
+    }
+  }
+
+  function executeRotation(deg) {
+    if (!selectedRotCenter) return;
+    const nv = rotateVerts(playerVerts, selectedRotCenter, deg);
+    if (sameState(nv, playerVerts) || !matchTile(nv, board.tiles, board.blockedSet)) return;
+    applyMove(nv, { type: 'rotate', center: { ...selectedRotCenter }, deg });
+  }
+
+  function confirmReflection() {
+    if (!selectedReflectLine) return;
+    const nv = reflectVerts(playerVerts, selectedReflectLine.A, selectedReflectLine.B);
+    const lineCopy = selectedReflectLine;
+    selectedReflectLine = null;
+    applyMove(nv, { type: 'reflect', line: lineCopy });
+  }
+
+  function cancelReflection() {
+    SoundFX.playUndo();
+    selectedReflectLine = null;
+    hoverTarget = null;
+    renderReflectControls();
+    draw();
+  }
+
+  function applyMove(nextVerts, animMeta) {
+    SoundFX.playMove();
+    const prev = playerVerts.map(p => ({ ...p }));
+    history.push(prev);
+    playerVerts = nextVerts.map(p => ({ ...p }));
+    hoverTarget = null;
+    selectedReflectLine = null;
+
+    if (rules.localOnly && selectedRotCenter) {
+      let bestIdx = 0, bestD = Infinity;
+      prev.forEach((p, i) => {
+        const d = dist(p, selectedRotCenter);
+        if (d < bestD) { bestD = d; bestIdx = i; }
+      });
+      selectedRotCenter = { ...playerVerts[bestIdx] };
+    }
+    ensureValidSelectedRotCenter();
+
+    updateMoveUI();
+    if (mode === 'rotate') renderRotateControls();
+    if (mode === 'reflect') renderReflectControls();
+
+    anim = {
+      from: prev,
+      to: playerVerts,
+      meta: animMeta,
+      start: performance.now(),
+      duration: 280
+    };
+    requestAnimationFrame(animLoop);
+
+    if (sameState(playerVerts, goalVerts)) {
+      setTimeout(handleGoalReached, 320);
+    }
+  }
+
+  function animLoop(now) {
+    draw(now);
+    if (anim && now - anim.start < anim.duration) {
+      requestAnimationFrame(animLoop);
+    } else {
+      anim = null;
+      if (mode === 'rotate') renderRotateControls();
+      draw();
+    }
+  }
+
+  function undoMove() {
+    if (history.length === 0) return;
+    SoundFX.playUndo();
+    playerVerts = history.pop();
+    ensureValidSelectedRotCenter();
+    selectedReflectLine = null;
+    hoverTarget = null;
+    updateMoveUI();
+    if (mode === 'rotate') renderRotateControls();
+    if (mode === 'reflect') renderReflectControls();
+    draw();
+  }
+
+  function handleGoalReached() {
+    if (playSession.kind === 'timeattack') {
+      const nextQ = playSession.taCurrentIndex + 1;
+      if (nextQ < 5) {
+        SoundFX.playClearNormal();
+        loadTimeAttackQuestion(nextQ);
+        return;
+      } else {
+        stopTaTimer();
+        const totalMs = performance.now() - playSession.taStartTime;
+        const isNewRecord = saveTaBest(playSession.rulesetKey, totalMs);
+        if (isNewRecord) SoundFX.playClearPar();
+        else SoundFX.playClearNormal();
+
+        document.getElementById('clearTitle').textContent = isNewRecord ? '🏆 新記録達成！5問完走！' : '⏱️ タイムアタック完走！';
+        document.getElementById('clearTitle').style.color = '#fb923c';
+        const courseName = playSession.rulesetKey === 'basic' ? 'ベーシック' : '何でもあり';
+        document.getElementById('clearMsg').textContent = `${courseName}コース5問をクリアしました！`;
+        const bestMs = taBestData[playSession.rulesetKey];
+        document.getElementById('clearStatsBox').innerHTML = `
+          <div>今回のタイム: <strong style="color:#fdba74;">${formatSeconds(totalMs)}</strong></div>
+          <div>自己ベスト: <strong style="color:#facc15;">${formatSeconds(bestMs)}</strong></div>
+        `;
+        document.getElementById('nextStageBtn').textContent = 'もう一度タイムアタック！';
+        document.getElementById('retryStageBtn').classList.add('hidden');
+        document.getElementById('clearModal').classList.remove('hidden');
+        return;
+      }
+    }
+
+    document.getElementById('retryStageBtn').classList.remove('hidden');
+    const moves = history.length;
+    const isPar = moves <= parSteps;
+
+    if (playSession.kind === 'campaign') {
+      saveStageProgress(playSession.rulesetKey, playSession.stageIdx, isPar);
+    }
+
+    if (isPar) SoundFX.playClearPar();
+    else SoundFX.playClearNormal();
+
+    document.getElementById('clearTitle').textContent = isPar ? '★ 最短手数クリア！' : 'ゴールに重なりました！';
+    document.getElementById('clearTitle').style.color = isPar ? '#facc15' : '#38bdf8';
+    document.getElementById('clearMsg').textContent = isPar
+      ? `見事、最短の ${parSteps}手 でぴったり重ねることができました！`
+      : `あと ${moves - parSteps}手 縮めることができます。別の移動方法も試してみよう！`;
+    document.getElementById('clearStatsBox').innerHTML = `
+      <div>あなたの手数: <strong style="color:#38bdf8;">${moves}手</strong></div>
+      <div>最短手数: <strong style="color:#facc15;">${parSteps}手</strong></div>
+    `;
+
+    const nextBtn = document.getElementById('nextStageBtn');
+    if (playSession.kind === 'random') {
+      nextBtn.textContent = '🎲 次のランダム問題へ';
+    } else if (playSession.stageIdx >= STAGE_SETS[playSession.rulesetKey].length - 1) {
+      nextBtn.textContent = '第1問に戻る';
+    } else {
+      nextBtn.textContent = '次の問題へ進む';
+    }
+    document.getElementById('clearModal').classList.remove('hidden');
+  }
+
+  function goNextFromModal() {
+    SoundFX.playSelect();
+    if (playSession.kind === 'timeattack') {
+      launchTimeAttack();
+    } else if (playSession.kind === 'random') {
+      launchRandomStage();
+    } else {
+      const len = STAGE_SETS[playSession.rulesetKey].length;
+      const next = (playSession.stageIdx + 1) % len;
+      startCampaignStage(playSession.rulesetKey, next);
+    }
+  }
+
+  function retryStage() {
+    SoundFX.playSelect();
+    document.getElementById('clearModal').classList.add('hidden');
+    resetStage(false);
+  }
+
+  // ==========================================
+  // 7. 合法手検索とキャンバス入力処理
+  // ==========================================
+  function getValidTranslations() {
+    const res = [];
+    const c = centroid(playerVerts);
+    for (const tile of board.tiles) {
+      if (board.blockedSet.has(tile.id)) continue;
+      const dx = tile.center.x - c.x;
+      const dy = tile.center.y - c.y;
+      if (Math.hypot(dx, dy) < 0.05) continue;
+      if ((rules.localOnly || rules.stepOneOnly) && Math.hypot(dx, dy) > 1.05) continue;
+      const nv = translateVerts(playerVerts, dx, dy);
+      if (matchTile(nv, board.tiles, board.blockedSet)) {
+        res.push({ tile, verts: nv, dx, dy });
+      }
+    }
+    return res;
+  }
+
+  function getValidReflections() {
+    const res = [];
+    const candidateLines = getCandidateReflectLines(playerVerts, board, rules);
+    for (const ln of candidateLines) {
+      const nv = reflectVerts(playerVerts, ln.A, ln.B);
+      if (!sameState(nv, playerVerts) && matchTile(nv, board.tiles, board.blockedSet)) {
+        res.push({ line: ln, verts: nv });
+      }
+    }
+    return res;
+  }
+
+  function getPointerWorld(e) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = ((e.clientX - rect.left) / rect.width) * canvas.width;
+    const cy = ((e.clientY - rect.top) / rect.height) * canvas.height;
+    return canvasToWorld(cx, cy);
+  }
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (anim || !board || !playerVerts) return;
+    const wp = getPointerWorld(e);
+    if (mode === 'translate') {
+      const cands = getValidTranslations();
+      let best = null, bestD = 0.42;
+      for (const item of cands) {
+        const d = dist(wp, item.tile.center);
+        if (d < bestD) { bestD = d; best = item; }
+      }
+      hoverTarget = best ? { type: 'translate', verts: best.verts, dx: best.dx, dy: best.dy } : null;
+      draw();
+    } else if (mode === 'reflect' && !selectedReflectLine) {
+      const cands = getValidReflections();
+      let best = null, bestD = 0.22;
+      for (const item of cands) {
+        const d = distToLine(wp, item.line.A, item.line.B);
+        if (d < bestD) { bestD = d; best = item; }
+      }
+      hoverTarget = best ? { type: 'reflect', verts: best.verts, line: best.line } : null;
+      draw();
+    }
+  });
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (anim || !board || !playerVerts) return;
+    const wp = getPointerWorld(e);
+
+    if (mode === 'translate') {
+      const cands = getValidTranslations();
+      let best = null, bestD = 0.45;
+      for (const item of cands) {
+        const d = dist(wp, item.tile.center);
+        if (d < bestD) { bestD = d; best = item; }
+      }
+      if (best) {
+        applyMove(best.verts, { type: 'translate', dx: best.dx, dy: best.dy });
+      }
+    } else if (mode === 'rotate') {
+      const usablePts = getUsableRotCenters(playerVerts, board, rules);
+      let best = null, bestD = 0.35;
+      for (const p of usablePts) {
+        const d = dist(wp, p);
+        if (d < bestD) { bestD = d; best = p; }
+      }
+      if (best) {
+        SoundFX.playSelect();
+        selectedRotCenter = { ...best };
+        hoverTarget = null;
+        renderRotateControls();
+        draw();
+      }
+    } else if (mode === 'reflect') {
+      if (selectedReflectLine && hoverTarget) {
+        const gCenter = centroid(hoverTarget.verts);
+        if (dist(wp, gCenter) < 0.38) {
+          confirmReflection();
+          return;
+        }
+      }
+
+      const cands = getValidReflections();
+      let best = null, bestD = 0.28;
+      for (const item of cands) {
+        const d = distToLine(wp, item.line.A, item.line.B);
+        if (d < bestD) { bestD = d; best = item; }
+      }
+      if (best) {
+        if (selectedReflectLine === best.line) {
+          confirmReflection();
+        } else {
+          SoundFX.playSelect();
+          selectedReflectLine = best.line;
+          hoverTarget = { type: 'reflect', verts: best.verts, line: best.line };
+          document.getElementById('guidePill').textContent = '黄色の位置へ移動します（もう一度タップで決定）';
+          renderReflectControls();
+          draw();
+        }
+      }
+    }
+  });
+
+  // ==========================================
+  // 8. キャンバス描画エンジン
+  // ==========================================
+  function baryPoint(verts, a, b, c) {
+    return worldToCanvas({
+      x: a * verts[0].x + b * verts[1].x + c * verts[2].x,
+      y: a * verts[0].y + b * verts[1].y + c * verts[2].y
+    });
+  }
+
+  function drawPiece(verts, fillStyle, strokeStyle, flagColor, lineWidth = 2.5, dashed = false) {
+    const c0 = worldToCanvas(verts[0]);
+    const c1 = worldToCanvas(verts[1]);
+    const c2 = worldToCanvas(verts[2]);
+
+    ctx.save();
+    if (dashed) ctx.setLineDash([7, 5]);
+    ctx.beginPath();
+    ctx.moveTo(c0.x, c0.y);
+    ctx.lineTo(c1.x, c1.y);
+    ctx.lineTo(c2.x, c2.y);
+    ctx.closePath();
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = strokeStyle;
+    ctx.stroke();
+    ctx.restore();
+
+    const poleBase = baryPoint(verts, 0.62, 0.24, 0.14);
+    const poleTop  = baryPoint(verts, 0.20, 0.62, 0.18);
+    const flagTip  = baryPoint(verts, 0.34, 0.22, 0.44);
+    const flagMid  = baryPoint(verts, 0.44, 0.42, 0.14);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(poleTop.x, poleTop.y);
+    ctx.lineTo(flagTip.x, flagTip.y);
+    ctx.lineTo(flagMid.x, flagMid.y);
+    ctx.closePath();
+    ctx.fillStyle = flagColor;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(poleBase.x, poleBase.y);
+    ctx.lineTo(poleTop.x, poleTop.y);
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = flagColor;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function draw(now = performance.now()) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!board || !playerVerts || !goalVerts) return;
+
+    for (const t of board.tiles) {
+      const isBlocked = board.blockedSet.has(t.id);
+      const c0 = worldToCanvas(t.verts[0]);
+      const c1 = worldToCanvas(t.verts[1]);
+      const c2 = worldToCanvas(t.verts[2]);
+
+      ctx.beginPath();
+      ctx.moveTo(c0.x, c0.y);
+      ctx.lineTo(c1.x, c1.y);
+      ctx.lineTo(c2.x, c2.y);
+      ctx.closePath();
+
+      if (isBlocked) {
+        ctx.fillStyle = '#090d16';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#334155';
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = t.type === 'U' ? '#172236' : '#1d2b44';
+        ctx.fill();
+        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = '#334155';
+        ctx.stroke();
+      }
+    }
+
+    drawPiece(
+      goalVerts,
+      'rgba(244, 63, 94, 0.24)',
+      '#f43f5e',
+      '#fda4af',
+      3.5,
+      false
+    );
+
+    if (!anim) {
+      if (mode === 'translate') {
+        for (const item of getValidTranslations()) {
+          drawPiece(
+            item.verts,
+            'rgba(56, 189, 248, 0.06)',
+            'rgba(56, 189, 248, 0.45)',
+            'rgba(56, 189, 248, 0.25)',
+            2,
+            true
+          );
+        }
+      } else if (mode === 'reflect') {
+        const refs = getValidReflections();
+        for (const item of refs) {
+          const vx = item.line.B.x - item.line.A.x;
+          const vy = item.line.B.y - item.line.A.y;
+          const pStart = worldToCanvas({ x: item.line.A.x - vx * 5, y: item.line.A.y - vy * 5 });
+          const pEnd   = worldToCanvas({ x: item.line.A.x + vx * 5, y: item.line.A.y + vy * 5 });
+          const isActive = (selectedReflectLine === item.line) || (hoverTarget && hoverTarget.line === item.line);
+
+          ctx.save();
+          ctx.setLineDash([8, 6]);
+          ctx.beginPath();
+          ctx.moveTo(pStart.x, pStart.y);
+          ctx.lineTo(pEnd.x, pEnd.y);
+          ctx.lineWidth = isActive ? 4.5 : 2.5;
+          ctx.strokeStyle = isActive ? '#facc15' : 'rgba(34, 197, 94, 0.65)';
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    if (hoverTarget && !anim) {
+      drawPiece(
+        hoverTarget.verts,
+        'rgba(250, 204, 21, 0.22)',
+        '#facc15',
+        '#fef08a',
+        2.5,
+        true
+      );
+
+      if (hoverTarget.type === 'translate') {
+        const fromC = worldToCanvas(centroid(playerVerts));
+        const toC = worldToCanvas(centroid(hoverTarget.verts));
+        drawArrow(fromC, toC, '#38bdf8');
+      } else if (hoverTarget.type === 'rotate') {
+        drawRotationArc(centroid(playerVerts), hoverTarget.center, hoverTarget.deg);
+      } else if (hoverTarget.type === 'reflect') {
+        for (let i = 0; i < 3; i++) {
+          const p1 = worldToCanvas(playerVerts[i]);
+          const p2 = worldToCanvas(hoverTarget.verts[i]);
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = 'rgba(134, 239, 172, 0.75)';
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    let renderVerts = playerVerts;
+    if (anim) {
+      const t = Math.min(1, (now - anim.start) / anim.duration);
+      const ease = 1 - Math.pow(1 - t, 3);
+      if (anim.meta && anim.meta.type === 'rotate') {
+        renderVerts = rotateVerts(anim.from, anim.meta.center, anim.meta.deg * ease);
+      } else {
+        renderVerts = anim.from.map((p, i) => ({
+          x: p.x + (anim.to[i].x - p.x) * ease,
+          y: p.y + (anim.to[i].y - p.y) * ease
+        }));
+      }
+    }
+
+    drawPiece(
+      renderVerts,
+      'rgba(2, 132, 199, 0.78)',
+      '#38bdf8',
+      '#e0f2fe',
+      3.5,
+      false
+    );
+
+    if (mode === 'rotate' && !anim) {
+      const usablePts = getUsableRotCenters(playerVerts, board, rules);
+      for (const p of usablePts) {
+        const cp = worldToCanvas(p);
+        const isSel = selectedRotCenter && dist(p, selectedRotCenter) < 0.03;
+        const isMid = p.kind === 'midpoint';
+        const r = isSel ? 11 : (isMid ? 5.5 : 7.5);
+        ctx.beginPath();
+        ctx.arc(cp.x, cp.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = isSel ? '#d8b4fe' : (isMid ? 'rgba(216, 180, 254, 0.55)' : 'rgba(168, 85, 247, 0.75)');
+        ctx.fill();
+        ctx.lineWidth = isSel ? 3 : 1.5;
+        ctx.strokeStyle = isSel ? '#581c87' : '#f3e8ff';
+        ctx.stroke();
+      }
+    }
+  }
+
+  function drawArrow(from, to, color) {
+    const angle = Math.atan2(to.y - from.y, to.x - from.x);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+
+    const head = 12;
+    ctx.beginPath();
+    ctx.moveTo(to.x, to.y);
+    ctx.lineTo(to.x - head * Math.cos(angle - Math.PI / 6), to.y - head * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(to.x - head * Math.cos(angle + Math.PI / 6), to.y - head * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawRotationArc(fromWorld, centerWorld, deg) {
+    const c = worldToCanvas(centerWorld);
+    const f = worldToCanvas(fromWorld);
+    const r = Math.hypot(f.x - c.x, f.y - c.y);
+    if (r < 5) return;
+    const startAngle = Math.atan2(f.y - c.y, f.x - c.x);
+    const endAngle = startAngle + (deg * Math.PI) / 180;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, r, startAngle, endAngle, deg < 0);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#d8b4fe';
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ==========================================
+  // 9. UIイベント登録と初期起動
+  // ==========================================
+  function bindUIEvents() {
+    document.getElementById('muteBtnSelect').addEventListener('click', () => SoundFX.toggleMute());
+    document.getElementById('muteBtnGame').addEventListener('click', () => SoundFX.toggleMute());
+    document.getElementById('backToListBtn').addEventListener('click', showSelectScreen);
+    document.getElementById('modalBackBtn').addEventListener('click', showSelectScreen);
+
+    document.querySelectorAll('.main-tab').forEach(btn => {
+      btn.addEventListener('click', () => switchMenuTab(btn.dataset.tab));
+    });
+
+    // ランダム練習オプション選択
+    document.querySelectorAll('#randRuleGroup .choice-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        SoundFX.playSelect();
+        randSelectedRule = btn.dataset.val;
+        document.querySelectorAll('#randRuleGroup .choice-pill').forEach(b => b.classList.toggle('selected', b === btn));
+        updateRandomStepOptionsUI();
+      });
+    });
+    document.querySelectorAll('#randStepsGroup .choice-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        SoundFX.playSelect();
+        randSelectedSteps = Number(btn.dataset.val);
+        document.querySelectorAll('#randStepsGroup .choice-pill').forEach(b => b.classList.toggle('selected', b === btn));
+      });
+    });
+    document.getElementById('startRandomBtn').addEventListener('click', launchRandomStage);
+    document.getElementById('nextRandomQuickBtn').addEventListener('click', launchRandomStage);
+
+    // タイムアタックオプション選択
+    document.querySelectorAll('#taRuleGroup .choice-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        SoundFX.playSelect();
+        taSelectedRule = btn.dataset.val;
+        document.querySelectorAll('#taRuleGroup .choice-pill').forEach(b => b.classList.toggle('selected', b === btn));
+        updateTaRecordDisplay();
+      });
+    });
+    document.getElementById('startTimeAttackBtn').addEventListener('click', launchTimeAttack);
+
+    // 操作パネル
+    document.getElementById('tabTranslate').addEventListener('click', () => setMode('translate', true));
+    document.getElementById('tabRotate').addEventListener('click', () => setMode('rotate', true));
+    document.getElementById('tabReflect').addEventListener('click', () => setMode('reflect', true));
+
+    document.getElementById('undoBtn').addEventListener('click', undoMove);
+    document.getElementById('resetBtn').addEventListener('click', () => resetStage(true));
+
+    document.getElementById('nextStageBtn').addEventListener('click', goNextFromModal);
+    document.getElementById('retryStageBtn').addEventListener('click', retryStage);
+  }
+
+  bindUIEvents();
+  switchMenuTab('basic');
+})();
+</script>
+</body>
+</html>
