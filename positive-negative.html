@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>正負の数 計算バトル - 計算力測定</title>
+  <!-- Tailwind CSS の読み込み -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts (Inter & Noto Sans JP) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* カスタムアニメーションと微調整用スタイル */
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #1e293b 0%, #0f172a 75%);
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .animate-shake {
+      animation: shake 0.28s ease-in-out;
+    }
+
+    @keyframes bounceSlow {
+      from { transform: translateY(0); }
+      to { transform: translateY(-4px); }
+    }
+
+    .animate-bounce-slow {
+      animation: bounceSlow 0.6s infinite alternate;
+    }
+
+    .key-shadow {
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+    }
+
+    .key-shadow:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="text-[#f8fafc] min-h-dvh flex flex-col items-center justify-center p-3">
+
+  <!-- メインカードコンテナ -->
+  <div class="w-full max-w-md bg-[#1e293b] rounded-3xl p-5 shadow-2xl border border-white/10 relative overflow-hidden">
+    
+    <!-- トップバー（ステータス＆サウンド切替） -->
+    <div class="flex justify-between items-center mb-3">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 text-slate-400 text-xs font-bold tracking-wider">
+        <span class="w-2 h-2 rounded-full bg-[#38bdf8] animate-pulse"></span>
+        MATH BATTLE
+      </div>
+      <button id="soundToggle" class="bg-white/5 hover:bg-white/10 active:scale-95 transition rounded-full w-9 h-9 flex items-center justify-center text-lg cursor-pointer" title="効果音切替">
+        🔊
+      </button>
+    </div>
+
+    <!-- ==================== 1. タイトル画面 ==================== -->
+    <div id="titleScreen">
+      <h1 class="text-center text-2xl font-black tracking-wide mb-4 bg-gradient-to-r from-[#38bdf8] to-indigo-400 bg-clip-text text-transparent">
+        正負の数 計算バトル
+      </h1>
+
+      <!-- 総合計算力ダッシュボード -->
+      <div class="bg-gradient-to-br from-[#38bdf8]/15 to-indigo-500/15 border border-[#38bdf8]/35 rounded-2xl p-4 text-center mb-4">
+        <div class="text-xs text-[#38bdf8] font-extrabold tracking-widest">
+          TOTAL CALCULATION POWER
+        </div>
+        <div id="totalPowerDisplay" class="text-5xl font-black leading-tight my-1 text-white drop-shadow-[0_0_20px_rgba(56,189,248,0.35)] tabular-nums">
+          0
+        </div>
+        <div id="rankDisplay" class="inline-block bg-[#fbbf24]/20 text-[#fbbf24] border border-[#fbbf24]/40 text-xs font-bold px-3 py-1 rounded-full mb-3">
+          ランク：計算見習い
+        </div>
+
+        <!-- モード別自己ベスト -->
+        <div class="grid grid-cols-3 gap-2 border-t border-white/10 pt-3">
+          <div class="bg-[#0f172a]/60 rounded-xl py-1.5 px-1">
+            <span class="block text-[11px] text-slate-400">加減ベスト</span>
+            <strong id="bestAdd" class="text-base font-extrabold text-white tabular-nums">0</strong>
+          </div>
+          <div class="bg-[#0f172a]/60 rounded-xl py-1.5 px-1">
+            <span class="block text-[11px] text-slate-400">かけ算ベスト</span>
+            <strong id="bestMul" class="text-base font-extrabold text-white tabular-nums">0</strong>
+          </div>
+          <div class="bg-[#0f172a]/60 rounded-xl py-1.5 px-1">
+            <span class="block text-[11px] text-slate-400">累乗ベスト</span>
+            <strong id="bestPow" class="text-base font-extrabold text-white tabular-nums">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- ① モード選択 -->
+      <div class="text-xs text-slate-400 font-bold mb-1.5">① モードを選ぶ</div>
+      <div class="grid grid-cols-3 gap-2 mb-3" id="modeSelector">
+        <button data-mode="add" class="select-btn active bg-[#38bdf8]/20 border-2 border-[#38bdf8] shadow-[0_0_15px_rgba(56,189,248,0.25)] text-white py-3 px-1.5 rounded-2xl font-bold text-sm cursor-pointer transition flex flex-col items-center gap-0.5">
+          <span>加減</span>
+          <small class="text-[10px] font-normal text-sky-200">たし算・ひき算</small>
+        </button>
+        <button data-mode="mul" class="select-btn bg-slate-700/80 border-2 border-transparent text-white py-3 px-1.5 rounded-2xl font-bold text-sm cursor-pointer transition flex flex-col items-center gap-0.5">
+          <span>かけ算</span>
+          <small class="text-[10px] font-normal text-slate-400">符号のルール</small>
+        </button>
+        <button data-mode="pow" class="select-btn bg-slate-700/80 border-2 border-transparent text-white py-3 px-1.5 rounded-2xl font-bold text-sm cursor-pointer transition flex flex-col items-center gap-0.5">
+          <span>累乗</span>
+          <small class="text-[10px] font-normal text-slate-400">(-2)² と -2²</small>
+        </button>
+      </div>
+
+      <!-- ② 難易度選択 -->
+      <div class="text-xs text-slate-400 font-bold mb-1.5">② 難易度を選ぶ（高難度ほど高得点！）</div>
+      <div class="grid grid-cols-3 gap-2" id="diffSelector">
+        <button data-diff="1" class="select-btn active bg-[#38bdf8]/20 border-2 border-[#38bdf8] shadow-[0_0_15px_rgba(56,189,248,0.25)] text-white py-3 px-1.5 rounded-2xl font-bold text-sm cursor-pointer transition flex flex-col items-center gap-0.5">
+          <span>初級</span>
+          <small class="text-[10px] font-normal text-sky-200">基本・100点/問</small>
+        </button>
+        <button data-diff="2" class="select-btn bg-slate-700/80 border-2 border-transparent text-white py-3 px-1.5 rounded-2xl font-bold text-sm cursor-pointer transition flex flex-col items-center gap-0.5">
+          <span>中級</span>
+          <small class="text-[10px] font-normal text-slate-400">標準・150点/問</small>
+        </button>
+        <button data-diff="3" class="select-btn bg-slate-700/80 border-2 border-transparent text-white py-3 px-1.5 rounded-2xl font-bold text-sm cursor-pointer transition flex flex-col items-center gap-0.5">
+          <span>上級</span>
+          <small class="text-[10px] font-normal text-slate-400">応用・220点/問</small>
+        </button>
+      </div>
+
+      <!-- スタートボタン -->
+      <button id="startBtn" class="w-full mt-5 py-4 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.98] text-white text-lg font-black tracking-wider shadow-lg shadow-indigo-600/40 transition cursor-pointer">
+        30秒チャレンジ開始！
+      </button>
+
+      <!-- 記録リセットボタン -->
+      <button id="resetScoresBtn" class="block w-full text-center mt-3.5 text-xs text-slate-400 hover:text-slate-200 underline bg-transparent border-none cursor-pointer">
+        記録をリセット
+      </button>
+    </div>
+
+    <!-- ==================== 2. ゲーム画面 ==================== -->
+    <div id="gameScreen" class="hidden">
+      <!-- HUD（残り時間・コンボ・スコア） -->
+      <div class="flex justify-between items-center mb-2.5">
+        <div class="bg-[#0f172a] px-3.5 py-1.5 rounded-full font-extrabold text-sm tabular-nums">
+          残り <span id="timeDisplay" class="text-[#38bdf8]">30.0</span>s
+        </div>
+        <div id="comboDisplay" class="text-[#fbbf24] font-black text-xs opacity-0 scale-75 transition-all duration-150">
+          2 COMBO!
+        </div>
+        <div class="bg-[#0f172a] px-3.5 py-1.5 rounded-full font-extrabold text-sm tabular-nums">
+          SCORE <span id="scoreDisplay" class="text-white">0</span>
+        </div>
+      </div>
+
+      <!-- タイマープログレスバー -->
+      <div class="w-full h-2 bg-[#0f172a] rounded-full overflow-hidden mb-3.5">
+        <div id="timerBar" class="h-full w-full bg-gradient-to-r from-emerald-400 to-[#38bdf8] transition-[width] duration-100 ease-linear"></div>
+      </div>
+
+      <!-- 問題ステージ -->
+      <div id="questionStage" class="bg-[#0f172a] rounded-2xl py-5 px-3 text-center mb-3 border-2 border-white/10 relative min-h-[142px] flex flex-col justify-center items-center transition-colors">
+        <div id="playingTag" class="absolute top-2 left-3 text-[11px] font-bold text-slate-400">
+          加減・初級
+        </div>
+        <div id="problemText" class="text-3xl font-extrabold tracking-wide my-2 tabular-nums">
+          (-3) + (+5)
+        </div>
+        <div id="answerBox" class="min-w-[144px] h-12 bg-[#1e293b] border-2 border-[#38bdf8] rounded-xl inline-flex items-center justify-center text-2xl font-black px-4 text-white tabular-nums transition-colors">
+          ?
+        </div>
+      </div>
+
+      <!-- カスタムテンキー -->
+      <div class="grid grid-cols-3 gap-2">
+        <button class="key bg-slate-700 hover:bg-slate-600 rounded-2xl text-white text-2xl font-extrabold py-3.5 key-shadow cursor-pointer transition" data-key="7">7</button>
+        <button class="key bg-slate-700 hover:bg-slate-600 rounded-2xl text-white text-2xl font-extrabold py-3.5 key-shadow cursor-pointer transition" data-key="8">8</button>
+        <button class="key bg-slate-700 hover:bg-slate-600 rounded-2xl text-white text-2xl font-extrabold py-3.5 key-shadow cursor-pointer transition" data-key="9">9</button>
+        <button class="key bg-slate-700 hover:bg-slate-600 rounded-2xl text-white text-2xl font-extrabold py-3.5 key-shadow cursor-pointer transition" data-key="4">4</button>
+        <button class="key bg-slate-700 hover:bg-slate-600 rounded-2xl text-white text-2xl font-extrabold py-3.5 key-shadow cursor-pointer transition" data-key="5">5</button>
+        <button class="key bg-slate-700 hover:bg-slate-600 rounded-2xl text-white text-2xl font-extrabold py-3.5 key-shadow cursor-pointer transition" data-key="6">6</button>
+        <button class="key bg-slate-700 hover:bg-slate-600 rounded-2xl text-white text-2xl font-extrabold py-3.5 key-shadow cursor-pointer transition" data-key="1">1</button>
+        <button class="key bg-slate-700 hover:bg-slate-600 rounded-2xl text-white text-2xl font-extrabold py-3.5 key-shadow cursor-pointer transition" data-key="2">2</button>
+        <button class="key bg-slate-700 hover:bg-slate-600 rounded-2xl text-white text-2xl font-extrabold py-3.5 key-shadow cursor-pointer transition" data-key="3">3</button>
+        
+        <button id="signBtn" class="bg-gradient-to-r from-blue-600 to-rose-600 hover:opacity-95 rounded-2xl text-white text-xl font-extrabold py-3.5 key-shadow cursor-pointer transition">
+          ＋ / －
+        </button>
+        <button class="key bg-slate-700 hover:bg-slate-600 rounded-2xl text-white text-2xl font-extrabold py-3.5 key-shadow cursor-pointer transition" data-key="0">0</button>
+        <button id="clearBtn" class="bg-slate-600 hover:bg-slate-500 rounded-2xl text-white text-lg font-extrabold py-3.5 key-shadow cursor-pointer transition">
+          C
+        </button>
+
+        <button id="enterBtn" class="col-span-3 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 rounded-2xl text-xl font-black py-3.5 mt-0.5 key-shadow cursor-pointer transition">
+          決定 (Enter)
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== 3. リザルト画面 ==================== -->
+    <div id="resultScreen" class="hidden text-center py-2">
+      <div id="newRecordBadge" class="hidden inline-block bg-[#fbbf24] text-amber-950 font-black text-xs px-3.5 py-1 rounded-full mb-2 animate-bounce-slow">
+        NEW RECORD!! 自己ベスト更新！
+      </div>
+      <div id="resultModeLabel" class="text-slate-400 text-sm font-bold">
+        加減・初級 スコア
+      </div>
+      <div id="finalScore" class="text-6xl font-black text-[#38bdf8] leading-tight my-1 tabular-nums">
+        0
+      </div>
+
+      <div class="flex justify-center gap-6 my-3.5 text-slate-400 text-sm">
+        <div>正解数: <strong id="correctCount" class="text-white text-base">0</strong>問</div>
+        <div>最大コンボ: <strong id="maxComboCount" class="text-[#fbbf24] text-base">0</strong></div>
+      </div>
+
+      <!-- 更新後の総合計算力 -->
+      <div class="bg-gradient-to-br from-[#38bdf8]/15 to-indigo-500/15 border border-[#38bdf8]/35 rounded-2xl p-4 mt-2">
+        <div class="text-xs text-[#38bdf8] font-bold">現在の総合計算力</div>
+        <div id="resultTotalPower" class="text-4xl font-black text-white my-1 tabular-nums">0</div>
+        <div id="resultRankDisplay" class="inline-block bg-[#fbbf24]/20 text-[#fbbf24] border border-[#fbbf24]/40 text-xs font-bold px-3 py-1 rounded-full">
+          ランク：計算見習い
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5 mt-5">
+        <button id="toTitleBtn" class="bg-slate-700 hover:bg-slate-600 text-white rounded-2xl py-3.5 font-bold text-base cursor-pointer transition">
+          モード選択へ
+        </button>
+        <button id="retryBtn" class="bg-[#38bdf8] hover:bg-sky-300 text-[#0f172a] rounded-2xl py-3.5 font-black text-base cursor-pointer transition">
+          もう一回！
+        </button>
+      </div>
+    </div>
+
+    <!-- カスタム確認モーダル（confirm()不使用） -->
+    <div id="resetModal" class="hidden absolute inset-0 bg-[#0f172a]/90 backdrop-blur-sm flex items-center justify-center p-5 z-50">
+      <div class="bg-[#1e293b] border border-white/15 rounded-2xl p-5 w-full max-w-xs text-center shadow-2xl">
+        <div class="text-lg font-black text-white mb-2">記録のリセット</div>
+        <p class="text-xs text-slate-300 leading-relaxed mb-5">
+          保存されているすべてのモードの自己ベストと総合計算力を0にリセットしますか？
+        </p>
+        <div class="grid grid-cols-2 gap-2.5">
+          <button id="cancelResetBtn" class="bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl font-bold text-sm cursor-pointer">
+            キャンセル
+          </button>
+          <button id="confirmResetBtn" class="bg-rose-600 hover:bg-rose-500 text-white py-2.5 rounded-xl font-bold text-sm cursor-pointer">
+            リセットする
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. 効果音システム (Web Audio API)
+    // ==========================================
+    let soundEnabled = true;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playTone(freq, type, duration, vol = 0.12) {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        // オーディオ制限環境でのエラー防止
+      }
+    }
+
+    function playOkSound(combo) {
+      const base = Math.min(523.25 + combo * 35, 1046.5);
+      playTone(base, 'sine', 0.12, 0.14);
+      setTimeout(() => playTone(base * 1.25, 'sine', 0.16, 0.14), 55);
+    }
+
+    function playNgSound() {
+      playTone(160, 'sawtooth', 0.22, 0.14);
+    }
+
+    function playFinishSound() {
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+        setTimeout(() => playTone(f, 'triangle', 0.25, 0.15), i * 90);
+      });
+    }
+
+    // ==========================================
+    // 2. スコア・称号ランク管理 (localStorage)
+    // ==========================================
+    const STORAGE_KEY = 'yasumath_posneg_scores_v1';
+    let bestScores = { add: 0, mul: 0, pow: 0 };
+
+    function loadScores() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (saved && typeof saved === 'object') {
+          bestScores = {
+            add: Number(saved.add) || 0,
+            mul: Number(saved.mul) || 0,
+            pow: Number(saved.pow) || 0
+          };
+        }
+      } catch (e) {
+        // ストレージ非対応時は初期値のまま動作
+      }
+      updatePowerUI();
+    }
+
+    function saveScores() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(bestScores));
+      } catch (e) {}
+      updatePowerUI();
+    }
+
+    function getRankName(total) {
+      if (total >= 12000) return 'ランク：数学神（レジェンド）';
+      if (total >= 9000)  return 'ランク：計算の魔術師';
+      if (total >= 6500)  return 'ランク：符号マスター';
+      if (total >= 4500)  return 'ランク：ハイスピード計算士';
+      if (total >= 2500)  return 'ランク：一人前の計算使い';
+      if (total >= 1000)  return 'ランク：駆け出し計算士';
+      return 'ランク：計算見習い';
+    }
+
+    function updatePowerUI() {
+      const total = bestScores.add + bestScores.mul + bestScores.pow;
+      const rank = getRankName(total);
+      document.getElementById('bestAdd').textContent = bestScores.add.toLocaleString();
+      document.getElementById('bestMul').textContent = bestScores.mul.toLocaleString();
+      document.getElementById('bestPow').textContent = bestScores.pow.toLocaleString();
+      document.getElementById('totalPowerDisplay').textContent = total.toLocaleString();
+      document.getElementById('rankDisplay').textContent = rank;
+      document.getElementById('resultTotalPower').textContent = total.toLocaleString();
+      document.getElementById('resultRankDisplay').textContent = rank;
+    }
+
+    // ==========================================
+    // 3. ゲーム状態と問題生成ロジック
+    // ==========================================
+    let selectedMode = 'add';
+    let selectedDiff = 1;
+    let score = 0;
+    let combo = 0;
+    let maxCombo = 0;
+    let correctNum = 0;
+    let timerId = null;
+    let currentAnswer = 0;
+    let inputSign = 1; // 1 または -1
+    let inputDigits = '';
+
+    const MODE_NAMES = { add: '加減', mul: 'かけ算', pow: '累乗' };
+    const DIFF_NAMES = { 1: '初級', 2: '中級', 3: '上級' };
+    const BASE_POINTS = { 1: 100, 2: 150, 3: 220 };
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function nonZeroRand(min, max) {
+      let n = 0;
+      while (n === 0) n = randInt(min, max);
+      return n;
+    }
+
+    function fmtNum(n, forcePlus = false) {
+      if (n < 0) return `(${n})`;
+      return forcePlus ? `(+${n})` : `${n}`;
+    }
+
+    function generateProblem() {
+      let html = '';
+      let ans = 0;
+
+      if (selectedMode === 'add') {
+        if (selectedDiff === 1) {
+          // 初級: (-9〜+9) の2項加減
+          const a = nonZeroRand(-9, 9);
+          const b = nonZeroRand(-9, 9);
+          const isPlus = Math.random() < 0.5;
+          ans = isPlus ? a + b : a - b;
+          html = `${fmtNum(a, true)} ${isPlus ? '+' : '−'} ${fmtNum(b, true)}`;
+        } else if (selectedDiff === 2) {
+          // 中級: -18〜+18 のカッコなし・あり混合
+          const a = nonZeroRand(-18, 18);
+          const b = nonZeroRand(-18, 18);
+          if (Math.random() < 0.5) {
+            ans = a + b;
+            html = `${a} ${b >= 0 ? '+ ' + b : '− ' + Math.abs(b)}`;
+          } else {
+            const isPlus = Math.random() < 0.5;
+            ans = isPlus ? a + b : a - b;
+            html = `${fmtNum(a)} ${isPlus ? '+' : '−'} ${fmtNum(b)}`;
+          }
+        } else {
+          // 上級: 3項の加減混合
+          const a = nonZeroRand(-12, 12);
+          const b = nonZeroRand(-12, 12);
+          const c = nonZeroRand(-12, 12);
+          const op1 = Math.random() < 0.5 ? 1 : -1;
+          const op2 = Math.random() < 0.5 ? 1 : -1;
+          ans = a + op1 * b + op2 * c;
+          html = `${a} ${op1 === 1 ? '+' : '−'} ${fmtNum(b)} ${op2 === 1 ? '+' : '−'} ${fmtNum(c)}`;
+        }
+      } else if (selectedMode === 'mul') {
+        if (selectedDiff === 1) {
+          // 初級: 九九レベルの2数の積
+          const a = nonZeroRand(-9, 9);
+          const b = nonZeroRand(-9, 9);
+          ans = a * b;
+          html = `${fmtNum(a)} × ${fmtNum(b)}`;
+        } else if (selectedDiff === 2) {
+          // 中級: やや大きい数・0を含む
+          const a = randInt(-15, 15);
+          const b = nonZeroRand(-12, 12);
+          ans = a * b;
+          html = `${fmtNum(a)} × ${fmtNum(b)}`;
+        } else {
+          // 上級: 3数の乗法
+          const a = nonZeroRand(-7, 7);
+          const b = nonZeroRand(-6, 6);
+          const c = nonZeroRand(-5, 5);
+          ans = a * b * c;
+          html = `${fmtNum(a)} × ${fmtNum(b)} × ${fmtNum(c)}`;
+        }
+      } else if (selectedMode === 'pow') {
+        if (selectedDiff === 1) {
+          // 初級: (-a)^2 と -a^2 の区別 (2〜6の2乗)
+          const base = randInt(2, 6);
+          const type = randInt(1, 3);
+          if (type === 1) {
+            ans = base * base;
+            html = `(-${base})<sup class="text-[#fbbf24] text-xl ml-0.5">2</sup>`;
+          } else if (type === 2) {
+            ans = -(base * base);
+            html = `-${base}<sup class="text-[#fbbf24] text-xl ml-0.5">2</sup>`;
+          } else {
+            ans = base * base;
+            html = `${base}<sup class="text-[#fbbf24] text-xl ml-0.5">2</sup>`;
+          }
+        } else if (selectedDiff === 2) {
+          // 中級: 2乗〜4乗、(-1)^n など
+          const patterns = [
+            () => { const b = randInt(2, 5); return { h: `(-${b})<sup class="text-[#fbbf24] text-xl ml-0.5">3</sup>`, a: -Math.pow(b, 3) }; },
+            () => { const b = randInt(2, 5); return { h: `-${b}<sup class="text-[#fbbf24] text-xl ml-0.5">3</sup>`, a: -Math.pow(b, 3) }; },
+            () => { const b = randInt(2, 3); return { h: `(-${b})<sup class="text-[#fbbf24] text-xl ml-0.5">4</sup>`, a: Math.pow(b, 4) }; },
+            () => { const b = randInt(2, 3); return { h: `-${b}<sup class="text-[#fbbf24] text-xl ml-0.5">4</sup>`, a: -Math.pow(b, 4) }; },
+            () => { const b = randInt(7, 9); return { h: `(-${b})<sup class="text-[#fbbf24] text-xl ml-0.5">2</sup>`, a: b * b }; },
+            () => { const b = randInt(7, 9); return { h: `-${b}<sup class="text-[#fbbf24] text-xl ml-0.5">2</sup>`, a: -(b * b) }; },
+            () => {
+              const exp = randInt(10, 35);
+              return { h: `(-1)<sup class="text-[#fbbf24] text-xl ml-0.5">${exp}</sup>`, a: exp % 2 === 0 ? 1 : -1 };
+            }
+          ];
+          const pick = patterns[randInt(0, patterns.length - 1)]();
+          html = pick.h;
+          ans = pick.a;
+        } else {
+          // 上級: 累乗を含むかけ算 (-2)^3 × (-3)^2 など
+          const a = randInt(2, 4);
+          const b = randInt(2, 3);
+          const expA = randInt(2, 3);
+          const expB = 2;
+          const parenA = Math.random() < 0.5;
+          const parenB = Math.random() < 0.5;
+
+          const valA = parenA ? Math.pow(-a, expA) : -Math.pow(a, expA);
+          const valB = parenB ? Math.pow(-b, expB) : -Math.pow(b, expB);
+          const strA = parenA
+            ? `(-${a})<sup class="text-[#fbbf24] text-xl ml-0.5">${expA}</sup>`
+            : `-${a}<sup class="text-[#fbbf24] text-xl ml-0.5">${expA}</sup>`;
+          const strB = parenB
+            ? `(-${b})<sup class="text-[#fbbf24] text-xl ml-0.5">${expB}</sup>`
+            : `-${b}<sup class="text-[#fbbf24] text-xl ml-0.5">${expB}</sup>`;
+
+          ans = valA * valB;
+          html = `${strA} × ${strB}`;
+        }
+      }
+
+      currentAnswer = ans;
+      document.getElementById('problemText').innerHTML = html;
+      resetInput();
+    }
+
+    // ==========================================
+    // 4. 入力・回答判定ロジック
+    // ==========================================
+    function resetInput() {
+      inputSign = 1;
+      inputDigits = '';
+      renderInput();
+    }
+
+    function renderInput() {
+      const box = document.getElementById('answerBox');
+      box.classList.remove('border-rose-500', 'text-rose-300', 'border-blue-500', 'text-blue-300', 'border-[#38bdf8]', 'text-white');
+
+      if (inputDigits === '' && inputSign === 1) {
+        box.textContent = '?';
+        box.classList.add('border-[#38bdf8]', 'text-white');
+        return;
+      }
+      const signStr = inputSign === -1 ? '-' : '';
+      box.textContent = signStr + (inputDigits === '' ? '_' : inputDigits);
+
+      if (inputSign === -1) {
+        box.classList.add('border-rose-500', 'text-rose-300');
+      } else {
+        box.classList.add('border-blue-500', 'text-blue-300');
+      }
+    }
+
+    function appendDigit(d) {
+      if (inputDigits.length >= 4) return;
+      if (inputDigits === '0') {
+        inputDigits = d;
+      } else {
+        inputDigits += d;
+      }
+      playTone(440, 'sine', 0.04, 0.05);
+      renderInput();
+    }
+
+    function toggleSign() {
+      inputSign *= -1;
+      playTone(520, 'sine', 0.04, 0.05);
+      renderInput();
+    }
+
+    function checkAnswer() {
+      if (inputDigits === '') return;
+      const num = Number(inputDigits);
+      const userVal = num === 0 ? 0 : inputSign * num;
+      const stage = document.getElementById('questionStage');
+
+      if (userVal === currentAnswer) {
+        combo++;
+        if (combo > maxCombo) maxCombo = combo;
+        correctNum++;
+
+        const comboBonus = Math.min(combo - 1, 10) * 15;
+        score += BASE_POINTS[selectedDiff] + comboBonus;
+
+        document.getElementById('scoreDisplay').textContent = score.toLocaleString();
+        const comboEl = document.getElementById('comboDisplay');
+        if (combo >= 2) {
+          comboEl.textContent = `${combo} COMBO! (+${comboBonus})`;
+          comboEl.classList.remove('opacity-0', 'scale-75');
+          comboEl.classList.add('opacity-100', 'scale-100');
+        }
+
+        playOkSound(combo);
+        stage.classList.remove('border-emerald-400', 'border-rose-500', 'animate-shake', 'border-white/10');
+        void stage.offsetWidth;
+        stage.classList.add('border-emerald-400');
+        setTimeout(() => {
+          stage.classList.remove('border-emerald-400');
+          stage.classList.add('border-white/10');
+        }, 220);
+
+        generateProblem();
+      } else {
+        combo = 0;
+        const comboEl = document.getElementById('comboDisplay');
+        comboEl.classList.remove('opacity-100', 'scale-100');
+        comboEl.classList.add('opacity-0', 'scale-75');
+
+        playNgSound();
+        stage.classList.remove('border-emerald-400', 'border-rose-500', 'animate-shake', 'border-white/10');
+        void stage.offsetWidth;
+        stage.classList.add('border-rose-500', 'animate-shake');
+        setTimeout(() => {
+          stage.classList.remove('border-rose-500', 'animate-shake');
+          stage.classList.add('border-white/10');
+        }, 300);
+
+        resetInput();
+      }
+    }
+
+    // ==========================================
+    // 5. タイマー＆画面遷移
+    // ==========================================
+    function startGame() {
+      score = 0;
+      combo = 0;
+      maxCombo = 0;
+      correctNum = 0;
+
+      document.getElementById('scoreDisplay').textContent = '0';
+      const comboEl = document.getElementById('comboDisplay');
+      comboEl.classList.remove('opacity-100', 'scale-100');
+      comboEl.classList.add('opacity-0', 'scale-75');
+
+      document.getElementById('playingTag').textContent = `${MODE_NAMES[selectedMode]}・${DIFF_NAMES[selectedDiff]}`;
+      const bar = document.getElementById('timerBar');
+      bar.style.width = '100%';
+      bar.classList.remove('from-rose-500', 'to-amber-500');
+      bar.classList.add('from-emerald-400', 'to-[#38bdf8]');
+
+      document.getElementById('titleScreen').classList.add('hidden');
+      document.getElementById('resultScreen').classList.add('hidden');
+      document.getElementById('gameScreen').classList.remove('hidden');
+
+      generateProblem();
+
+      const startTime = performance.now();
+      const duration = 30000;
+
+      if (timerId) cancelAnimationFrame(timerId);
+      function tick(now) {
+        const elapsed = now - startTime;
+        const rem = Math.max(0, (duration - elapsed) / 1000);
+        document.getElementById('timeDisplay').textContent = rem.toFixed(1);
+
+        const pct = (rem / 30) * 100;
+        bar.style.width = pct + '%';
+        if (rem <= 7) {
+          bar.classList.remove('from-emerald-400', 'to-[#38bdf8]');
+          bar.classList.add('from-rose-500', 'to-amber-500');
+        }
+
+        if (rem <= 0) {
+          endGame();
+        } else {
+          timerId = requestAnimationFrame(tick);
+        }
+      }
+      timerId = requestAnimationFrame(tick);
+    }
+
+    function endGame() {
+      playFinishSound();
+      document.getElementById('gameScreen').classList.add('hidden');
+      document.getElementById('resultScreen').classList.remove('hidden');
+
+      const isNew = score > bestScores[selectedMode];
+      if (isNew) {
+        bestScores[selectedMode] = score;
+        saveScores();
+      } else {
+        updatePowerUI();
+      }
+
+      document.getElementById('newRecordBadge').classList.toggle('hidden', !isNew);
+      document.getElementById('resultModeLabel').textContent = `${MODE_NAMES[selectedMode]}・${DIFF_NAMES[selectedDiff]} スコア`;
+      document.getElementById('finalScore').textContent = score.toLocaleString();
+      document.getElementById('correctCount').textContent = correctNum;
+      document.getElementById('maxComboCount').textContent = maxCombo;
+    }
+
+    // ==========================================
+    // 6. UIボタン・キーボードイベント登録
+    // ==========================================
+    function setActiveStyle(buttons, targetBtn) {
+      buttons.forEach(b => {
+        b.classList.remove('active', 'bg-[#38bdf8]/20', 'border-[#38bdf8]', 'shadow-[0_0_15px_rgba(56,189,248,0.25)]');
+        b.classList.add('bg-slate-700/80', 'border-transparent');
+        const sub = b.querySelector('small');
+        if (sub) {
+          sub.classList.remove('text-sky-200');
+          sub.classList.add('text-slate-400');
+        }
+      });
+      targetBtn.classList.remove('bg-slate-700/80', 'border-transparent');
+      targetBtn.classList.add('active', 'bg-[#38bdf8]/20', 'border-[#38bdf8]', 'shadow-[0_0_15px_rgba(56,189,248,0.25)]');
+      const activeSub = targetBtn.querySelector('small');
+      if (activeSub) {
+        activeSub.classList.remove('text-slate-400');
+        activeSub.classList.add('text-sky-200');
+      }
+    }
+
+    const modeBtns = document.querySelectorAll('#modeSelector .select-btn');
+    modeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        setActiveStyle(modeBtns, btn);
+        selectedMode = btn.dataset.mode;
+        playTone(600, 'sine', 0.05, 0.06);
+      });
+    });
+
+    const diffBtns = document.querySelectorAll('#diffSelector .select-btn');
+    diffBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        setActiveStyle(diffBtns, btn);
+        selectedDiff = Number(btn.dataset.diff);
+        playTone(660, 'sine', 0.05, 0.06);
+      });
+    });
+
+    document.querySelectorAll('.key[data-key]').forEach(btn => {
+      btn.addEventListener('click', () => appendDigit(btn.dataset.key));
+    });
+
+    document.getElementById('signBtn').addEventListener('click', toggleSign);
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      playTone(300, 'sine', 0.05, 0.05);
+      resetInput();
+    });
+    document.getElementById('enterBtn').addEventListener('click', checkAnswer);
+
+    // PCキーボード操作対応
+    document.addEventListener('keydown', (e) => {
+      if (document.getElementById('gameScreen').classList.contains('hidden')) return;
+      if (e.key >= '0' && e.key <= '9') {
+        appendDigit(e.key);
+      } else if (e.key === '-' || e.key === '+' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        toggleSign();
+      } else if (e.key === 'Backspace' || e.key === 'Escape' || e.key === 'c' || e.key === 'C') {
+        resetInput();
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        checkAnswer();
+      }
+    });
+
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('retryBtn').addEventListener('click', startGame);
+    document.getElementById('toTitleBtn').addEventListener('click', () => {
+      document.getElementById('resultScreen').classList.add('hidden');
+      document.getElementById('titleScreen').classList.remove('hidden');
+    });
+
+    document.getElementById('soundToggle').addEventListener('click', (e) => {
+      soundEnabled = !soundEnabled;
+      e.target.textContent = soundEnabled ? '🔊' : '🔇';
+    });
+
+    // カスタムモーダルによる記録リセット
+    const resetModal = document.getElementById('resetModal');
+    document.getElementById('resetScoresBtn').addEventListener('click', () => {
+      resetModal.classList.remove('hidden');
+    });
+    document.getElementById('cancelResetBtn').addEventListener('click', () => {
+      resetModal.classList.add('hidden');
+    });
+    document.getElementById('confirmResetBtn').addEventListener('click', () => {
+      bestScores = { add: 0, mul: 0, pow: 0 };
+      saveScores();
+      resetModal.classList.add('hidden');
+      playTone(320, 'sine', 0.12, 0.08);
+    });
+
+    // 初期化
+    loadScores();
+  </script>
+</body>
+</html>
