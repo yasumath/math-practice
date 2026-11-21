@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>正負の数の大小マスター | 中1数学</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Noto Sans JP & Nunito (数字が見やすいフォント) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* 基本フォントとタッチ操作最適化 */
+        body {
+            font-family: 'Nunito', 'Noto Sans JP', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #f0f7ff;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* 分数の美しい上下表示用スタイル */
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            line-height: 1.05;
+            font-weight: 800;
+        }
+        .fraction .num {
+            padding: 0 4px 2px 4px;
+            border-bottom: 2.5px solid currentColor;
+            width: 100%;
+            text-align: center;
+        }
+        .fraction .den {
+            padding: 2px 4px 0 4px;
+            width: 100%;
+            text-align: center;
+        }
+        .fraction-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+        .fraction-sign {
+            font-weight: 800;
+            margin-right: 1px;
+        }
+
+        /* アニメーション定義 */
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            70% { transform: scale(1.06); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes feedbackPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            40% { transform: scale(1.15); opacity: 1; }
+            80% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0; }
+        }
+        .animate-feedback {
+            animation: feedbackPop 0.65s ease-out forwards;
+        }
+
+        /* カードボタンの立体感 */
+        .num-card {
+            box-shadow: 0 5px 0 #cbd5e1;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
+        }
+        .num-card:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #cbd5e1;
+        }
+        .num-card:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #cbd5e1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-3 sm:p-6 text-slate-800">
+
+    <!-- メインアプリコンテナ -->
+    <div id="app" class="w-full max-w-xl bg-white rounded-3xl shadow-xl border-2 border-slate-100 overflow-hidden relative">
+        
+        <!-- ヘッダーバー（サウンド切替・タイトル戻り） -->
+        <header class="bg-slate-50 border-b border-slate-100 px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-full tracking-wider">中1数学</span>
+                <h1 class="font-bold text-slate-700 text-sm sm:text-base">正負の数の大小</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <!-- サウンド切り替えボタン -->
+                <button id="btn-sound" type="button" aria-label="サウンド切り替え" class="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 active:scale-95 transition flex items-center gap-1 text-xs font-bold">
+                    <span id="sound-icon">🔊</span>
+                    <span id="sound-label" class="hidden sm:inline">音あり</span>
+                </button>
+                <!-- プレイ中のみ表示する中断ボタン -->
+                <button id="btn-quit" type="button" class="hidden px-3 py-1.5 rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs font-bold transition">
+                    やめる
+                </button>
+            </div>
+        </header>
+
+        <!-- ==================== 1. タイトル・難易度選択画面 ==================== -->
+        <section id="screen-title" class="p-6 sm:p-8 text-center">
+            <div class="mb-6">
+                <div class="inline-flex items-center justify-center gap-2 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-sm font-bold mb-3">
+                    <span>小さい順に並べよう！</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight mb-2">
+                    正負の数の大小マスター
+                </h2>
+                <p class="text-slate-500 text-sm sm:text-base">
+                    制限時間30秒！3つの数を<strong class="text-blue-600">小さい順</strong>にタップしよう
+                </p>
+            </div>
+
+            <!-- ルールミニ図解 -->
+            <div class="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-200/80">
+                <div class="flex items-center justify-center gap-2 sm:gap-3 text-lg sm:text-xl font-black text-slate-700 mb-2">
+                    <span class="bg-white border-2 border-blue-400 text-blue-600 px-3 py-1 rounded-xl shadow-sm">-5</span>
+                    <span class="text-slate-400">&lt;</span>
+                    <span class="bg-white border-2 border-blue-400 text-blue-600 px-3 py-1 rounded-xl shadow-sm">-2</span>
+                    <span class="text-slate-400">&lt;</span>
+                    <span class="bg-white border-2 border-blue-400 text-blue-600 px-3 py-1 rounded-xl shadow-sm">+3</span>
+                </div>
+                <p class="text-xs text-slate-500">
+                    ※まちがえるとリセットされ、<span class="text-rose-500 font-bold">2秒間</span>操作できなくなります！
+                </p>
+            </div>
+
+            <!-- 難易度選択ボタン -->
+            <div class="space-y-3.5 mb-6">
+                <button id="btn-start-normal" type="button" class="w-full group relative bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-2xl p-4 sm:p-5 text-left shadow-md shadow-emerald-200 transition transform active:scale-[0.98] flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg sm:text-xl font-black">ふつう（整数のみ）</span>
+                            <span class="bg-white/25 text-white text-xs font-bold px-2 py-0.5 rounded-md">基本</span>
+                        </div>
+                        <p class="text-emerald-50 text-xs sm:text-sm mt-1">
+                            -15 〜 +15 の整数（負の数同士の比較など）
+                        </p>
+                    </div>
+                    <div class="text-right pl-2">
+                        <div class="text-[11px] text-emerald-100 font-bold">ハイスコア</div>
+                        <div class="text-2xl font-black"><span id="hs-normal">0</span><span class="text-xs ml-0.5">問</span></div>
+                    </div>
+                </button>
+
+                <button id="btn-start-hard" type="button" class="w-full group relative bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white rounded-2xl p-4 sm:p-5 text-left shadow-md shadow-indigo-200 transition transform active:scale-[0.98] flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg sm:text-xl font-black">むずかしい（分数・小数）</span>
+                            <span class="bg-amber-400 text-slate-900 text-xs font-black px-2 py-0.5 rounded-md">応用</span>
+                        </div>
+                        <p class="text-indigo-100 text-xs sm:text-sm mt-1">
+                            整数・小数・分数がミックス！通分や小数変換がカギ
+                        </p>
+                    </div>
+                    <div class="text-right pl-2">
+                        <div class="text-[11px] text-indigo-100 font-bold">ハイスコア</div>
+                        <div class="text-2xl font-black"><span id="hs-hard">0</span><span class="text-xs ml-0.5">問</span></div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- ハイスコアリセット -->
+            <div class="flex justify-center">
+                <button id="btn-reset-score" type="button" class="text-xs text-slate-400 hover:text-rose-500 underline transition py-1 px-2">
+                    ハイスコアをリセットする
+                </button>
+            </div>
+
+            <!-- リセット確認用インラインメッセージボックス（alert不使用） -->
+            <div id="reset-confirm-box" class="hidden mt-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center justify-between gap-2">
+                <span>本当にハイスコアを0に戻しますか？</span>
+                <div class="flex gap-2 shrink-0">
+                    <button id="btn-reset-yes" type="button" class="bg-rose-500 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-rose-600">はい</button>
+                    <button id="btn-reset-no" type="button" class="bg-white border border-slate-300 text-slate-600 font-bold px-3 py-1.5 rounded-lg hover:bg-slate-50">いいえ</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 2. ゲームプレイ画面 ==================== -->
+        <section id="screen-game" class="hidden p-4 sm:p-7 relative">
+            <!-- ステータスバー（残り時間・スコア） -->
+            <div class="flex items-center justify-between gap-4 mb-3">
+                <div class="flex items-center gap-2 bg-slate-100 px-3.5 py-1.5 rounded-xl">
+                    <span class="text-xs font-bold text-slate-500">難易度:</span>
+                    <span id="game-diff-badge" class="text-xs font-black text-emerald-600">ふつう</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <span class="text-xs font-bold text-slate-400 block leading-none">のこり時間</span>
+                        <span id="timer-text" class="text-xl sm:text-2xl font-black text-slate-700 tabular-nums">30.0</span><span class="text-xs font-bold text-slate-500 ml-0.5">秒</span>
+                    </div>
+                    <div class="bg-blue-600 text-white px-4 py-1.5 rounded-2xl text-center shadow-sm min-w-[84px]">
+                        <span class="text-[10px] font-bold text-blue-100 block leading-none">正解数</span>
+                        <span id="score-text" class="text-xl sm:text-2xl font-black tabular-nums">0</span><span class="text-xs font-bold ml-0.5">問</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- カウントダウンプログレスバー -->
+            <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-6 p-0.5 border border-slate-200/60">
+                <div id="timer-bar" class="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-100 ease-linear" style="width: 100%;"></div>
+            </div>
+
+            <!-- 指示テキスト -->
+            <div class="text-center mb-3">
+                <span class="inline-block bg-amber-100 text-amber-800 text-xs sm:text-sm font-bold px-3 py-1 rounded-full">
+                    ▼ 小さい順にタップして空欄をうめよう ▼
+                </span>
+            </div>
+
+            <!-- 画面上部：[ 空欄 ] < [ 空欄 ] < [ 空欄 ] 不等式エリア -->
+            <div id="slots-container" class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-3 sm:p-5 mb-6 flex items-center justify-center gap-1.5 sm:gap-3 min-h-[116px] sm:min-h-[132px]">
+                <!-- スロット0 -->
+                <div id="slot-0" class="slot-box flex-1 max-w-[130px] h-20 sm:h-24 rounded-xl border-2 border-dashed border-slate-300 bg-white flex flex-col items-center justify-center relative transition-all">
+                    <span class="text-[10px] font-bold text-slate-400 absolute top-1.5">1番小さい</span>
+                    <div class="slot-content text-xl sm:text-2xl font-black text-slate-700 mt-2"></div>
+                </div>
+
+                <div class="text-2xl sm:text-3xl font-black text-slate-400 select-none">&lt;</div>
+
+                <!-- スロット1 -->
+                <div id="slot-1" class="slot-box flex-1 max-w-[130px] h-20 sm:h-24 rounded-xl border-2 border-dashed border-slate-300 bg-white flex flex-col items-center justify-center relative transition-all">
+                    <span class="text-[10px] font-bold text-slate-400 absolute top-1.5">2番目</span>
+                    <div class="slot-content text-xl sm:text-2xl font-black text-slate-700 mt-2"></div>
+                </div>
+
+                <div class="text-2xl sm:text-3xl font-black text-slate-400 select-none">&lt;</div>
+
+                <!-- スロット2 -->
+                <div id="slot-2" class="slot-box flex-1 max-w-[130px] h-20 sm:h-24 rounded-xl border-2 border-dashed border-slate-300 bg-white flex flex-col items-center justify-center relative transition-all">
+                    <span class="text-[10px] font-bold text-slate-400 absolute top-1.5">1番大きい</span>
+                    <div class="slot-content text-xl sm:text-2xl font-black text-slate-700 mt-2"></div>
+                </div>
+            </div>
+
+            <!-- 選択取り消し（1つ戻る）ボタン -->
+            <div class="flex justify-end mb-3 h-7">
+                <button id="btn-undo" type="button" class="hidden text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-lg transition flex items-center gap-1">
+                    <span>↩</span> 1つもどす
+                </button>
+            </div>
+
+            <!-- 画面下部：3つの選択肢カードエリア -->
+            <div class="relative">
+                <div id="choices-container" class="grid grid-cols-3 gap-2.5 sm:gap-4">
+                    <button id="choice-0" type="button" class="num-card h-24 sm:h-28 bg-white border-2 border-slate-200 hover:border-blue-400 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl font-black text-slate-800 p-2"></button>
+                    <button id="choice-1" type="button" class="num-card h-24 sm:h-28 bg-white border-2 border-slate-200 hover:border-blue-400 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl font-black text-slate-800 p-2"></button>
+                    <button id="choice-2" type="button" class="num-card h-24 sm:h-28 bg-white border-2 border-slate-200 hover:border-blue-400 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl font-black text-slate-800 p-2"></button>
+                </div>
+
+                <!-- 不正解時のペナルティロックオーバーレイ（2.0秒間操作不可） -->
+                <div id="penalty-overlay" class="hidden absolute inset-0 bg-rose-500/95 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center text-white z-20 p-3 text-center shadow-lg">
+                    <div class="text-xl sm:text-2xl font-black tracking-wide mb-1">ざんねん！もういちど！</div>
+                    <div class="text-xs sm:text-sm text-rose-100 font-bold">
+                        ロック解除まで <span id="penalty-timer" class="text-lg font-black underline tabular-nums">2.0</span> 秒
+                    </div>
+                </div>
+            </div>
+
+            <!-- 正解・不正解の大きな〇×フィードバックオーバーレイ -->
+            <div id="feedback-overlay" class="pointer-events-none hidden absolute inset-0 flex items-center justify-center z-30">
+                <div id="feedback-mark" class="text-[120px] sm:text-[150px] font-black leading-none drop-shadow-md"></div>
+            </div>
+        </section>
+
+        <!-- ==================== 3. 結果画面 ==================== -->
+        <section id="screen-result" class="hidden p-6 sm:p-8 text-center">
+            <div class="inline-block bg-blue-100 text-blue-700 font-black text-xs sm:text-sm px-4 py-1 rounded-full mb-3">
+                タイムアップ！
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-800 mb-1">結果発表</h2>
+            <p id="result-diff-label" class="text-sm font-bold text-slate-500 mb-5">難易度：ふつう（整数のみ）</p>
+
+            <!-- ハイスコア更新バッジ -->
+            <div id="new-record-badge" class="hidden mb-4 animate-bounce">
+                <span class="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 font-black text-sm px-4 py-1.5 rounded-full shadow-md">
+                    <span>🎉</span> NEW RECORD! ハイスコア更新！ <span>🎉</span>
+                </span>
+            </div>
+
+            <!-- スコアカード -->
+            <div class="bg-gradient-to-b from-slate-50 to-blue-50/50 border-2 border-blue-100 rounded-3xl p-6 mb-6">
+                <div class="text-xs font-bold text-slate-500 mb-1">あなたのスコア</div>
+                <div class="text-5xl sm:text-6xl font-black text-blue-600 mb-3 tabular-nums">
+                    <span id="result-score">0</span><span class="text-xl sm:text-2xl text-slate-600 ml-1">問正解</span>
+                </div>
+                <div class="inline-flex items-center gap-2 bg-white px-4 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600">
+                    <span>自己ベスト:</span>
+                    <span id="result-highscore" class="text-blue-600 font-black text-sm">0</span>問
+                </div>
+                <p id="result-comment" class="mt-4 text-sm font-bold text-slate-700"></p>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button id="btn-retry" type="button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-6 rounded-2xl shadow-md shadow-blue-200 transition active:scale-95 text-base">
+                    もう一回挑戦する
+                </button>
+                <button id="btn-to-title" type="button" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-4 px-6 rounded-2xl transition active:scale-95 text-base">
+                    難易度選択へ
+                </button>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- フッター -->
+    <footer class="mt-4 text-center text-xs text-slate-400">
+        中学校1年 数学「正の数・負の数」学習アプリ
+    </footer>
+
+    <script>
+        /**
+         * Web Audio API を用いたシンプルな効果音ジェネレーター
+         * 外部音声ファイル不要でブラウザ単体で軽快に動作します
+         */
+        class SoundManager {
+            constructor() {
+                this.enabled = true;
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        this.ctx = new AudioCtx();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            toggle() {
+                this.enabled = !this.enabled;
+                return this.enabled;
+            }
+
+            // カード選択時の軽快なタップ音
+            playSelect() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.06); // E5
+
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            }
+
+            // 正解時のピンポン音
+            playCorrect() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                // 1音目 (ピ)
+                this._tone(659.25, now, 0.12, 'triangle', 0.22); // E5
+                // 2音目 (ポン)
+                this._tone(880.00, now + 0.11, 0.25, 'triangle', 0.25); // A5
+            }
+
+            // 不正解時のブザー音
+            playWrong() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                this._tone(160, now, 0.18, 'sawtooth', 0.18);
+                this._tone(135, now + 0.16, 0.28, 'sawtooth', 0.18);
+            }
+
+            // タイムアップ終了音
+            playFinish() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                this._tone(523.25, now, 0.12, 'triangle', 0.2);
+                this._tone(659.25, now + 0.12, 0.12, 'triangle', 0.2);
+                this._tone(783.99, now + 0.24, 0.12, 'triangle', 0.2);
+                this._tone(1046.50, now + 0.36, 0.35, 'triangle', 0.25);
+            }
+
+            _tone(freq, startTime, duration, type, volume) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, startTime);
+
+                gain.gain.setValueAtTime(volume, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            }
+        }
+
+        /**
+         * 問題生成エンジン（正負の数の大小比較）
+         */
+        class ProblemGenerator {
+            static gcd(a, b) {
+                a = Math.abs(a);
+                b = Math.abs(b);
+                while (b !== 0) {
+                    const t = b;
+                    b = a % b;
+                    a = t;
+                }
+                return a;
+            }
+
+            // 配列シャッフル（Fisher-Yates）
+            static shuffle(array) {
+                const arr = [...array];
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
+
+            // 「ふつう」難易度：-15〜+15の整数（負の数同士の比較をしっかり含める）
+            static generateNormal() {
+                const items = [];
+                const usedValues = new Set();
+
+                // 学習効果を高めるため、負の数を含みやすいパターンを設計
+                const pattern = Math.random();
+                let minVal = -15;
+                let maxVal = 15;
+
+                if (pattern < 0.45) {
+                    // 45%の確率で「すべて負の数」または「負の数2つ＋0や正の数」の重要パターン
+                    minVal = -15;
+                    maxVal = 2;
+                } else if (pattern < 0.75) {
+                    // 30%の確率で負の数と正の数の混合（絶対値が近い数が出やすい範囲）
+                    minVal = -10;
+                    maxVal = 10;
+                }
+
+                while (items.length < 3) {
+                    const val = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+                    if (!usedValues.has(val)) {
+                        usedValues.add(val);
+                        // 正の数にはときどき「+」をつけて中学1年生の表記に慣れさせる
+                        let displayStr = String(val);
+                        if (val > 0 && Math.random() < 0.45) {
+                            displayStr = `+${val}`;
+                        }
+                        items.push({
+                            value: val,
+                            html: `<span>${displayStr}</span>`
+                        });
+                    }
+                }
+                return this.shuffle(items);
+            }
+
+            // 「むずかしい」難易度：整数・小数・分数（真分数・仮分数、負の数）の混合
+            static generateHard() {
+                // よく出る見やすい分母リスト
+                const denominators = [2, 3, 4, 5, 6, 8, 10];
+                const items = [];
+                const usedValues = new Set(); // 浮動小数点誤差対策で10000倍した整数キーを使用
+
+                // 基準となる中心値を決めることで、互いに値が近く考えごたえのある3数を生成する
+                // 例: -1.5付近、-0.5付近、+0.5付近など
+                const centers = [-2.5, -1.8, -1.2, -0.7, -0.3, 0.3, 0.8, 1.5];
+                const center = centers[Math.floor(Math.random() * centers.length)];
+
+                // 3つのタイプ（分数、小数、整数/分数）をバランスよく混ぜる
+                const typesPool = this.shuffle(['fraction', 'fraction', 'decimal', 'intOrDec']);
+
+                let attempts = 0;
+                while (items.length < 3 && attempts < 200) {
+                    attempts++;
+                    const type = typesPool[items.length % typesPool.length];
+                    let candidate = null;
+
+                    if (type === 'fraction') {
+                        const den = denominators[Math.floor(Math.random() * denominators.length)];
+                        // center付近の分子を探す
+                        const approxNum = Math.round(center * den) + (Math.floor(Math.random() * 7) - 3);
+                        if (approxNum === 0) continue;
+                        // 約分して整数になってしまう場合はスキップ（純粋な分数にする）
+                        const g = this.gcd(approxNum, den);
+                        const num = approxNum / g;
+                        const reducedDen = den / g;
+                        if (reducedDen === 1) continue;
+                        if (Math.abs(num) > 19) continue; // 分子が大きすぎないように制限
+
+                        const val = num / reducedDen;
+                        const signHtml = num < 0 ? `<span class="fraction-sign">-</span>` : '';
+                        const absNum = Math.abs(num);
+                        candidate = {
+                            value: val,
+                            html: `
+                                <span class="fraction-wrapper">
+                                    ${signHtml}
+                                    <span class="fraction text-lg sm:text-xl">
+                                        <span class="num">${absNum}</span>
+                                        <span class="den">${reducedDen}</span>
+                                    </span>
+                                </span>
+                            `
+                        };
+                    } else if (type === 'decimal') {
+                        // 小数第1位（たまに第2位の.25, .75など）
+                        let val;
+                        if (Math.random() < 0.25) {
+                            const quarters = [-2.75, -2.25, -1.75, -1.25, -0.75, -0.25, 0.25, 0.75, 1.25, 1.75, 2.25];
+                            val = quarters[Math.floor(Math.random() * quarters.length)];
+                        } else {
+                            const tenth = Math.round(center * 10) + (Math.floor(Math.random() * 13) - 6);
+                            if (tenth === 0 || tenth % 10 === 0) continue;
+                            val = tenth / 10;
+                        }
+                        candidate = {
+                            value: val,
+                            html: `<span>${val}</span>`
+                        };
+                    } else {
+                        // 整数（-3〜+3）
+                        const intVal = Math.round(center) + (Math.floor(Math.random() * 3) - 1);
+                        if (intVal < -4 || intVal > 4) continue;
+                        candidate = {
+                            value: intVal,
+                            html: `<span>${intVal}</span>`
+                        };
+                    }
+
+                    if (candidate) {
+                        const key = Math.round(candidate.value * 10000);
+                        // 同じ値の重複を防ぐ
+                        if (!usedValues.has(key)) {
+                            usedValues.add(key);
+                            items.push(candidate);
+                        }
+                    }
+                }
+
+                // 万が一生成が足りなかった場合のフォールバック
+                while (items.length < 3) {
+                    const fallbackVal = items.length - 2;
+                    const key = fallbackVal * 10000;
+                    if (!usedValues.has(key)) {
+                        usedValues.add(key);
+                        items.push({ value: fallbackVal, html: `<span>${fallbackVal}</span>` });
+                    }
+                }
+
+                return this.shuffle(items);
+            }
+        }
+
+        /**
+         * メインゲームコントローラー
+         */
+        class MathCompareGame {
+            constructor() {
+                this.sound = new SoundManager();
+                this.GAME_DURATION = 30.0; // 制限時間30秒
+                this.PENALTY_DURATION = 2.0; // 不正解ペナルティ2.0秒
+
+                this.difficulty = 'normal'; // 'normal' | 'hard'
+                this.score = 0;
+                this.timeLeft = this.GAME_DURATION;
+                this.isPlaying = false;
+                this.isLocked = false; // ペナルティ中または判定アニメーション中
+
+                this.currentChoices = []; // 現在表示中の3つの数オブジェクト
+                this.selectedIndices = []; // プレイヤーが選んだchoiceのインデックス順（最大3つ）
+
+                this.timerInterval = null;
+                this.penaltyInterval = null;
+                this.lastTickTime = 0;
+
+                // ハイスコア読み込み
+                this.highScores = {
+                    normal: parseInt(localStorage.getItem('math_comp_hs_normal') || '0', 10),
+                    hard: parseInt(localStorage.getItem('math_comp_hs_hard') || '0', 10)
+                };
+
+                this.bindElements();
+                this.bindEvents();
+                this.updateHighScoreUI();
+            }
+
+            bindElements() {
+                // 画面セクション
+                this.screenTitle = document.getElementById('screen-title');
+                this.screenGame = document.getElementById('screen-game');
+                this.screenResult = document.getElementById('screen-result');
+
+                // ヘッダー
+                this.btnSound = document.getElementById('btn-sound');
+                this.soundIcon = document.getElementById('sound-icon');
+                this.soundLabel = document.getElementById('sound-label');
+                this.btnQuit = document.getElementById('btn-quit');
+
+                // タイトル画面要素
+                this.hsNormalEl = document.getElementById('hs-normal');
+                this.hsHardEl = document.getElementById('hs-hard');
+                this.btnStartNormal = document.getElementById('btn-start-normal');
+                this.btnStartHard = document.getElementById('btn-start-hard');
+                this.btnResetScore = document.getElementById('btn-reset-score');
+                this.resetConfirmBox = document.getElementById('reset-confirm-box');
+                this.btnResetYes = document.getElementById('btn-reset-yes');
+                this.btnResetNo = document.getElementById('btn-reset-no');
+
+                // ゲーム画面要素
+                this.gameDiffBadge = document.getElementById('game-diff-badge');
+                this.timerText = document.getElementById('timer-text');
+                this.timerBar = document.getElementById('timer-bar');
+                this.scoreText = document.getElementById('score-text');
+                this.slotsContainer = document.getElementById('slots-container');
+                this.slots = [
+                    document.getElementById('slot-0'),
+                    document.getElementById('slot-1'),
+                    document.getElementById('slot-2')
+                ];
+                this.choiceButtons = [
+                    document.getElementById('choice-0'),
+                    document.getElementById('choice-1'),
+                    document.getElementById('choice-2')
+                ];
+                this.btnUndo = document.getElementById('btn-undo');
+                this.penaltyOverlay = document.getElementById('penalty-overlay');
+                this.penaltyTimerEl = document.getElementById('penalty-timer');
+                this.feedbackOverlay = document.getElementById('feedback-overlay');
+                this.feedbackMark = document.getElementById('feedback-mark');
+
+                // 結果画面要素
+                this.resultDiffLabel = document.getElementById('result-diff-label');
+                this.newRecordBadge = document.getElementById('new-record-badge');
+                this.resultScore = document.getElementById('result-score');
+                this.resultHighscore = document.getElementById('result-highscore');
+                this.resultComment = document.getElementById('result-comment');
+                this.btnRetry = document.getElementById('btn-retry');
+                this.btnToTitle = document.getElementById('btn-to-title');
+            }
+
+            bindEvents() {
+                // サウンド切り替え
+                this.btnSound.addEventListener('click', () => {
+                    const isOn = this.sound.toggle();
+                    this.soundIcon.textContent = isOn ? '🔊' : '🔇';
+                    this.soundLabel.textContent = isOn ? '音あり' : '消音';
+                    if (isOn) this.sound.playSelect();
+                });
+
+                // 難易度選択スタート
+                this.btnStartNormal.addEventListener('click', () => this.startGame('normal'));
+                this.btnStartHard.addEventListener('click', () => this.startGame('hard'));
+
+                // 中断ボタン
+                this.btnQuit.addEventListener('click', () => {
+                    this.stopTimers();
+                    this.isPlaying = false;
+                    this.showScreen('title');
+                });
+
+                // ハイスコアリセット
+                this.btnResetScore.addEventListener('click', () => {
+                    this.resetConfirmBox.classList.remove('hidden');
+                });
+                this.btnResetNo.addEventListener('click', () => {
+                    this.resetConfirmBox.classList.add('hidden');
+                });
+                this.btnResetYes.addEventListener('click', () => {
+                    this.highScores = { normal: 0, hard: 0 };
+                    localStorage.setItem('math_comp_hs_normal', '0');
+                    localStorage.setItem('math_comp_hs_hard', '0');
+                    this.updateHighScoreUI();
+                    this.resetConfirmBox.classList.add('hidden');
+                    this.sound.playSelect();
+                });
+
+                // 選択肢ボタンのクリック
+                this.choiceButtons.forEach((btn, idx) => {
+                    btn.addEventListener('click', () => this.handleChoiceSelect(idx));
+                });
+
+                // 1つもどすボタン
+                this.btnUndo.addEventListener('click', () => this.handleUndo());
+
+                // 結果画面ボタン
+                this.btnRetry.addEventListener('click', () => this.startGame(this.difficulty));
+                this.btnToTitle.addEventListener('click', () => this.showScreen('title'));
+            }
+
+            updateHighScoreUI() {
+                this.hsNormalEl.textContent = this.highScores.normal;
+                this.hsHardEl.textContent = this.highScores.hard;
+            }
+
+            showScreen(name) {
+                this.screenTitle.classList.add('hidden');
+                this.screenGame.classList.add('hidden');
+                this.screenResult.classList.add('hidden');
+                this.resetConfirmBox.classList.add('hidden');
+
+                if (name === 'title') {
+                    this.screenTitle.classList.remove('hidden');
+                    this.btnQuit.classList.add('hidden');
+                    this.updateHighScoreUI();
+                } else if (name === 'game') {
+                    this.screenGame.classList.remove('hidden');
+                    this.btnQuit.classList.remove('hidden');
+                } else if (name === 'result') {
+                    this.screenResult.classList.remove('hidden');
+                    this.btnQuit.classList.add('hidden');
+                }
+            }
+
+            startGame(diff) {
+                this.sound.init();
+                this.sound.playSelect();
+
+                this.difficulty = diff;
+                this.score = 0;
+                this.timeLeft = this.GAME_DURATION;
+                this.isPlaying = true;
+                this.isLocked = false;
+
+                // UI初期化
+                this.scoreText.textContent = '0';
+                this.timerText.textContent = this.GAME_DURATION.toFixed(1);
+                this.timerBar.style.width = '100%';
+                this.timerBar.className = 'h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-100 ease-linear';
+                this.penaltyOverlay.classList.add('hidden');
+                this.feedbackOverlay.classList.add('hidden');
+
+                if (diff === 'normal') {
+                    this.gameDiffBadge.textContent = 'ふつう（整数）';
+                    this.gameDiffBadge.className = 'text-xs font-black text-emerald-600';
+                } else {
+                    this.gameDiffBadge.textContent = 'むずかしい（分数・小数）';
+                    this.gameDiffBadge.className = 'text-xs font-black text-indigo-600';
+                }
+
+                this.showScreen('game');
+                this.nextProblem();
+                this.startMainTimer();
+            }
+
+            startMainTimer() {
+                this.stopTimers();
+                this.lastTickTime = performance.now();
+
+                this.timerInterval = setInterval(() => {
+                    if (!this.isPlaying) return;
+                    const now = performance.now();
+                    const dt = (now - this.lastTickTime) / 1000;
+                    this.lastTickTime = now;
+
+                    this.timeLeft = Math.max(0, this.timeLeft - dt);
+                    this.timerText.textContent = this.timeLeft.toFixed(1);
+
+                    const pct = (this.timeLeft / this.GAME_DURATION) * 100;
+                    this.timerBar.style.width = `${pct}%`;
+
+                    // 残り10秒以下でバーを赤くして緊張感を演出
+                    if (this.timeLeft <= 10) {
+                        this.timerBar.className = 'h-full bg-gradient-to-r from-rose-500 to-amber-500 rounded-full transition-all duration-100 ease-linear';
+                        this.timerText.classList.add('text-rose-600');
+                    } else {
+                        this.timerText.classList.remove('text-rose-600');
+                    }
+
+                    if (this.timeLeft <= 0) {
+                        this.finishGame();
+                    }
+                }, 50);
+            }
+
+            stopTimers() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+                if (this.penaltyInterval) {
+                    clearInterval(this.penaltyInterval);
+                    this.penaltyInterval = null;
+                }
+            }
+
+            nextProblem() {
+                this.currentChoices = this.difficulty === 'normal'
+                    ? ProblemGenerator.generateNormal()
+                    : ProblemGenerator.generateHard();
+                this.resetSelections();
+            }
+
+            resetSelections() {
+                this.selectedIndices = [];
+                this.renderBoard();
+            }
+
+            renderBoard() {
+                // 上部スロットの描画
+                for (let i = 0; i < 3; i++) {
+                    const slotEl = this.slots[i];
+                    const contentEl = slotEl.querySelector('.slot-content');
+
+                    if (i < this.selectedIndices.length) {
+                        const choiceIdx = this.selectedIndices[i];
+                        const item = this.currentChoices[choiceIdx];
+                        contentEl.innerHTML = item.html;
+                        slotEl.classList.remove('border-dashed', 'border-slate-300', 'bg-white');
+                        slotEl.classList.add('border-solid', 'border-blue-500', 'bg-blue-50/70', 'animate-pop');
+                    } else {
+                        contentEl.innerHTML = '';
+                        slotEl.classList.add('border-dashed', 'border-slate-300', 'bg-white');
+                        slotEl.classList.remove('border-solid', 'border-blue-500', 'bg-blue-50/70', 'animate-pop');
+                    }
+                }
+
+                // 下部選択肢カードの描画
+                for (let i = 0; i < 3; i++) {
+                    const btn = this.choiceButtons[i];
+                    btn.innerHTML = this.currentChoices[i].html;
+                    const isAlreadySelected = this.selectedIndices.includes(i);
+                    btn.disabled = isAlreadySelected || this.isLocked;
+                }
+
+                // 「1つもどす」ボタンの表示制御（1つまたは2つ選択中でロックされていない時）
+                if (this.selectedIndices.length > 0 && this.selectedIndices.length < 3 && !this.isLocked) {
+                    this.btnUndo.classList.remove('hidden');
+                } else {
+                    this.btnUndo.classList.add('hidden');
+                }
+            }
+
+            handleChoiceSelect(choiceIdx) {
+                if (!this.isPlaying || this.isLocked) return;
+                if (this.selectedIndices.includes(choiceIdx)) return;
+
+                this.sound.playSelect();
+                this.selectedIndices.push(choiceIdx);
+                this.renderBoard();
+
+                // 3つすべて選ばれたら自動判定
+                if (this.selectedIndices.length === 3) {
+                    this.evaluateAnswer();
+                }
+            }
+
+            handleUndo() {
+                if (!this.isPlaying || this.isLocked || this.selectedIndices.length === 0) return;
+                this.sound.playSelect();
+                this.selectedIndices.pop();
+                this.renderBoard();
+            }
+
+            evaluateAnswer() {
+                const v0 = this.currentChoices[this.selectedIndices[0]].value;
+                const v1 = this.currentChoices[this.selectedIndices[1]].value;
+                const v2 = this.currentChoices[this.selectedIndices[2]].value;
+
+                // 厳密に小さい順 (v0 < v1 < v2) かどうか判定
+                const isCorrect = (v0 < v1) && (v1 < v2);
+
+                if (isCorrect) {
+                    // 正解処理
+                    this.sound.playCorrect();
+                    this.score += 1;
+                    this.scoreText.textContent = this.score;
+                    this.showFeedback(true);
+
+                    // 少しだけ正解の余韻を見せてから即座に次の問題へ
+                    this.isLocked = true;
+                    setTimeout(() => {
+                        if (!this.isPlaying) return;
+                        this.isLocked = false;
+                        this.nextProblem();
+                    }, 220);
+                } else {
+                    // 不正解処理：選択リセット ＋ 2秒間入力不可ペナルティ
+                    this.sound.playWrong();
+                    this.showFeedback(false);
+                    this.slotsContainer.classList.add('animate-shake');
+                    setTimeout(() => this.slotsContainer.classList.remove('animate-shake'), 450);
+
+                    this.startPenalty();
+                }
+            }
+
+            startPenalty() {
+                this.isLocked = true;
+                this.resetSelections(); // 空欄をすべてリセット
+                this.penaltyOverlay.classList.remove('hidden');
+
+                let penaltyLeft = this.PENALTY_DURATION;
+                this.penaltyTimerEl.textContent = penaltyLeft.toFixed(1);
+                let lastTime = performance.now();
+
+                if (this.penaltyInterval) clearInterval(this.penaltyInterval);
+
+                this.penaltyInterval = setInterval(() => {
+                    if (!this.isPlaying) {
+                        clearInterval(this.penaltyInterval);
+                        return;
+                    }
+                    const now = performance.now();
+                    const dt = (now - lastTime) / 1000;
+                    lastTime = now;
+
+                    penaltyLeft = Math.max(0, penaltyLeft - dt);
+                    this.penaltyTimerEl.textContent = penaltyLeft.toFixed(1);
+
+                    if (penaltyLeft <= 0) {
+                        clearInterval(this.penaltyInterval);
+                        this.penaltyInterval = null;
+                        this.isLocked = false;
+                        this.penaltyOverlay.classList.add('hidden');
+                        this.renderBoard(); // ボタンを再有効化（同じ問題に再挑戦）
+                    }
+                }, 50);
+            }
+
+            showFeedback(isCorrect) {
+                this.feedbackOverlay.classList.remove('hidden');
+                this.feedbackMark.classList.remove('animate-feedback');
+                // リフロー強制でアニメーション再発火
+                void this.feedbackMark.offsetWidth;
+
+                if (isCorrect) {
+                    this.feedbackMark.textContent = '〇';
+                    this.feedbackMark.className = 'text-[120px] sm:text-[150px] font-black leading-none text-emerald-500/85 drop-shadow-md animate-feedback';
+                } else {
+                    this.feedbackMark.textContent = '×';
+                    this.feedbackMark.className = 'text-[120px] sm:text-[150px] font-black leading-none text-rose-500/85 drop-shadow-md animate-feedback';
+                }
+            }
+
+            finishGame() {
+                this.isPlaying = false;
+                this.isLocked = true;
+                this.stopTimers();
+                this.sound.playFinish();
+
+                // ハイスコア更新チェック
+                const prevHigh = this.highScores[this.difficulty];
+                let isNewRecord = false;
+                if (this.score > prevHigh) {
+                    this.highScores[this.difficulty] = this.score;
+                    localStorage.setItem(`math_comp_hs_${this.difficulty}`, String(this.score));
+                    isNewRecord = true;
+                }
+
+                // 結果画面UI更新
+                this.resultDiffLabel.textContent = this.difficulty === 'normal'
+                    ? '難易度：ふつう（整数のみ）'
+                    : '難易度：むずかしい（分数・小数）';
+                this.resultScore.textContent = this.score;
+                this.resultHighscore.textContent = this.highScores[this.difficulty];
+
+                if (isNewRecord && this.score > 0) {
+                    this.newRecordBadge.classList.remove('hidden');
+                } else {
+                    this.newRecordBadge.classList.add('hidden');
+                }
+
+                // スコアに応じた応援コメント（30秒基準）
+                if (this.score >= 15) {
+                    this.resultComment.textContent = '驚異のスピード＆正確さ！正負の数の大小は完全にマスターしましたね！';
+                } else if (this.score >= 10) {
+                    this.resultComment.textContent = 'すばらしい成績です！負の数の大小関係もしっかり身についています！';
+                } else if (this.score >= 5) {
+                    this.resultComment.textContent = 'ナイスチャレンジ！数直線をイメージするとさらに速くなりますよ！';
+                } else {
+                    this.resultComment.textContent = 'おつかれさま！負の数は「0から離れるほど小さい」のがポイントです！';
+                }
+
+                this.showScreen('result');
+            }
+        }
+
+        // ページ読み込み完了時にアプリ起動
+        window.addEventListener('DOMContentLoaded', () => {
+            new MathCompareGame();
+        });
+    </script>
+</body>
+</html>
