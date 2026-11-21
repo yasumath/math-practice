@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>1次方程式マスター！移項パズル</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'M PLUS Rounded 1c', 'Inter', sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      background-color: #f0f4f8;
+      background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+    }
+
+    .math-font {
+      font-family: 'Inter', 'M PLUS Rounded 1c', sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ゲーム風立体ボタン */
+    .game-btn {
+      transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      top: 0;
+    }
+    .game-btn:active:not(:disabled) {
+      top: 4px;
+      box-shadow: 0 0px 0 transparent !important;
+    }
+    .game-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(45%);
+    }
+
+    /* 項ブロック */
+    .term-block {
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, filter 0.18s ease;
+      cursor: pointer;
+    }
+    .term-block:hover {
+      transform: translateY(-2px);
+    }
+    .term-block.selected {
+      transform: translateY(-8px) scale(1.06);
+      z-index: 10;
+    }
+
+    /* アニメーション群 */
+    @keyframes transposeRight {
+      0% { transform: translate(0, 0) scale(1); opacity: 1; }
+      45% { transform: translate(55px, -40px) scale(1.15) rotate(8deg); opacity: 0.85; }
+      100% { transform: translate(110px, 0) scale(1); opacity: 0; }
+    }
+    @keyframes transposeLeft {
+      0% { transform: translate(0, 0) scale(1); opacity: 1; }
+      45% { transform: translate(-55px, -40px) scale(1.15) rotate(-8deg); opacity: 0.85; }
+      100% { transform: translate(-110px, 0) scale(1); opacity: 0; }
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.4); opacity: 0; }
+      70% { transform: scale(1.12); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes combinePulse {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.2); filter: brightness(1.15); }
+      100% { transform: scale(1); }
+    }
+    @keyframes swapFlip {
+      0% { transform: scaleX(1); }
+      50% { transform: scaleX(0.1); opacity: 0.5; }
+      100% { transform: scaleX(1); opacity: 1; }
+    }
+    @keyframes cutInZoom {
+      0% { transform: scale(0.5); opacity: 0; }
+      30% { transform: scale(1.08); opacity: 1; }
+      85% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0; }
+    }
+    @keyframes pulseGold {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+      50% { transform: scale(1.05); box-shadow: 0 0 18px 4px rgba(245, 158, 11, 0.4); }
+    }
+
+    .anim-transpose-right {
+      animation: transposeRight 0.34s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      pointer-events: none;
+    }
+    .anim-transpose-left {
+      animation: transposeLeft 0.34s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      pointer-events: none;
+    }
+    .anim-pop-in {
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    .anim-combine {
+      animation: combinePulse 0.38s ease-out;
+    }
+    .anim-swap {
+      animation: swapFlip 0.38s ease-in-out;
+    }
+    .anim-cut-in {
+      animation: cutInZoom 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .new-record-badge {
+      animation: pulseGold 1.4s infinite;
+    }
+    .balance-pillar {
+      background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between text-slate-800 overflow-x-hidden">
+
+  <!-- 紙吹雪エフェクト用キャンバス -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50 hidden"></canvas>
+
+  <!-- ==================== 画面1: タイトル・モード選択画面 ==================== -->
+  <div id="title-screen" class="flex-1 w-full max-w-3xl mx-auto px-4 py-6 sm:py-10 flex flex-col justify-center">
+    <div class="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl border-2 border-slate-200 p-5 sm:p-8">
+      
+      <!-- タイトルロゴ＆ミュートボタン -->
+      <div class="text-center mb-6 sm:mb-8 relative">
+        <button type="button" id="btn-mute-title" class="mute-toggle-btn absolute right-0 top-0 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl border border-slate-200 transition flex items-center gap-1.5 shadow-xs" title="効果音のオン/オフ">
+          <span class="mute-icon text-base">🔊</span>
+          <span class="mute-label">音ON</span>
+        </button>
+
+        <span class="inline-block bg-indigo-100 text-indigo-700 text-xs sm:text-sm font-extrabold px-3 py-1 rounded-full mb-2 tracking-wider">
+          中1数学 感覚トレーニング
+        </span>
+        <h1 class="text-2xl sm:text-4xl font-extrabold text-slate-800 tracking-tight mb-2">
+          1次方程式マスター
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-600 font-bold">
+          項ブロックを動かして、感覚的に「移項」と「文字式の計算」をマスターしよう！
+        </p>
+      </div>
+
+      <!-- ステップ1：難易度選択 -->
+      <div class="mb-6 sm:mb-8">
+        <div class="flex items-center justify-between mb-2.5">
+          <span class="text-xs sm:text-sm font-extrabold text-slate-600 flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">1</span>
+            難易度を選ぶ
+          </span>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-amber-600 flex items-center gap-1">
+              🏆 タイムアタック自己ベスト
+            </span>
+            <button type="button" id="btn-open-reset" class="text-[11px] font-bold text-slate-400 hover:text-rose-500 underline transition">
+              記録リセット
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3" id="title-difficulty-grid">
+          <!-- 初級カード -->
+          <button type="button" data-diff="beginner" class="diff-card text-left p-3.5 sm:p-4 rounded-2xl border-2 transition-all border-indigo-600 bg-indigo-50/70 shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+              <span class="diff-title text-base sm:text-lg font-extrabold text-indigo-700">初級</span>
+              <span class="badge-selected text-[11px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded-md">選択中</span>
+            </div>
+            <p class="text-xs text-slate-600 font-bold mb-2 leading-relaxed">基本の移項と計算<br><span class="text-slate-400 font-normal">例: x + 4 = 9 / 2x - 3 = 7</span></p>
+            <div class="pt-2 border-t border-indigo-200/70 flex items-center justify-between text-xs">
+              <span class="text-slate-500 font-bold">BEST:</span>
+              <span id="best-time-beginner" class="math-font font-extrabold text-amber-600">--.- 秒</span>
+            </div>
+          </button>
+
+          <!-- 中級カード -->
+          <button type="button" data-diff="intermediate" class="diff-card text-left p-3.5 sm:p-4 rounded-2xl border-2 transition-all border-slate-200 bg-white hover:border-indigo-300">
+            <div class="flex items-center justify-between mb-1">
+              <span class="diff-title text-base sm:text-lg font-extrabold text-slate-800">中級</span>
+              <span class="badge-selected hidden text-[11px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded-md">選択中</span>
+            </div>
+            <p class="text-xs text-slate-600 font-bold mb-2 leading-relaxed">両辺に文字と数がある式<br><span class="text-slate-400 font-normal">例: 3x - 2 = 2x + 5</span></p>
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span class="text-slate-500 font-bold">BEST:</span>
+              <span id="best-time-intermediate" class="math-font font-extrabold text-amber-600">--.- 秒</span>
+            </div>
+          </button>
+
+          <!-- 上級カード -->
+          <button type="button" data-diff="advanced" class="diff-card text-left p-3.5 sm:p-4 rounded-2xl border-2 transition-all border-slate-200 bg-white hover:border-indigo-300">
+            <div class="flex items-center justify-between mb-1">
+              <span class="diff-title text-base sm:text-lg font-extrabold text-slate-800">上級</span>
+              <span class="badge-selected hidden text-[11px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded-md">選択中</span>
+            </div>
+            <p class="text-xs text-slate-600 font-bold mb-2 leading-relaxed">負の係数・項が多い応用式<br><span class="text-slate-400 font-normal">例: 5x + 2 = 2x - 10</span></p>
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span class="text-slate-500 font-bold">BEST:</span>
+              <span id="best-time-advanced" class="math-font font-extrabold text-amber-600">--.- 秒</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- ステップ2：モード選択ボタン -->
+      <div>
+        <div class="mb-2.5">
+          <span class="text-xs sm:text-sm font-extrabold text-slate-600 flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">2</span>
+            モードを選んでスタート！（全10問）
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <!-- 練習モード -->
+          <button type="button" id="btn-start-practice" class="game-btn bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white p-4 sm:p-5 rounded-2xl shadow-[0_5px_0_#0f766e] text-left flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-lg sm:text-xl font-extrabold flex items-center gap-2">
+                <span>📘</span>
+                <span>練習モード</span>
+              </span>
+              <span class="bg-white/20 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full">全10問</span>
+            </div>
+            <p class="text-xs sm:text-sm text-emerald-50 font-medium leading-snug">
+              時間制限なし！ヒントを見ながら自分のペースで10問クリアを目指そう。
+            </p>
+          </button>
+
+          <!-- タイムアタックモード -->
+          <button type="button" id="btn-start-timeattack" class="game-btn bg-gradient-to-br from-rose-500 to-orange-500 hover:from-rose-400 hover:to-orange-400 text-white p-4 sm:p-5 rounded-2xl shadow-[0_5px_0_#be123c] text-left flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-lg sm:text-xl font-extrabold flex items-center gap-2">
+                <span>⏱️</span>
+                <span>タイムアタック</span>
+              </span>
+              <span class="bg-white/20 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full">全10問</span>
+            </div>
+            <p class="text-xs sm:text-sm text-rose-50 font-medium leading-snug">
+              10問連続クリアまでのスピードに挑戦！自己ベスト更新を目指そう！
+            </p>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 画面2: ゲームプレイ画面 ==================== -->
+  <div id="game-screen" class="hidden flex-1 flex flex-col justify-between">
+
+    <!-- 上部ヘッダー・ステータス＆数式表示エリア -->
+    <header class="w-full max-w-4xl mx-auto pt-3 px-3 sm:pt-4 sm:px-6">
+      <div class="flex items-center justify-between gap-2 mb-2.5">
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button type="button" id="btn-back-title" class="bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 text-xs sm:text-sm font-extrabold px-2.5 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+            <span>タイトル</span>
+          </button>
+          <span id="game-mode-badge" class="bg-emerald-600 text-white text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded-xl shadow-xs">
+            練習モード
+          </span>
+          <span id="game-diff-badge" class="bg-indigo-100 text-indigo-700 text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded-xl">
+            初級
+          </span>
+          <button type="button" id="btn-mute-game" class="mute-toggle-btn bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-extrabold px-2.5 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1" title="効果音のオン/オフ">
+            <span class="mute-icon">🔊</span>
+          </button>
+        </div>
+
+        <!-- 進捗＆タイマー -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <div id="timer-box" class="hidden bg-slate-800 text-amber-300 px-3 py-1 rounded-xl shadow-xs flex items-center gap-1.5">
+            <span class="text-xs">⏱️</span>
+            <span id="timer-display" class="math-font text-sm sm:text-lg font-extrabold">0.0</span>
+            <span class="text-[10px] sm:text-xs text-slate-300 font-bold">秒</span>
+          </div>
+
+          <div class="bg-white border border-slate-200 px-3 py-1 rounded-xl shadow-xs text-xs sm:text-sm font-extrabold text-slate-700">
+            第 <span id="question-number" class="text-indigo-600 text-base sm:text-lg">1</span> / 10 問
+          </div>
+        </div>
+      </div>
+
+      <!-- 10問プログレスバー -->
+      <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden mb-3 shadow-inner">
+        <div id="progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-300" style="width: 0%;"></div>
+      </div>
+
+      <!-- 現在の方程式ボード -->
+      <div class="bg-white rounded-2xl shadow-md border-2 border-slate-200 p-3 sm:p-4 relative overflow-hidden">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-400 mb-0.5">
+          <span>現在の方程式</span>
+          <span>目標：x ＝ 数 の形にしよう！</span>
+        </div>
+
+        <div class="flex items-center justify-center py-1 sm:py-2">
+          <div id="equation-display" class="math-font text-2xl sm:text-4xl font-extrabold text-slate-800 tracking-wider">
+            x + 4 = 9
+          </div>
+        </div>
+
+        <!-- ガイダンスメッセージバー -->
+        <div id="message-bar" class="mt-1 text-center text-xs sm:text-sm font-bold py-1.5 px-3 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 transition-all duration-300">
+          ブロックをタッチして選び、「移項する」を押してみよう！
+        </div>
+      </div>
+    </header>
+
+    <!-- 中央ステージ（イメージ図・天秤エリア） -->
+    <main class="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-6 py-2.5 flex flex-col justify-center">
+      
+      <!-- 凡例 -->
+      <div class="flex justify-center gap-4 mb-2 text-xs font-bold text-slate-600">
+        <div class="flex items-center gap-1.5">
+          <span class="w-3.5 h-3.5 rounded bg-sky-500 inline-block shadow-xs"></span>
+          <span>文字の項（xの仲間）</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-3.5 h-3.5 rounded bg-amber-500 inline-block shadow-xs"></span>
+          <span>数の項（定数項）</span>
+        </div>
+      </div>
+
+      <!-- 天秤ステージ -->
+      <div id="stage-container" class="relative bg-white/85 backdrop-blur-sm rounded-3xl border-2 border-slate-200/90 shadow-lg p-3 sm:p-5 flex flex-col justify-between min-h-[220px] sm:min-h-[275px]">
+        
+        <div class="flex-1 grid grid-cols-11 gap-2 sm:gap-3 items-stretch">
+          
+          <!-- 左辺エリア -->
+          <div class="col-span-5 flex flex-col">
+            <div class="text-center text-xs sm:text-sm font-extrabold text-slate-500 mb-1.5 tracking-widest bg-slate-100 py-1 rounded-lg">
+              左辺
+            </div>
+            <div id="left-pan" class="flex-1 bg-slate-50/90 border-2 border-dashed border-slate-300 rounded-2xl p-2 sm:p-3 flex flex-wrap content-center justify-center gap-2 sm:gap-3 min-h-[130px] transition-colors">
+            </div>
+            <div class="h-2.5 bg-slate-400 rounded-full mx-3 mt-1.5 shadow-xs"></div>
+          </div>
+
+          <!-- 中央イコール -->
+          <div class="col-span-1 flex flex-col items-center justify-center relative">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center text-2xl sm:text-3xl font-extrabold shadow-md z-10 border-4 border-white">
+              ＝
+            </div>
+            <div class="w-2 sm:w-2.5 flex-1 balance-pillar rounded-full -mt-2 opacity-40"></div>
+          </div>
+
+          <!-- 右辺エリア -->
+          <div class="col-span-5 flex flex-col">
+            <div class="text-center text-xs sm:text-sm font-extrabold text-slate-500 mb-1.5 tracking-widest bg-slate-100 py-1 rounded-lg">
+              右辺
+            </div>
+            <div id="right-pan" class="flex-1 bg-slate-50/90 border-2 border-dashed border-slate-300 rounded-2xl p-2 sm:p-3 flex flex-wrap content-center justify-center gap-2 sm:gap-3 min-h-[130px] transition-colors">
+            </div>
+            <div class="h-2.5 bg-slate-400 rounded-full mx-3 mt-1.5 shadow-xs"></div>
+          </div>
+
+        </div>
+
+        <!-- 土台ビジュアル -->
+        <div class="mt-2 flex flex-col items-center">
+          <div class="w-3/4 h-2 bg-slate-300 rounded-full"></div>
+          <div class="w-24 h-3 bg-slate-400 rounded-t-xl mt-0.5"></div>
+        </div>
+
+        <!-- 1問ごとのクリアカットイン演出 -->
+        <div id="step-clear-overlay" class="hidden absolute inset-0 bg-white/90 backdrop-blur-xs rounded-3xl flex flex-col items-center justify-center p-4 z-20">
+          <div class="anim-cut-in flex flex-col items-center">
+            <span class="bg-emerald-500 text-white text-xs sm:text-sm font-extrabold px-3 py-1 rounded-full mb-1 shadow">
+              GREAT!
+            </span>
+            <h2 class="text-3xl sm:text-5xl font-extrabold text-emerald-600 tracking-tight mb-1">
+              正解！
+            </h2>
+            <p id="step-clear-answer" class="math-font text-xl sm:text-3xl font-extrabold text-slate-800 bg-amber-100 px-5 py-1.5 rounded-2xl border-2 border-amber-300 shadow-xs">
+              x = 5
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- 下部コントロール（操作ボタンエリア） -->
+    <footer class="w-full max-w-4xl mx-auto px-3 pb-4 pt-1 sm:px-6 sm:pb-5">
+      <div class="bg-white rounded-3xl shadow-lg border-2 border-slate-200 p-3 sm:p-4">
+        
+        <!-- メインアクションボタン群 -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 mb-2.5">
+          
+          <!-- 1. 移項するボタン -->
+          <button type="button" id="btn-transpose" class="game-btn col-span-1 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-3 sm:py-3.5 px-3 rounded-2xl shadow-[0_4px_0_#3730a3] flex flex-col items-center justify-center gap-0.5">
+            <div class="flex items-center gap-1.5 text-sm sm:text-base">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+              <span>移項する</span>
+            </div>
+            <span class="text-[10px] sm:text-xs font-medium text-indigo-200">選んだ項を反対側へ</span>
+          </button>
+
+          <!-- 2. 計算してまとめるボタン -->
+          <button type="button" id="btn-combine" class="game-btn col-span-1 bg-amber-500 hover:bg-amber-400 text-white font-extrabold py-3 sm:py-3.5 px-3 rounded-2xl shadow-[0_4px_0_#b45309] flex flex-col items-center justify-center gap-0.5">
+            <div class="flex items-center gap-1.5 text-sm sm:text-base">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+              <span>計算してまとめる</span>
+            </div>
+            <span class="text-[10px] sm:text-xs font-medium text-amber-100">文字どうし・数どうしを計算</span>
+          </button>
+
+          <!-- 3. 仕上げ（xの係数でわる / 左右入れ替え）ボタン -->
+          <button type="button" id="btn-finish" disabled class="game-btn col-span-2 sm:col-span-1 bg-rose-500 hover:bg-rose-400 text-white font-extrabold py-3 sm:py-3.5 px-3 rounded-2xl shadow-[0_4px_0_#be123c] flex flex-col items-center justify-center gap-0.5">
+            <div class="flex items-center gap-1.5 text-sm sm:text-base">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span id="btn-finish-label">仕上げ（x = の形に）</span>
+            </div>
+            <span id="btn-finish-sub" class="text-[10px] sm:text-xs font-medium text-rose-100">ax = b の形になると使える！</span>
+          </button>
+
+        </div>
+
+        <!-- サブアクション -->
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+          <div class="flex items-center gap-1 sm:gap-2">
+            <button type="button" id="btn-undo" disabled class="text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 disabled:opacity-40 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+              <span>1手戻る</span>
+            </button>
+
+            <button type="button" id="btn-reset-problem" class="text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-800 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              <span>最初からやり直す</span>
+            </button>
+          </div>
+
+          <button type="button" id="btn-hint" class="text-xs sm:text-sm font-bold text-indigo-600 hover:text-indigo-800 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition flex items-center gap-1">
+            <span>💡 ヒント</span>
+          </button>
+        </div>
+
+      </div>
+    </footer>
+  </div>
+
+  <!-- ==================== 画面3: 10問クリア・リザルト画面 ==================== -->
+  <div id="result-screen" class="hidden flex-1 w-full max-w-2xl mx-auto px-4 py-6 sm:py-10 flex flex-col justify-center">
+    <div class="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl border-2 border-slate-200 p-6 sm:p-8 text-center relative overflow-hidden">
+      
+      <div class="text-5xl sm:text-6xl mb-3 animate-bounce">🏆</div>
+      <span id="result-badge" class="inline-block bg-indigo-100 text-indigo-700 text-xs sm:text-sm font-extrabold px-3 py-1 rounded-full mb-2">
+        練習モード・初級
+      </span>
+      <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-800 tracking-tight mb-4">
+        全10問クリア達成！
+      </h2>
+
+      <!-- タイムアタック時の記録表示 -->
+      <div id="result-time-panel" class="hidden bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 sm:p-5 mb-6">
+        <div id="new-record-banner" class="hidden new-record-badge inline-block bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs sm:text-sm font-extrabold px-4 py-1 rounded-full mb-2 shadow">
+          ✨ NEW RECORD! 自己ベスト更新！ ✨
+        </div>
+
+        <div class="text-xs sm:text-sm font-bold text-slate-500 mb-1">クリアタイム</div>
+        <div class="math-font text-4xl sm:text-5xl font-extrabold text-rose-600 mb-3">
+          <span id="result-final-time">24.5</span> <span class="text-lg sm:text-xl text-slate-600">秒</span>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-center gap-2 text-sm sm:text-base font-bold text-slate-600">
+          <span>自己ベスト記録:</span>
+          <span id="result-best-time" class="math-font font-extrabold text-amber-600">24.5 秒</span>
+        </div>
+      </div>
+
+      <!-- 練習モード時のメッセージ -->
+      <div id="result-practice-panel" class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 sm:p-5 mb-6">
+        <p class="text-sm sm:text-base font-extrabold text-emerald-800 mb-1">
+          素晴らしい集中力です！1次方程式の基本はバッチリ！
+        </p>
+        <p class="text-xs sm:text-sm text-emerald-700 font-bold">
+          次は「タイムアタック」や、ひとつ上の難易度にも挑戦してみよう！
+        </p>
+      </div>
+
+      <!-- リザルト画面ボタン -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button type="button" id="btn-retry-same" class="game-btn bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-3.5 px-5 rounded-2xl shadow-[0_4px_0_#3730a3] text-sm sm:text-base">
+          🔄 もう一度挑戦する
+        </button>
+        <button type="button" id="btn-result-title" class="game-btn bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold py-3.5 px-5 rounded-2xl shadow-[0_4px_0_#94a3b8] text-sm sm:text-base">
+          🏠 タイトルへ戻る
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ベストタイム初期化確認モーダル -->
+  <div id="reset-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl border-2 border-slate-200 max-w-sm w-full p-6 text-center">
+      <div class="text-3xl mb-2">⚠️</div>
+      <h3 class="text-lg font-extrabold text-slate-800 mb-2">自己ベスト記録を消去しますか？</h3>
+      <p class="text-xs sm:text-sm text-slate-500 font-bold mb-5">
+        初級・中級・上級のすべてのベストタイム記録がリセットされます。
+      </p>
+      <div class="grid grid-cols-2 gap-3">
+        <button type="button" id="btn-cancel-reset" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-sm transition">
+          キャンセル
+        </button>
+        <button type="button" id="btn-confirm-reset" class="py-2.5 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-sm shadow transition">
+          リセットする
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JavaScript ロジック ==================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      /**
+       * 1. 定数・ローカルストレージキー定義
+       */
+      const TOTAL_QUESTIONS = 10;
+      const STORAGE_KEY_BEST = 'linear_eq_puzzle_best_times_v1';
+      const DIFF_LABELS = {
+        beginner: '初級',
+        intermediate: '中級',
+        advanced: '上級'
+      };
+
+      /**
+       * 2. アプリケーション状態管理
+       */
+      const state = {
+        selectedDifficulty: 'beginner',
+        mode: 'practice',
+        difficulty: 'beginner',
+        questions: [],
+        currentQuestionIdx: 0,
+        leftTerms: [],
+        rightTerms: [],
+        historyStack: [],
+        selectedIds: new Set(),
+        isAnimating: false,
+        isStepCleared: false,
+        isMuted: false,
+        startTime: 0,
+        elapsedSeconds: 0,
+        timerInterval: null
+      };
+
+      let uniqueIdCounter = 1;
+      function generateId() {
+        uniqueIdCounter += 1;
+        return 'term_' + uniqueIdCounter;
+      }
+
+      /**
+       * 3. 効果音生成（Web Audio API）
+       */
+      let audioCtx = null;
+      function getAudioContext() {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+          }
+        }
+        return audioCtx;
+      }
+
+      function toggleMute() {
+        state.isMuted = !state.isMuted;
+        const icons = document.querySelectorAll('.mute-icon');
+        const labels = document.querySelectorAll('.mute-label');
+        const buttons = document.querySelectorAll('.mute-toggle-btn');
+
+        icons.forEach(function (el) {
+          el.textContent = state.isMuted ? '🔇' : '🔊';
+        });
+        labels.forEach(function (el) {
+          el.textContent = state.isMuted ? '音OFF' : '音ON';
+        });
+        buttons.forEach(function (btn) {
+          if (state.isMuted) {
+            btn.classList.remove('bg-slate-100', 'bg-white', 'text-slate-700');
+            btn.classList.add('bg-slate-200', 'text-slate-400');
+          } else {
+            btn.classList.remove('bg-slate-200', 'text-slate-400');
+            btn.classList.add('bg-slate-100', 'text-slate-700');
+          }
+        });
+
+        if (!state.isMuted) {
+          playSound('select');
+        }
+      }
+
+      function playSound(type) {
+        if (state.isMuted) return;
+        try {
+          const ctx = getAudioContext();
+          if (!ctx) return;
+          if (ctx.state === 'suspended') {
+            ctx.resume();
+          }
+
+          const now = ctx.currentTime;
+
+          if (type === 'select') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(520, now);
+            osc.frequency.exponentialRampToValueAtTime(680, now + 0.08);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            osc.start(now);
+            osc.stop(now + 0.08);
+          } else if (type === 'transpose') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(340, now);
+            osc.frequency.exponentialRampToValueAtTime(620, now + 0.24);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.24);
+            osc.start(now);
+            osc.stop(now + 0.24);
+          } else if (type === 'combine') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.setValueAtTime(554.37, now + 0.08);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+            osc.start(now);
+            osc.stop(now + 0.22);
+          } else if (type === 'error') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(180, now);
+            osc.frequency.linearRampToValueAtTime(140, now + 0.18);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+            osc.start(now);
+            osc.stop(now + 0.18);
+          } else if (type === 'step_clear') {
+            const notes = [659.25, 880];
+            notes.forEach(function (freq, idx) {
+              const o = ctx.createOscillator();
+              const g = ctx.createGain();
+              o.type = 'sine';
+              o.connect(g);
+              g.connect(ctx.destination);
+              o.frequency.setValueAtTime(freq, now + idx * 0.08);
+              g.gain.setValueAtTime(0.16, now + idx * 0.08);
+              g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.22);
+              o.start(now + idx * 0.08);
+              o.stop(now + idx * 0.08 + 0.22);
+            });
+          } else if (type === 'all_clear') {
+            const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
+            const times = [0, 0.1, 0.2, 0.32, 0.48, 0.6];
+            notes.forEach(function (freq, idx) {
+              const o = ctx.createOscillator();
+              const g = ctx.createGain();
+              o.type = 'triangle';
+              o.connect(g);
+              g.connect(ctx.destination);
+              o.frequency.setValueAtTime(freq, now + times[idx]);
+              g.gain.setValueAtTime(0.2, now + times[idx]);
+              g.gain.exponentialRampToValueAtTime(0.01, now + times[idx] + 0.35);
+              o.start(now + times[idx]);
+              o.stop(now + times[idx] + 0.35);
+            });
+          }
+        } catch (e) {
+          // オーディオ再生エラーは無視して進行を妨げない
+        }
+      }
+
+      /**
+       * 4. 問題生成エンジン（重複なし10問・必ず整数解）
+       */
+      function randInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function randNonZero(min, max) {
+        let n = 0;
+        while (n === 0) {
+          n = randInt(min, max);
+        }
+        return n;
+      }
+
+      function generateSingleQuestion(difficulty) {
+        const xAns = randNonZero(-8, 9);
+
+        if (difficulty === 'beginner') {
+          const pattern = randInt(1, 4);
+          const c = randNonZero(-9, 9);
+          if (pattern === 1) {
+            return {
+              hint: '左辺の数の項「' + (c > 0 ? '+' + c : c) + '」を選んで移項しよう！',
+              left: [{ type: 'x', coef: 1 }, { type: 'const', coef: c }],
+              right: [{ type: 'const', coef: xAns + c }]
+            };
+          } else if (pattern === 2) {
+            const a = randInt(2, 5);
+            return {
+              hint: '左辺が「' + a + 'x」だけになっているので、仕上げボタンで割ろう！',
+              left: [{ type: 'x', coef: a }],
+              right: [{ type: 'const', coef: a * xAns }]
+            };
+          } else if (pattern === 3) {
+            const a = randInt(2, 4);
+            return {
+              hint: '数の項「' + (c > 0 ? '+' + c : c) + '」を右辺に移項してから、xの係数「' + a + '」で割ろう！',
+              left: [{ type: 'x', coef: a }, { type: 'const', coef: c }],
+              right: [{ type: 'const', coef: a * xAns + c }]
+            };
+          } else {
+            return {
+              hint: '「' + (c > 0 ? '+' + c : c) + '」を左辺へ移項してから、左右を入れ替えよう！',
+              left: [{ type: 'const', coef: xAns + c }],
+              right: [{ type: 'x', coef: 1 }, { type: 'const', coef: c }]
+            };
+          }
+        }
+
+        if (difficulty === 'intermediate') {
+          const pattern = randInt(1, 3);
+          if (pattern === 1) {
+            const a = randInt(2, 5);
+            return {
+              hint: '右辺の「' + (a - 1 === 1 ? '' : (a - 1)) + 'x」を左辺に移項して計算しよう！',
+              left: [{ type: 'x', coef: a }],
+              right: [{ type: 'x', coef: a - 1 }, { type: 'const', coef: xAns }]
+            };
+          } else if (pattern === 2) {
+            const a = randInt(2, 5);
+            const b = randNonZero(-7, 7);
+            const d = xAns + b;
+            return {
+              hint: '文字の項は左辺へ、数の項は右辺へ移項して計算しよう！',
+              left: [{ type: 'x', coef: a }, { type: 'const', coef: b }],
+              right: [{ type: 'x', coef: a - 1 }, { type: 'const', coef: d }]
+            };
+          } else {
+            const a = randInt(2, 4);
+            const b = randNonZero(-6, 6);
+            const d = xAns + b;
+            return {
+              hint: '「x」の項は左辺、数の項は右辺に集めて計算しよう！',
+              left: [{ type: 'const', coef: b }, { type: 'x', coef: a }],
+              right: [{ type: 'const', coef: d }, { type: 'x', coef: a - 1 }]
+            };
+          }
+        }
+
+        // 上級：負の係数や係数割り算、項が多い応用形
+        const pattern = randInt(1, 3);
+        if (pattern === 1) {
+          const diff = randNonZero(-4, 4);
+          const c = randNonZero(-3, 4);
+          const a = c + diff;
+          if (a === 0 || diff === 1) {
+            return generateSingleQuestion('advanced');
+          }
+          const b = randNonZero(-8, 8);
+          const d = diff * xAns + b;
+          return {
+            hint: '文字は左、数は右へ移項！最後は「仕上げ」ボタンで係数で割ろう！',
+            left: [{ type: 'x', coef: a }, { type: 'const', coef: b }],
+            right: [{ type: 'x', coef: c }, { type: 'const', coef: d }]
+          };
+        } else if (pattern === 2) {
+          const a = randInt(-4, -2);
+          const c = randInt(1, 3);
+          const diff = a - c;
+          const b = randNonZero(-6, 8);
+          const d = diff * xAns + b;
+          return {
+            hint: 'マイナスの移項に注意！xの係数がマイナスでも最後にその数で割ればOK！',
+            left: [{ type: 'const', coef: b }, { type: 'x', coef: a }],
+            right: [{ type: 'x', coef: c }, { type: 'const', coef: d }]
+          };
+        } else {
+          const a = randInt(2, 4);
+          const e = randNonZero(-2, 3);
+          const c = randInt(1, 3);
+          const diff = a + e - c;
+          if (diff === 0 || diff === 1 || a + e === 0) {
+            return generateSingleQuestion('advanced');
+          }
+          const b = randNonZero(-6, 6);
+          const d = diff * xAns + b;
+          return {
+            hint: '同じ辺にある文字の項どうしを先にまとめるか、移項してから計算しよう！',
+            left: [{ type: 'x', coef: a }, { type: 'const', coef: b }, { type: 'x', coef: e }],
+            right: [{ type: 'x', coef: c }, { type: 'const', coef: d }]
+          };
+        }
+      }
+
+      function generateQuestionSet(difficulty, count) {
+        const questions = [];
+        const seenSignatures = new Set();
+        let safety = 0;
+
+        while (questions.length < count && safety < 400) {
+          safety += 1;
+          const q = generateSingleQuestion(difficulty);
+          const sig = JSON.stringify({ l: q.left, r: q.right });
+          if (!seenSignatures.has(sig)) {
+            seenSignatures.add(sig);
+            questions.push(q);
+          }
+        }
+        return questions;
+      }
+
+      /**
+       * 5. ベストタイム保存・取得・リセット（localStorage）
+       */
+      function getBestTimes() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_BEST);
+          if (raw) {
+            return JSON.parse(raw);
+          }
+        } catch (e) {}
+        return { beginner: null, intermediate: null, advanced: null };
+      }
+
+      function saveBestTime(difficulty, seconds) {
+        const bests = getBestTimes();
+        const prev = bests[difficulty];
+        const isNewRecord = (prev === null || seconds < prev);
+        if (isNewRecord) {
+          bests[difficulty] = seconds;
+          try {
+            localStorage.setItem(STORAGE_KEY_BEST, JSON.stringify(bests));
+          } catch (e) {}
+        }
+        return { isNewRecord: isNewRecord, bestTime: bests[difficulty] };
+      }
+
+      function updateTitleBestTimesUI() {
+        const bests = getBestTimes();
+        ['beginner', 'intermediate', 'advanced'].forEach(function (diff) {
+          const el = document.getElementById('best-time-' + diff);
+          if (el) {
+            el.textContent = bests[diff] !== null ? (bests[diff].toFixed(1) + ' 秒') : '--.- 秒';
+          }
+        });
+      }
+
+      function openResetBestModal() {
+        playSound('select');
+        document.getElementById('reset-modal').classList.remove('hidden');
+      }
+
+      function closeResetBestModal() {
+        playSound('select');
+        document.getElementById('reset-modal').classList.add('hidden');
+      }
+
+      function confirmResetBestTimes() {
+        try {
+          localStorage.removeItem(STORAGE_KEY_BEST);
+        } catch (e) {}
+        updateTitleBestTimesUI();
+        closeResetBestModal();
+        playSound('combine');
+      }
+
+      /**
+       * 6. 画面遷移・難易度選択・ゲーム開始
+       */
+      function switchScreen(screenId) {
+        ['title-screen', 'game-screen', 'result-screen'].forEach(function (id) {
+          const el = document.getElementById(id);
+          if (!el) return;
+          if (id === screenId) {
+            el.classList.remove('hidden');
+          } else {
+            el.classList.add('hidden');
+          }
+        });
+      }
+
+      function selectTitleDifficulty(diff) {
+        playSound('select');
+        state.selectedDifficulty = diff;
+        document.querySelectorAll('.diff-card').forEach(function (card) {
+          const isSelected = card.getAttribute('data-diff') === diff;
+          const titleEl = card.querySelector('.diff-title');
+          const badgeEl = card.querySelector('.badge-selected');
+
+          if (isSelected) {
+            card.className = 'diff-card text-left p-3.5 sm:p-4 rounded-2xl border-2 transition-all border-indigo-600 bg-indigo-50/70 shadow-sm';
+            if (titleEl) titleEl.className = 'diff-title text-base sm:text-lg font-extrabold text-indigo-700';
+            if (badgeEl) badgeEl.classList.remove('hidden');
+          } else {
+            card.className = 'diff-card text-left p-3.5 sm:p-4 rounded-2xl border-2 transition-all border-slate-200 bg-white hover:border-indigo-300';
+            if (titleEl) titleEl.className = 'diff-title text-base sm:text-lg font-extrabold text-slate-800';
+            if (badgeEl) badgeEl.classList.add('hidden');
+          }
+        });
+      }
+
+      function returnToTitle() {
+        playSound('select');
+        stopTimer();
+        stopConfetti();
+        updateTitleBestTimesUI();
+        switchScreen('title-screen');
+      }
+
+      function startGame(mode) {
+        playSound('select');
+        stopConfetti();
+        state.mode = mode;
+        state.difficulty = state.selectedDifficulty;
+        state.questions = generateQuestionSet(state.difficulty, TOTAL_QUESTIONS);
+        state.currentQuestionIdx = 0;
+
+        const modeBadge = document.getElementById('game-mode-badge');
+        const timerBox = document.getElementById('timer-box');
+        if (mode === 'timeattack') {
+          modeBadge.textContent = '⏱️ タイムアタック';
+          modeBadge.className = 'bg-rose-600 text-white text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded-xl shadow-xs';
+          timerBox.classList.remove('hidden');
+          startTimer();
+        } else {
+          modeBadge.textContent = '📘 練習モード';
+          modeBadge.className = 'bg-emerald-600 text-white text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded-xl shadow-xs';
+          timerBox.classList.add('hidden');
+          stopTimer();
+        }
+
+        document.getElementById('game-diff-badge').textContent = DIFF_LABELS[state.difficulty];
+        switchScreen('game-screen');
+        loadQuestion(0);
+      }
+
+      /**
+       * 7. タイムアタック計測タイマー
+       */
+      function startTimer() {
+        stopTimer();
+        state.startTime = performance.now();
+        state.elapsedSeconds = 0;
+        document.getElementById('timer-display').textContent = '0.0';
+
+        state.timerInterval = setInterval(function () {
+          const now = performance.now();
+          state.elapsedSeconds = (now - state.startTime) / 1000;
+          document.getElementById('timer-display').textContent = state.elapsedSeconds.toFixed(1);
+        }, 100);
+      }
+
+      function stopTimer() {
+        if (state.timerInterval) {
+          clearInterval(state.timerInterval);
+          state.timerInterval = null;
+        }
+      }
+
+      /**
+       * 8. 各問題の読み込み・履歴管理
+       */
+      function loadQuestion(index) {
+        state.currentQuestionIdx = index;
+        const prob = state.questions[index];
+
+        state.leftTerms = prob.left.map(function (t) {
+          return { id: generateId(), type: t.type, coef: t.coef };
+        });
+        state.rightTerms = prob.right.map(function (t) {
+          return { id: generateId(), type: t.type, coef: t.coef };
+        });
+        state.historyStack = [];
+        state.selectedIds.clear();
+        state.isAnimating = false;
+        state.isStepCleared = false;
+
+        document.getElementById('question-number').textContent = String(index + 1);
+        document.getElementById('progress-bar').style.width = ((index / TOTAL_QUESTIONS) * 100) + '%';
+        document.getElementById('step-clear-overlay').classList.add('hidden');
+
+        if (state.mode === 'practice') {
+          showMessage(prob.hint, 'info');
+        } else {
+          showMessage('ブロックをタッチして素早く移項・計算しよう！', 'info');
+        }
+
+        render();
+      }
+
+      function pushHistory() {
+        state.historyStack.push({
+          left: state.leftTerms.map(function (t) { return { id: t.id, type: t.type, coef: t.coef }; }),
+          right: state.rightTerms.map(function (t) { return { id: t.id, type: t.type, coef: t.coef }; })
+        });
+      }
+
+      function undoStep() {
+        if (state.isAnimating || state.isStepCleared || state.historyStack.length === 0) return;
+        playSound('select');
+        const prev = state.historyStack.pop();
+        state.leftTerms = prev.left;
+        state.rightTerms = prev.right;
+        state.selectedIds.clear();
+        showMessage('1つ前の状態に戻しました', 'info');
+        render();
+      }
+
+      function resetCurrentProblem() {
+        if (state.isAnimating || state.isStepCleared) return;
+        playSound('select');
+        loadQuestion(state.currentQuestionIdx);
+        showMessage('この問題の最初に戻しました！', 'info');
+      }
+
+      function showCurrentHint() {
+        if (state.isStepCleared) return;
+        playSound('select');
+        const prob = state.questions[state.currentQuestionIdx];
+        showMessage('💡 ヒント：' + prob.hint, 'info');
+      }
+
+      /**
+       * 9. 数式フォーマット＆画面レンダリング
+       */
+      function formatTermForBlock(term, isFirst) {
+        const sign = term.coef < 0 ? '－' : (isFirst ? '' : '＋');
+        const absCoef = Math.abs(term.coef);
+
+        if (term.type === 'x') {
+          const numPart = absCoef === 1 ? '' : String(absCoef);
+          return sign + numPart + 'x';
+        } else {
+          return sign + String(absCoef);
+        }
+      }
+
+      function formatSideExpression(terms) {
+        if (terms.length === 0) return '0';
+        return terms.map(function (t, idx) {
+          const sign = t.coef < 0 ? ' - ' : (idx === 0 ? '' : ' + ');
+          const absCoef = Math.abs(t.coef);
+          if (t.type === 'x') {
+            return sign + (absCoef === 1 ? '' : String(absCoef)) + 'x';
+          } else {
+            return sign + String(absCoef);
+          }
+        }).join('');
+      }
+
+      function showMessage(text, type) {
+        const bar = document.getElementById('message-bar');
+        bar.textContent = text;
+        bar.className = 'mt-1 text-center text-xs sm:text-sm font-bold py-1.5 px-3 rounded-xl transition-all duration-300 ';
+        if (type === 'error') {
+          bar.className += 'bg-rose-100 text-rose-700 border border-rose-200';
+        } else if (type === 'success') {
+          bar.className += 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+        } else {
+          bar.className += 'bg-indigo-50 text-indigo-700 border border-indigo-100';
+        }
+      }
+
+      function render() {
+        const leftStr = formatSideExpression(state.leftTerms);
+        const rightStr = formatSideExpression(state.rightTerms);
+        document.getElementById('equation-display').textContent = leftStr + ' = ' + rightStr;
+
+        renderPan('left-pan', state.leftTerms);
+        renderPan('right-pan', state.rightTerms);
+
+        document.getElementById('btn-undo').disabled = (state.historyStack.length === 0);
+        updateActionButtons();
+        checkStepClearCondition();
+      }
+
+      function renderPan(containerId, terms) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+
+        if (terms.length === 0) {
+          const emptyZero = document.createElement('div');
+          emptyZero.className = 'math-font text-2xl sm:text-3xl font-extrabold text-slate-300 px-4 py-3';
+          emptyZero.textContent = '0';
+          container.appendChild(emptyZero);
+          return;
+        }
+
+        terms.forEach(function (term, index) {
+          const isSelected = state.selectedIds.has(term.id);
+          const btn = document.createElement('button');
+          btn.id = term.id;
+          btn.type = 'button';
+
+          const colorClasses = term.type === 'x'
+            ? 'bg-gradient-to-b from-sky-400 to-sky-600 text-white border-sky-700 shadow-[0_4px_0_#0369a1]'
+            : 'bg-gradient-to-b from-amber-400 to-amber-500 text-white border-amber-700 shadow-[0_4px_0_#b45309]';
+
+          const selectedClasses = isSelected
+            ? 'selected ring-4 ring-indigo-500 ring-offset-2 brightness-110'
+            : '';
+
+          const animClasses = term.isNew ? 'anim-pop-in' : '';
+          if (term.isNew) {
+            delete term.isNew;
+          }
+
+          btn.className = 'term-block math-font text-xl sm:text-3xl font-extrabold px-4 py-3 sm:px-5 sm:py-4 rounded-2xl border-b-2 min-w-[66px] sm:min-w-[82px] flex items-center justify-center ' + colorClasses + ' ' + selectedClasses + ' ' + animClasses;
+          btn.textContent = formatTermForBlock(term, index === 0);
+
+          btn.addEventListener('click', function () {
+            toggleSelectTerm(term.id);
+          });
+          container.appendChild(btn);
+        });
+      }
+
+      function toggleSelectTerm(id) {
+        if (state.isAnimating || state.isStepCleared) return;
+        playSound('select');
+
+        if (state.selectedIds.has(id)) {
+          state.selectedIds.delete(id);
+        } else {
+          state.selectedIds.add(id);
+        }
+        render();
+      }
+
+      /**
+       * 10. アクション実行（移項・計算してまとめる・仕上げ）
+       */
+      function hasCalculableTerms(terms) {
+        const xCount = terms.filter(function (t) { return t.type === 'x'; }).length;
+        const constCount = terms.filter(function (t) { return t.type === 'const'; }).length;
+        return xCount >= 2 || constCount >= 2;
+      }
+
+      function analyzeFinishState() {
+        const L = state.leftTerms;
+        const R = state.rightTerms;
+
+        // パターンA: 左辺が ax (1項)、右辺が b (1項または0)
+        if (L.length === 1 && L[0].type === 'x' && (R.length === 0 || (R.length === 1 && R[0].type === 'const'))) {
+          const a = L[0].coef;
+          const b = R.length === 0 ? 0 : R[0].coef;
+          if (a !== 1 && a !== 0) {
+            return {
+              ready: true,
+              mode: 'divide_left',
+              a: a,
+              b: b,
+              label: '÷ (' + a + ') をして仕上げる！',
+              sub: 'x の係数「' + a + '」で両辺を割ろう'
+            };
+          }
+        }
+
+        // パターンB: 右辺が ax (1項)、左辺が b (1項または0)
+        if (R.length === 1 && R[0].type === 'x' && (L.length === 0 || (L.length === 1 && L[0].type === 'const'))) {
+          return {
+            ready: true,
+            mode: 'swap_sides',
+            label: '左辺と右辺を入れ替える！',
+            sub: 'x を左辺に持ってこよう'
+          };
+        }
+
+        return { ready: false };
+      }
+
+      function updateActionButtons() {
+        const btnTranspose = document.getElementById('btn-transpose');
+        const btnCombine = document.getElementById('btn-combine');
+        const btnFinish = document.getElementById('btn-finish');
+        const btnFinishLabel = document.getElementById('btn-finish-label');
+        const btnFinishSub = document.getElementById('btn-finish-sub');
+
+        btnTranspose.disabled = (state.selectedIds.size === 0);
+
+        const canCombine = hasCalculableTerms(state.leftTerms) || hasCalculableTerms(state.rightTerms);
+        btnCombine.disabled = !canCombine;
+
+        const finishState = analyzeFinishState();
+        if (finishState.ready) {
+          btnFinish.disabled = false;
+          btnFinish.classList.add('animate-pulse');
+          btnFinishLabel.textContent = finishState.label;
+          btnFinishSub.textContent = finishState.sub;
+        } else {
+          btnFinish.disabled = true;
+          btnFinish.classList.remove('animate-pulse');
+          btnFinishLabel.textContent = '仕上げ（x = の形に）';
+          btnFinishSub.textContent = 'ax = b の形になると使える！';
+        }
+      }
+
+      function handleTranspose() {
+        if (state.isAnimating || state.isStepCleared) return;
+        if (state.selectedIds.size === 0) {
+          playSound('error');
+          showMessage('移項したいブロックをタッチして選んでね！', 'error');
+          return;
+        }
+
+        pushHistory();
+        state.isAnimating = true;
+        playSound('transpose');
+
+        state.selectedIds.forEach(function (id) {
+          const el = document.getElementById(id);
+          if (!el) return;
+          const isLeft = state.leftTerms.some(function (t) { return t.id === id; });
+          el.classList.remove('selected');
+          el.classList.add(isLeft ? 'anim-transpose-right' : 'anim-transpose-left');
+        });
+
+        setTimeout(function () {
+          const movingFromLeft = state.leftTerms.filter(function (t) { return state.selectedIds.has(t.id); });
+          const movingFromRight = state.rightTerms.filter(function (t) { return state.selectedIds.has(t.id); });
+
+          state.leftTerms = state.leftTerms.filter(function (t) { return !state.selectedIds.has(t.id); });
+          state.rightTerms = state.rightTerms.filter(function (t) { return !state.selectedIds.has(t.id); });
+
+          movingFromLeft.forEach(function (t) {
+            state.rightTerms.push({ id: generateId(), type: t.type, coef: -t.coef, isNew: true });
+          });
+          movingFromRight.forEach(function (t) {
+            state.leftTerms.push({ id: generateId(), type: t.type, coef: -t.coef, isNew: true });
+          });
+
+          state.selectedIds.clear();
+          state.isAnimating = false;
+          showMessage('移項して符号（＋と－）が反転したよ！', 'success');
+          render();
+        }, 320);
+      }
+
+      function combineSideTerms(terms) {
+        let xSum = 0;
+        let hasX = false;
+        let constSum = 0;
+        let hasConst = false;
+
+        terms.forEach(function (t) {
+          if (t.type === 'x') {
+            xSum += t.coef;
+            hasX = true;
+          } else {
+            constSum += t.coef;
+            hasConst = true;
+          }
+        });
+
+        const result = [];
+        if (hasX && xSum !== 0) {
+          result.push({ id: generateId(), type: 'x', coef: xSum, isNew: true });
+        }
+        if (hasConst && constSum !== 0) {
+          result.push({ id: generateId(), type: 'const', coef: constSum, isNew: true });
+        }
+        return result;
+      }
+
+      function handleCombine() {
+        if (state.isAnimating || state.isStepCleared) return;
+
+        if (!hasCalculableTerms(state.leftTerms) && !hasCalculableTerms(state.rightTerms)) {
+          playSound('error');
+          showMessage('同じ辺にまとめられる文字の項や数の項がないよ！', 'error');
+          return;
+        }
+
+        pushHistory();
+        playSound('combine');
+        state.selectedIds.clear();
+
+        state.leftTerms = combineSideTerms(state.leftTerms);
+        state.rightTerms = combineSideTerms(state.rightTerms);
+
+        showMessage('文字の項どうし・数の項どうしを計算してまとめたよ！', 'success');
+        render();
+
+        setTimeout(function () {
+          document.querySelectorAll('.term-block').forEach(function (el) {
+            el.classList.add('anim-combine');
+          });
+        }, 10);
+      }
+
+      function handleFinish() {
+        if (state.isAnimating || state.isStepCleared) return;
+        const info = analyzeFinishState();
+        if (!info.ready) return;
+
+        pushHistory();
+        playSound('combine');
+        state.selectedIds.clear();
+
+        if (info.mode === 'swap_sides') {
+          const stage = document.getElementById('stage-container');
+          stage.classList.add('anim-swap');
+          setTimeout(function () {
+            stage.classList.remove('anim-swap');
+          }, 400);
+
+          const temp = state.leftTerms;
+          state.leftTerms = state.rightTerms;
+          state.rightTerms = temp;
+          showMessage('左辺と右辺を入れ替えたよ！', 'success');
+          render();
+        } else if (info.mode === 'divide_left') {
+          const ans = info.b / info.a;
+          state.leftTerms = [{ id: generateId(), type: 'x', coef: 1, isNew: true }];
+          state.rightTerms = [{ id: generateId(), type: 'const', coef: ans, isNew: true }];
+          showMessage('両辺を ' + info.a + ' で割って解が求まったよ！', 'success');
+          render();
+        }
+      }
+
+      /**
+       * 11. 1問クリア＆10問達成リザルト判定
+       */
+      function checkStepClearCondition() {
+        if (state.isStepCleared) return;
+
+        const L = state.leftTerms;
+        const R = state.rightTerms;
+
+        const isLeftJustX = (L.length === 1 && L[0].type === 'x' && L[0].coef === 1);
+        const isRightConst = ((R.length === 1 && R[0].type === 'const') || R.length === 0);
+
+        if (isLeftJustX && isRightConst) {
+          state.isStepCleared = true;
+          const finalVal = R.length === 0 ? 0 : R[0].coef;
+
+          const nextIdx = state.currentQuestionIdx + 1;
+          document.getElementById('progress-bar').style.width = ((nextIdx / TOTAL_QUESTIONS) * 100) + '%';
+
+          if (nextIdx >= TOTAL_QUESTIONS) {
+            stopTimer();
+            playSound('all_clear');
+            document.getElementById('step-clear-answer').textContent = 'x = ' + finalVal;
+            document.getElementById('step-clear-overlay').classList.remove('hidden');
+
+            setTimeout(function () {
+              showResultScreen();
+            }, 850);
+          } else {
+            playSound('step_clear');
+            document.getElementById('step-clear-answer').textContent = 'x = ' + finalVal;
+            document.getElementById('step-clear-overlay').classList.remove('hidden');
+
+            setTimeout(function () {
+              if (state.isStepCleared) {
+                loadQuestion(nextIdx);
+              }
+            }, 850);
+          }
+        }
+      }
+
+      function showResultScreen() {
+        const modeLabel = state.mode === 'timeattack' ? 'タイムアタック' : '練習モード';
+        document.getElementById('result-badge').textContent = modeLabel + '・' + DIFF_LABELS[state.difficulty];
+
+        const timePanel = document.getElementById('result-time-panel');
+        const practicePanel = document.getElementById('result-practice-panel');
+        const newRecordBanner = document.getElementById('new-record-banner');
+
+        if (state.mode === 'timeattack') {
+          timePanel.classList.remove('hidden');
+          practicePanel.classList.add('hidden');
+
+          const finalTime = Number(state.elapsedSeconds.toFixed(1));
+          document.getElementById('result-final-time').textContent = finalTime.toFixed(1);
+
+          const res = saveBestTime(state.difficulty, finalTime);
+          document.getElementById('result-best-time').textContent = res.bestTime.toFixed(1) + ' 秒';
+
+          if (res.isNewRecord) {
+            newRecordBanner.classList.remove('hidden');
+          } else {
+            newRecordBanner.classList.add('hidden');
+          }
+        } else {
+          timePanel.classList.add('hidden');
+          practicePanel.classList.remove('hidden');
+        }
+
+        switchScreen('result-screen');
+        startConfetti();
+      }
+
+      /**
+       * 12. 紙吹雪パーティクルアニメーション
+       */
+      let confettiAnimId = null;
+      function startConfetti() {
+        const canvas = document.getElementById('confetti-canvas');
+        canvas.classList.remove('hidden');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#0ea5e9'];
+        const particles = [];
+        for (let i = 0; i < 95; i++) {
+          particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            w: Math.random() * 10 + 6,
+            h: Math.random() * 6 + 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            speedY: Math.random() * 3 + 2.5,
+            speedX: Math.random() * 2 - 1,
+            angle: Math.random() * 360,
+            spin: Math.random() * 8 - 4
+          });
+        }
+
+        function draw() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          particles.forEach(function (p) {
+            p.y += p.speedY;
+            p.x += p.speedX;
+            p.angle += p.spin;
+            if (p.y > canvas.height) {
+              p.y = -15;
+            }
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.angle * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            ctx.restore();
+          });
+          confettiAnimId = requestAnimationFrame(draw);
+        }
+        draw();
+      }
+
+      function stopConfetti() {
+        if (confettiAnimId) {
+          cancelAnimationFrame(confettiAnimId);
+          confettiAnimId = null;
+        }
+        const canvas = document.getElementById('confetti-canvas');
+        if (canvas) {
+          canvas.classList.add('hidden');
+        }
+      }
+
+      /**
+       * 13. イベントリスナーの一括バインドと初期化
+       */
+      function initApp() {
+        // ミュート切替ボタン（タイトル画面・ゲーム画面の両方）
+        document.querySelectorAll('.mute-toggle-btn').forEach(function (btn) {
+          btn.addEventListener('click', toggleMute);
+        });
+
+        // 難易度選択カード
+        document.querySelectorAll('.diff-card').forEach(function (card) {
+          card.addEventListener('click', function () {
+            const diff = card.getAttribute('data-diff');
+            if (diff) {
+              selectTitleDifficulty(diff);
+            }
+          });
+        });
+
+        // モード開始ボタン
+        document.getElementById('btn-start-practice').addEventListener('click', function () {
+          startGame('practice');
+        });
+        document.getElementById('btn-start-timeattack').addEventListener('click', function () {
+          startGame('timeattack');
+        });
+
+        // ベストタイムリセットモーダル関連
+        document.getElementById('btn-open-reset').addEventListener('click', openResetBestModal);
+        document.getElementById('btn-cancel-reset').addEventListener('click', closeResetBestModal);
+        document.getElementById('btn-confirm-reset').addEventListener('click', confirmResetBestTimes);
+
+        // ゲームプレイ画面ヘッダー・サブボタン
+        document.getElementById('btn-back-title').addEventListener('click', returnToTitle);
+        document.getElementById('btn-undo').addEventListener('click', undoStep);
+        document.getElementById('btn-reset-problem').addEventListener('click', resetCurrentProblem);
+        document.getElementById('btn-hint').addEventListener('click', showCurrentHint);
+
+        // ゲームプレイ画面メインアクションボタン
+        document.getElementById('btn-transpose').addEventListener('click', handleTranspose);
+        document.getElementById('btn-combine').addEventListener('click', handleCombine);
+        document.getElementById('btn-finish').addEventListener('click', handleFinish);
+
+        // リザルト画面ボタン
+        document.getElementById('btn-retry-same').addEventListener('click', function () {
+          startGame(state.mode);
+        });
+        document.getElementById('btn-result-title').addEventListener('click', returnToTitle);
+
+        // リサイズ時の紙吹雪キャンバス追従
+        window.addEventListener('resize', function () {
+          const canvas = document.getElementById('confetti-canvas');
+          if (canvas && !canvas.classList.contains('hidden')) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+          }
+        });
+
+        // 初期表示更新
+        updateTitleBestTimesUI();
+        selectTitleDifficulty('beginner');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+      } else {
+        initApp();
+      }
+    })();
+  </script>
+</body>
+</html>
