@@ -1,13 +1,94 @@
+from pathlib import Path
 
-<!DOCTYPE html>
+html = r'''<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>数学練習アプリ</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1d4ed8">
+<title>数学アプリ集</title>
+<style>
+:root{--blue:#1d4ed8;--ink:#172033;--muted:#64748b;--line:#dbe3ee;--bg:#f4f7fb}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
+main{width:min(100%,680px);margin:auto;padding:24px 16px 40px}
+header{text-align:center;padding:28px 12px 24px}
+.mark{display:inline-grid;place-items:center;width:58px;height:58px;border-radius:18px;background:#dbeafe;color:var(--blue);font-size:28px;margin-bottom:12px}
+h1{font-size:clamp(27px,7vw,36px);margin:0 0 8px;letter-spacing:.02em}
+.lead{color:var(--muted);font-size:14px;line-height:1.7;margin:0}
+.section-title{font-size:17px;margin:8px 2px 12px}
+.card{display:block;text-decoration:none;color:inherit;background:white;border:1px solid var(--line);border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 4px 14px #0f172a08;transition:transform .12s,box-shadow .12s}
+.card:active{transform:translateY(1px)}
+.card-main{display:flex;align-items:center;gap:14px}
+.icon{flex:0 0 52px;height:52px;display:grid;place-items:center;border-radius:15px;background:#eff6ff;color:var(--blue);font-size:25px;font-weight:800}
+.card h2{font-size:18px;margin:0 0 4px}
+.card p{font-size:13px;color:var(--muted);margin:0;line-height:1.55}
+.arrow{margin-left:auto;color:var(--blue);font-size:22px;padding-left:8px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0 66px}
+.tag{font-size:11px;color:#1e40af;background:#eff6ff;border-radius:999px;padding:4px 9px}
+.coming{opacity:.76}
+.coming .icon{background:#f1f5f9;color:#64748b}
+.coming .arrow{color:#94a3b8}
+.badge{font-size:11px;font-weight:700;color:#166534;background:#dcfce7;padding:4px 8px;border-radius:999px;margin-left:8px;vertical-align:middle}
+.how{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:24px}
+.how h2{font-size:15px;margin:0 0 8px}
+.how p{font-size:13px;color:var(--muted);line-height:1.7;margin:0}
+footer{text-align:center;color:#94a3b8;font-size:11px;margin-top:24px}
+</style>
 </head>
 <body>
-  <h1>数学練習アプリ</h1>
-  <p>GitHubでWebページを作成しました！</p>
+<main>
+<header>
+  <div class="mark" aria-hidden="true">∑</div>
+  <h1>数学アプリ集</h1>
+  <p class="lead">中学校数学の計算練習・学び直しに使えるアプリです。<br>使いたい内容を選んで取り組みましょう。</p>
+</header>
+
+<h2 class="section-title">アプリを選ぶ</h2>
+
+<a class="card" href="./positive-negative.html">
+  <div class="card-main">
+    <div class="icon" aria-hidden="true">＋−</div>
+    <div>
+      <h2>正負の数 <span class="badge">公開中</span></h2>
+      <p>加法・減法のタイムアタックに挑戦しよう。</p>
+    </div>
+    <div class="arrow" aria-hidden="true">›</div>
+  </div>
+  <div class="tags"><span class="tag">基本</span><span class="tag">標準</span><span class="tag">発展</span><span class="tag">30秒チャレンジ</span></div>
+</a>
+
+<div class="card coming" aria-label="方程式アプリは準備中">
+  <div class="card-main">
+    <div class="icon" aria-hidden="true">x</div>
+    <div>
+      <h2>方程式</h2>
+      <p>方程式の計算練習アプリ（準備中）</p>
+    </div>
+    <div class="arrow" aria-hidden="true">…</div>
+  </div>
+</div>
+
+<div class="card coming" aria-label="文字式アプリは準備中">
+  <div class="card-main">
+    <div class="icon" aria-hidden="true">ab</div>
+    <div>
+      <h2>文字式</h2>
+      <p>文字式の計算練習アプリ（準備中）</p>
+    </div>
+    <div class="arrow" aria-hidden="true">…</div>
+  </div>
+</div>
+
+<section class="how">
+  <h2>使い方</h2>
+  <p>使いたいアプリをタップしてください。アプリはブラウザ上で動作します。インストールは必要ありません。</p>
+</section>
+<footer>数学アプリ集 · 学習用</footer>
+</main>
 </body>
 </html>
+'''
+path = Path("/mnt/data/index.html")
+path.write_text(html, encoding="utf-8")
+print(f"トップページ用ファイルを作成しました: {path}（{path.stat().st_size:,} bytes）")
