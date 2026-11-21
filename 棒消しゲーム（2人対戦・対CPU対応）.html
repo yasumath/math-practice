@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>棒消しゲーム - 数学の授業用アプリ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* 基本リセットとフォント設定（外部CSSフレームワークに依存しない完全自己完結スタイル） */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f4f6f0;
+            background-image: radial-gradient(#d5dec9 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* ヘッダー */
+        .app-header {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-bottom: 1px solid #e2e8f0;
+            padding: 10px 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        .header-inner {
+            max-width: 860px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background-color: #047857;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 18px;
+            box-shadow: 0 2px 4px rgba(4, 120, 87, 0.25);
+        }
+
+        .brand-title {
+            font-size: 18px;
+            font-weight: 900;
+            color: #1e293b;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .brand-sub {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .remaining-badge {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            background-color: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        @media (min-width: 640px) {
+            .remaining-badge {
+                display: flex;
+            }
+            .brand-title {
+                font-size: 20px;
+            }
+        }
+
+        .remaining-num {
+            font-size: 18px;
+            font-weight: 900;
+            color: #047857;
+        }
+
+        .btn-rules {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background-color: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .btn-rules:hover {
+            background-color: #fef3c7;
+        }
+
+        /* メインコンテナ */
+        .main-container {
+            flex: 1;
+            width: 100%;
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 12px 14px 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        /* モード・設定パネル */
+        .settings-card {
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .segmented-group {
+            display: inline-flex;
+            background-color: #f1f5f9;
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .seg-btn {
+            border: none;
+            background: transparent;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            white-space: nowrap;
+        }
+
+        .seg-btn.active {
+            background-color: #047857;
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(4, 120, 87, 0.25);
+        }
+
+        .cpu-options {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cpu-options.hidden {
+            display: none;
+        }
+
+        .option-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+        }
+
+        .seg-btn-sm {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .seg-btn-sm.active-blue {
+            background-color: #2563eb;
+            color: #ffffff;
+        }
+
+        .seg-btn-sm.active-purple {
+            background-color: #7c3aed;
+            color: #ffffff;
+        }
+
+        /* 手番バナー */
+        .turn-banner {
+            width: 100%;
+            border-radius: 16px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 2px solid #60a5fa;
+            background-color: #2563eb;
+            color: #ffffff;
+            transition: background-color 0.25s ease, border-color 0.25s ease;
+        }
+
+        .turn-banner.p2-theme {
+            background-color: #ea580c;
+            border-color: #fb923c;
+        }
+
+        .turn-banner.cpu-theme {
+            background-color: #7c3aed;
+            border-color: #a78bfa;
+        }
+
+        .turn-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .player-badge {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background-color: rgba(255, 255, 255, 0.22);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 18px;
+        }
+
+        .turn-sub {
+            font-size: 11px;
+            font-weight: 700;
+            opacity: 0.9;
+        }
+
+        .turn-main {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 0.02em;
+        }
+
+        .turn-right {
+            text-align: right;
+        }
+
+        .mobile-remaining {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        @media (min-width: 640px) {
+            .mobile-remaining {
+                display: none;
+            }
+            .turn-main {
+                font-size: 22px;
+            }
+        }
+
+        .selection-pill {
+            display: inline-block;
+            background-color: rgba(0, 0, 0, 0.22);
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* ガイド・メッセージトースト */
+        .feedback-area {
+            width: 100%;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feedback-toast {
+            padding: 7px 16px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 700;
+            background-color: #ffffff;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .feedback-toast.warning {
+            background-color: #fff1f2;
+            color: #be123c;
+            border-color: #fda4af;
+            animation: shake 0.35s ease-in-out;
+        }
+
+        .feedback-toast.success {
+            background-color: #ecfdf5;
+            color: #065f46;
+            border-color: #6ee7b7;
+        }
+
+        .feedback-toast.cpu-msg {
+            background-color: #f5f3ff;
+            color: #5b21b6;
+            border-color: #c4b5fd;
+        }
+
+        .feedback-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #10b981;
+            flex-shrink: 0;
+        }
+
+        .feedback-toast.warning .feedback-dot {
+            background-color: #e11d48;
+        }
+
+        .feedback-toast.cpu-msg .feedback-dot {
+            background-color: #7c3aed;
+            animation: pulseDot 0.8s infinite alternate;
+        }
+
+        @keyframes pulseDot {
+            from { opacity: 0.4; transform: scale(0.85); }
+            to { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* 黒板風ゲーム盤面 */
+        .chalkboard-card {
+            background-color: #1e3a2f;
+            border: 8px solid #8b5a2b;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), inset 0 0 30px rgba(0, 0, 0, 0.45);
+            width: 100%;
+            padding: 20px 14px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pyramid-board {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .board-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 540px;
+            position: relative;
+            min-height: 64px;
+        }
+
+        .row-label {
+            position: absolute;
+            left: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.85);
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 4px 10px;
+            border-radius: 9999px;
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .sticks-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding-left: 58px;
+            padding-right: 12px;
+        }
+
+        @media (min-width: 640px) {
+            .board-row {
+                min-height: 74px;
+            }
+            .row-label {
+                left: 12px;
+                font-size: 14px;
+                padding: 5px 12px;
+            }
+            .sticks-group {
+                gap: 28px;
+                padding-left: 74px;
+                padding-right: 24px;
+            }
+        }
+
+        /* 棒のタップ領域 */
+        .stick-wrapper {
+            position: relative;
+            width: 34px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            padding: 0;
+            border-radius: 10px;
+            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+            touch-action: manipulation;
+        }
+
+        @media (min-width: 640px) {
+            .stick-wrapper {
+                width: 40px;
+                height: 74px;
+            }
+        }
+
+        .stick-wrapper:active:not(.removed):not(:disabled) {
+            transform: scale(0.92);
+        }
+
+        /* 棒の本体グラフィック（明示的な寸法と背景色を保証） */
+        .stick-body {
+            width: 14px;
+            height: 56px;
+            border-radius: 7px;
+            background: linear-gradient(180deg, #fef08a 0%, #eab308 65%, #ca8a04 100%);
+            border: 1.5px solid #fef9c3;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.35), inset 0 2px 3px rgba(255, 255, 255, 0.5);
+            position: relative;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        @media (min-width: 640px) {
+            .stick-body {
+                width: 15px;
+                height: 64px;
+                border-radius: 7.5px;
+            }
+        }
+
+        .stick-head {
+            width: 100%;
+            height: 10px;
+            background-color: #ef4444;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+            transition: background-color 0.2s ease;
+        }
+
+        /* プレイヤー1 選択中 */
+        .p1-turn .stick-wrapper.selected .stick-body {
+            background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+            border-color: #dbeafe;
+            transform: translateY(-7px) scale(1.1);
+            box-shadow: 0 10px 18px rgba(37, 99, 235, 0.55), 0 0 0 3px #93c5fd;
+        }
+        .p1-turn .stick-wrapper.selected .stick-head {
+            background-color: #1d4ed8;
+        }
+
+        /* プレイヤー2 選択中 */
+        .p2-turn .stick-wrapper.selected .stick-body {
+            background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%);
+            border-color: #ffedd5;
+            transform: translateY(-7px) scale(1.1);
+            box-shadow: 0 10px 18px rgba(234, 88, 12, 0.55), 0 0 0 3px #fdba74;
+        }
+        .p2-turn .stick-wrapper.selected .stick-head {
+            background-color: #c2410c;
+        }
+
+        /* CPU 思考・選択ハイライト */
+        .cpu-turn .stick-wrapper.selected .stick-body {
+            background: linear-gradient(180deg, #c084fc 0%, #7c3aed 100%);
+            border-color: #f3e8ff;
+            transform: translateY(-7px) scale(1.12);
+            box-shadow: 0 10px 20px rgba(124, 58, 237, 0.65), 0 0 0 3px #d8b4fe;
+        }
+        .cpu-turn .stick-wrapper.selected .stick-head {
+            background-color: #5b21b6;
+        }
+
+        /* 選択中の斜め取り消し線 */
+        .stick-wrapper.selected::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 8%;
+            width: 84%;
+            height: 4px;
+            background-color: #ffffff;
+            border-radius: 2px;
+            transform: translateY(-50%) rotate(-25deg);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* 消去済みの棒 */
+        .stick-wrapper.removed {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .stick-wrapper.removed .stick-body {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1.5px dashed rgba(255, 255, 255, 0.25);
+            box-shadow: none;
+            transform: scale(0.92);
+        }
+
+        .stick-wrapper.removed .stick-head {
+            background-color: transparent;
+            border-bottom: none;
+        }
+
+        .stick-wrapper.removed::before {
+            content: '×';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.35);
+            z-index: 1;
+        }
+
+        @media (hover: hover) {
+            .stick-wrapper:not(.removed):not(.selected):not(:disabled):hover .stick-body {
+                transform: translateY(-4px);
+                filter: brightness(1.08);
+            }
+        }
+
+        .chalk-ledge {
+            width: 75%;
+            height: 6px;
+            background-color: rgba(120, 53, 15, 0.75);
+            border-radius: 9999px;
+            margin-top: 14px;
+        }
+
+        /* 操作コントロールパネル */
+        .control-panel {
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 12px 14px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1 1 auto;
+        }
+
+        .control-group.right {
+            justify-content: flex-end;
+        }
+
+        .btn-sub {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 11px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            background-color: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-sub:hover:not(:disabled) {
+            background-color: #e2e8f0;
+        }
+
+        .btn-sub:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-confirm {
+            flex: 1 1 auto;
+            min-width: 185px;
+            padding: 13px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 900;
+            color: #ffffff;
+            background-color: #059669;
+            border: none;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-confirm:hover:not(:disabled) {
+            background-color: #10b981;
+        }
+
+        .btn-confirm:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+
+        .btn-confirm:disabled {
+            background-color: #cbd5e1;
+            color: #64748b;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* フッター */
+        .app-footer {
+            text-align: center;
+            padding: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        /* アニメーション */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        /* モーダル共通スタイル */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background-color: rgba(15, 23, 42, 0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+        }
+
+        .modal-card {
+            background-color: #ffffff;
+            border-radius: 24px;
+            max-width: 480px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.25);
+            border: 1px solid #e2e8f0;
+        }
+
+        .modal-card.result-card {
+            max-width: 420px;
+            border: 4px solid #fcd34d;
+            text-align: center;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 19px;
+            font-weight: 900;
+            margin: 0;
+            color: #1e293b;
+        }
+
+        .btn-icon-close {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .rule-highlight {
+            background-color: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .rule-list {
+            margin: 8px 0 14px;
+            padding-left: 20px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #334155;
+        }
+
+        .btn-modal-primary {
+            width: 100%;
+            padding: 13px 16px;
+            border-radius: 14px;
+            border: none;
+            background-color: #059669;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25);
+            margin-bottom: 10px;
+        }
+
+        .btn-modal-secondary {
+            width: 100%;
+            padding: 11px 16px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            background-color: #f1f5f9;
+            color: #334155;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .btn-modal-link {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ヘッダー -->
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="brand-box">
+                <div class="brand-icon">||</div>
+                <div>
+                    <h1 class="brand-title">棒消しゲーム</h1>
+                    <p class="brand-sub">数学・論理パズル教材</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="remaining-badge">
+                    <span>残り:</span>
+                    <span id="remaining-count" class="remaining-num">15</span>
+                    <span>本</span>
+                </div>
+
+                <button id="btn-rules" type="button" class="btn-rules">
+                    <span>？ ルール</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main-container">
+
+        <!-- 対戦モード・CPU設定バー -->
+        <section class="settings-card" aria-label="対戦設定">
+            <!-- 2人対戦 / 対CPU 切替 -->
+            <div class="segmented-group">
+                <button id="mode-pvp" type="button" class="seg-btn active">2人対戦</button>
+                <button id="mode-cpu" type="button" class="seg-btn">対CPU</button>
+            </div>
+
+            <!-- 対CPU専用オプション -->
+            <div id="cpu-options" class="cpu-options hidden">
+                <div class="segmented-group">
+                    <button id="order-player-first" type="button" class="seg-btn seg-btn-sm active-blue">プレイヤー先攻</button>
+                    <button id="order-cpu-first" type="button" class="seg-btn seg-btn-sm">CPU先攻</button>
+                </div>
+
+                <div class="segmented-group">
+                    <button id="diff-weak" type="button" class="seg-btn seg-btn-sm">よわい</button>
+                    <button id="diff-normal" type="button" class="seg-btn seg-btn-sm active-purple">ふつう</button>
+                    <button id="diff-strong" type="button" class="seg-btn seg-btn-sm">つよい</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- プレイヤー手番バナー -->
+        <div id="turn-banner" class="turn-banner">
+            <div class="turn-left">
+                <div id="player-badge" class="player-badge">P1</div>
+                <div>
+                    <div id="turn-sub" class="turn-sub">現在の手番</div>
+                    <div id="turn-text" class="turn-main">プレイヤー1 の番</div>
+                </div>
+            </div>
+
+            <div class="turn-right">
+                <div class="mobile-remaining">
+                    残り <span id="remaining-count-mobile" style="font-size:15px; font-weight:900;">15</span> 本
+                </div>
+                <div id="selection-status" class="selection-pill">
+                    消す棒を選んでください
+                </div>
+            </div>
+        </div>
+
+        <!-- ガイド・エラー通知エリア -->
+        <div class="feedback-area">
+            <div id="feedback-toast" class="feedback-toast">
+                <span class="feedback-dot"></span>
+                <span id="feedback-text">同じ段の「隣り合う棒」をタップして選択し、「決定」を押してください</span>
+            </div>
+        </div>
+
+        <!-- ゲーム盤面（黒板モチーフ） -->
+        <div id="board-container" class="chalkboard-card p1-turn">
+            <div id="pyramid-board" class="pyramid-board"></div>
+            <div class="chalk-ledge"></div>
+        </div>
+
+        <!-- 操作コントロールパネル -->
+        <div class="control-panel">
+            <div class="control-group">
+                <button id="btn-undo" type="button" disabled class="btn-sub">
+                    <span>↩ 1手戻る</span>
+                </button>
+
+                <button id="btn-reset" type="button" class="btn-sub">
+                    <span>↻ 最初から</span>
+                </button>
+            </div>
+
+            <div class="control-group right">
+                <button id="btn-clear" type="button" disabled class="btn-sub">
+                    <span>選択解除</span>
+                </button>
+
+                <button id="btn-confirm" type="button" disabled class="btn-confirm">
+                    <span id="confirm-btn-text">選択した棒を消す</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="app-footer">
+        棒消しゲーム｜最後の1本を消したプレイヤーが負け
+    </footer>
+
+    <!-- ルール説明モーダル -->
+    <div id="rules-modal" class="modal-backdrop">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 class="modal-title">📖 棒消しゲームのルール</h2>
+                <button id="btn-close-rules" type="button" class="btn-icon-close">✕</button>
+            </div>
+
+            <div class="rule-highlight">
+                <strong style="color:#065f46; display:block; margin-bottom:4px;">🎯 勝敗のルール</strong>
+                交互に棒を消していき、<strong style="color:#be123c; text-decoration:underline;">最後の1本を消した人が「負け」</strong>です！
+            </div>
+
+            <strong style="font-size:14px;">✅ 棒の消し方（3つの約束）</strong>
+            <ul class="rule-list">
+                <li>自分の番では、<strong>1本以上</strong>の棒を消します。</li>
+                <li>複数本を同時に消すときは、<strong>「同じ段」</strong>の棒だけ選べます。</li>
+                <li><strong>「隣り合っている（連続している）」</strong>棒しか同時に消せません。（すでに消された棒を飛び越えることはできません）</li>
+            </ul>
+
+            <button id="btn-confirm-rules" type="button" class="btn-modal-primary" style="margin-bottom:0;">
+                わかった！ゲームに戻る
+            </button>
+        </div>
+    </div>
+
+    <!-- 勝敗リザルトモーダル -->
+    <div id="result-modal" class="modal-backdrop">
+        <div class="modal-card result-card">
+            <div style="display:inline-block; padding:4px 12px; border-radius:9999px; background:#fef3c7; color:#92400e; font-weight:900; font-size:12px; margin-bottom:8px;">
+                GAME SET!
+            </div>
+            <div style="font-size:48px; margin-bottom:8px;">🏆</div>
+            <p id="result-loser-text" style="font-size:15px; font-weight:700; color:#64748b; margin:0 0 4px;">
+                プレイヤー1 が最後の棒を消しました
+            </p>
+            <h2 id="result-winner-text" style="font-size:26px; font-weight:900; color:#2563eb; margin:0 0 20px;">
+                プレイヤー2 の勝ち！
+            </h2>
+
+            <button id="btn-rematch-swap" type="button" class="btn-modal-primary">
+                ⇄ 先攻・後攻を交代してもう1回
+            </button>
+            <button id="btn-rematch-same" type="button" class="btn-modal-secondary">
+                同じ順番でもう1回遊ぶ
+            </button>
+            <button id="btn-close-result" type="button" class="btn-modal-link">
+                盤面を見る（1手戻ることもできます）
+            </button>
+        </div>
+    </div>
+
+    <!-- リセット確認モーダル -->
+    <div id="reset-confirm-modal" class="modal-backdrop">
+        <div class="modal-card" style="max-width:360px; text-align:center;">
+            <h3 style="font-size:18px; font-weight:900; margin:0 0 8px;">最初からやり直しますか？</h3>
+            <p style="font-size:14px; color:#64748b; margin:0 0 20px;">現在の盤面はリセットされ、15本すべて元に戻ります。</p>
+            <div style="display:flex; gap:10px;">
+                <button id="btn-cancel-reset" type="button" class="btn-modal-secondary" style="margin:0;">
+                    キャンセル
+                </button>
+                <button id="btn-execute-reset" type="button" class="btn-modal-primary" style="background-color:#e11d48; margin:0;">
+                    やり直す
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 棒消しゲーム アプリケーションロジック（2人対戦・対CPU対応）
+         * 盤面：1段目(1本), 2段目(2本), 3段目(3本), 4段目(4本), 5段目(5本) = 計15本
+         */
+        function initBoukeshiGame() {
+            const ROW_COUNTS = [1, 2, 3, 4, 5];
+
+            // ゲームモード・設定
+            let gameMode = 'pvp';          // 'pvp' (2人対戦) または 'cpu' (対CPU)
+            let cpuStarts = false;         // 対CPU時：true = CPU先攻, false = プレイヤー先攻
+            let cpuDifficulty = 'normal';  // 'normal' (ふつう) または 'strong' (つよい)
+
+            // ゲーム進行状態
+            let board = [];                // 2次元配列: true = 残っている, false = 消去済み
+            let currentPlayer = 1;         // 1 = プレイヤー1(人間), 2 = プレイヤー2 または CPU
+            let pvpStartingPlayer = 1;     // 2人対戦時の先攻プレイヤー
+            let selectedRow = null;        // 選択中の段 (0〜4)
+            let selectedCols = [];         // 選択中の列配列 (昇順)
+            let history = [];              // アンドゥ用履歴スタック
+            let isGameOver = false;
+            let isCpuThinking = false;     // CPU思考・アニメーション中ロック
+            let cpuTimerId = null;         // タイマー管理用
+
+            // DOM要素の参照
+            const pyramidBoardEl = document.getElementById('pyramid-board');
+            const boardContainerEl = document.getElementById('board-container');
+            const turnBannerEl = document.getElementById('turn-banner');
+            const playerBadgeEl = document.getElementById('player-badge');
+            const turnSubEl = document.getElementById('turn-sub');
+            const turnTextEl = document.getElementById('turn-text');
+            const selectionStatusEl = document.getElementById('selection-status');
+            const remainingCountEl = document.getElementById('remaining-count');
+            const remainingCountMobileEl = document.getElementById('remaining-count-mobile');
+
+            const feedbackToastEl = document.getElementById('feedback-toast');
+            const feedbackTextEl = document.getElementById('feedback-text');
+
+            const btnUndo = document.getElementById('btn-undo');
+            const btnReset = document.getElementById('btn-reset');
+            const btnClear = document.getElementById('btn-clear');
+            const btnConfirm = document.getElementById('btn-confirm');
+            const confirmBtnTextEl = document.getElementById('confirm-btn-text');
+
+            // モード切替ボタン
+            const modePvpBtn = document.getElementById('mode-pvp');
+            const modeCpuBtn = document.getElementById('mode-cpu');
+            const cpuOptionsEl = document.getElementById('cpu-options');
+            const orderPlayerFirstBtn = document.getElementById('order-player-first');
+            const orderCpuFirstBtn = document.getElementById('order-cpu-first');
+            const diffWeakBtn = document.getElementById('diff-weak');
+            const diffNormalBtn = document.getElementById('diff-normal');
+            const diffStrongBtn = document.getElementById('diff-strong');
+
+            // モーダル要素
+            const rulesModal = document.getElementById('rules-modal');
+            const resultModal = document.getElementById('result-modal');
+            const resetConfirmModal = document.getElementById('reset-confirm-modal');
+
+            // =========================================================================
+            // 必勝法（完全解析メモ化探索）エンジン
+            // =========================================================================
+            // 連続する棒の塊（長さ1〜5）のマルチセットをキーにして、
+            // 「手番側が必勝か(true) / 必敗か(false)」をメモ化再帰で計算する
+            const winMemo = new Map();
+
+            /**
+             * 盤面状態から「連続した棒の塊の長さリスト」を抽出する
+             * 例：[true, false, true, true] -> [1, 2]
+             */
+            function extractSegments(boardState) {
+                const segs = [];
+                for (let r = 0; r < boardState.length; r++) {
+                    let run = 0;
+                    for (let c = 0; c < boardState[r].length; c++) {
+                        if (boardState[r][c]) {
+                            run++;
+                        } else if (run > 0) {
+                            segs.push(run);
+                            run = 0;
+                        }
+                    }
+                    if (run > 0) segs.push(run);
+                }
+                // 対称性を利用するため昇順ソート
+                segs.sort((a, b) => a - b);
+                return segs;
+            }
+
+            /**
+             * 長さの配列状態から、現在の手番プレイヤーが必勝できるかを判定
+             * （最後の1本を取らされたら負けのルール）
+             */
+            function canCurrentPlayerWin(sortedSegments) {
+                // すでに棒が0本（直前の相手が最後の1本を消した）なら、現在の手番側の勝ち！
+                if (sortedSegments.length === 0) {
+                    return true;
+                }
+
+                const key = sortedSegments.join(',');
+                if (winMemo.has(key)) {
+                    return winMemo.get(key);
+                }
+
+                // すべての合法手（ある塊から連続する k 本を取り除く）を試す
+                for (let i = 0; i < sortedSegments.length; i++) {
+                    const len = sortedSegments[i];
+                    // 同じ長さの塊は重複して調べない
+                    if (i > 0 && sortedSegments[i] === sortedSegments[i - 1]) continue;
+
+                    // 取り除く本数 k (1 〜 len)
+                    for (let k = 1; k <= len; k++) {
+                        // 塊のどこから k 本取るか（左端からのオフセット offset: 0 〜 len - k）
+                        const maxOffset = Math.floor((len - k) / 2);
+                        for (let offset = 0; offset <= maxOffset; offset++) {
+                            const leftPart = offset;
+                            const rightPart = len - k - offset;
+
+                            // 次の盤面のセグメント配列を構築
+                            const nextSegs = [];
+                            for (let j = 0; j < sortedSegments.length; j++) {
+                                if (j !== i) nextSegs.push(sortedSegments[j]);
+                            }
+                            if (leftPart > 0) nextSegs.push(leftPart);
+                            if (rightPart > 0) nextSegs.push(rightPart);
+                            nextSegs.sort((a, b) => a - b);
+
+                            // 相手が必勝できない手（＝相手が必敗になる手）が1つでもあれば自分の勝ち
+                            if (!canCurrentPlayerWin(nextSegs)) {
+                                winMemo.set(key, true);
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                winMemo.set(key, false);
+                return false;
+            }
+
+            /**
+             * 現在の盤面から可能なすべての合法手リストを生成する
+             */
+            function getAllValidMoves(boardState) {
+                const moves = [];
+                for (let r = 0; r < boardState.length; r++) {
+                    const row = boardState[r];
+                    for (let start = 0; start < row.length; start++) {
+                        if (!row[start]) continue;
+                        const cols = [];
+                        for (let end = start; end < row.length; end++) {
+                            if (!row[end]) break;
+                            cols.push(end);
+                            moves.push({ row: r, cols: [...cols] });
+                        }
+                    }
+                }
+                return moves;
+            }
+
+            /**
+             * CPUの次の一手を決定する
+             * - 'weak'   (よわい): 必勝法を一切使わず完全ランダム（20%は自滅手も含む初心者レベル）
+             * - 'normal' (ふつう): 1手詰め（残り1本にする手）は60%で気づくが、中盤までの必勝手は25%しか使わない
+             * - 'strong' (つよい): 完全解析による必勝法を使用
+             */
+            function chooseCpuMove() {
+                const allMoves = getAllValidMoves(board);
+                if (allMoves.length === 0) return null;
+
+                const remaining = getRemainingCount();
+                // 自分が最後の棒を消してしまう（即負け）手以外
+                const nonSuicidalMoves = allMoves.filter(m => remaining - m.cols.length >= 1);
+
+                // 1. 難易度「よわい」：必勝法を一切使わない純粋なランダム思考
+                if (cpuDifficulty === 'weak') {
+                    // 80%は即自滅を避けてランダム、20%はうっかり全部消す手も含めて完全ランダム
+                    const useSafePool = nonSuicidalMoves.length > 0 && Math.random() < 0.80;
+                    const pool = useSafePool ? nonSuicidalMoves : allMoves;
+                    return pool[Math.floor(Math.random() * pool.length)];
+                }
+
+                // 必勝手とそれ以外の手に分類
+                const winningMoves = [];
+                const otherMoves = [];
+
+                for (const move of allMoves) {
+                    const nextBoard = board.map(r => [...r]);
+                    move.cols.forEach(c => { nextBoard[move.row][c] = false; });
+                    const nextSegs = extractSegments(nextBoard);
+
+                    // 自分が最後の棒を消してしまう手は即負けなので除外
+                    if (nextSegs.length === 0) {
+                        otherMoves.push(move);
+                        continue;
+                    }
+
+                    // 相手の手番で相手が勝てない状態にできれば必勝手
+                    if (!canCurrentPlayerWin(nextSegs)) {
+                        winningMoves.push(move);
+                    } else {
+                        otherMoves.push(move);
+                    }
+                }
+
+                // 2. 難易度「つよい」：必勝手があれば確実に選ぶ
+                if (cpuDifficulty === 'strong') {
+                    if (winningMoves.length > 0) {
+                        return winningMoves[Math.floor(Math.random() * winningMoves.length)];
+                    }
+                    // 必勝手がない（相手が完璧なら負ける）状況では、残り本数を多く残して粘る
+                    const safeSingleMoves = nonSuicidalMoves.filter(m => m.cols.length === 1);
+                    if (safeSingleMoves.length > 0) {
+                        return safeSingleMoves[Math.floor(Math.random() * safeSingleMoves.length)];
+                    }
+                    const pool = nonSuicidalMoves.length > 0 ? nonSuicidalMoves : allMoves;
+                    return pool[Math.floor(Math.random() * pool.length)];
+                }
+
+                // 3. 難易度「ふつう」（生徒が法則に気づけば安定して勝てるバランス）
+                // 相手に残り1本を渡す明確な1手勝ちの手を抽出
+                const directFinishMoves = allMoves.filter(m => remaining - m.cols.length === 1);
+                if (directFinishMoves.length > 0 && Math.random() < 0.60) {
+                    return directFinishMoves[Math.floor(Math.random() * directFinishMoves.length)];
+                }
+
+                // それ以外の場面では25%の確率でのみ必勝手を選び、75%はランダムに指す
+                if (winningMoves.length > 0 && Math.random() < 0.25) {
+                    return winningMoves[Math.floor(Math.random() * winningMoves.length)];
+                }
+
+                // 即自滅は避けつつ、1〜2本消す自然な手をやや優先してランダム選択
+                const basePool = nonSuicidalMoves.length > 0 ? nonSuicidalMoves : allMoves;
+                const smallMoves = basePool.filter(m => m.cols.length <= 2);
+                const finalPool = (smallMoves.length > 0 && Math.random() < 0.70) ? smallMoves : basePool;
+                return finalPool[Math.floor(Math.random() * finalPool.length)];
+            }
+
+            // =========================================================================
+            // ゲーム進行・状態管理
+            // =========================================================================
+
+            /**
+             * 現在の手番がCPUかどうか
+             */
+            function isCpuTurn() {
+                return gameMode === 'cpu' && currentPlayer === 2 && !isGameOver;
+            }
+
+            /**
+             * プレイヤー表示名を取得
+             */
+            function getPlayerName(playerNum) {
+                if (gameMode === 'pvp') {
+                    return `プレイヤー${playerNum}`;
+                }
+                return playerNum === 1 ? 'あなた' : 'CPU';
+            }
+
+            /**
+             * ゲームの初期化
+             * @param {boolean} swapOrder 先攻・後攻を交代するかどうか
+             */
+            function initGame(swapOrder = false) {
+                if (cpuTimerId) {
+                    clearTimeout(cpuTimerId);
+                    cpuTimerId = null;
+                }
+                isCpuThinking = false;
+
+                if (swapOrder) {
+                    if (gameMode === 'pvp') {
+                        pvpStartingPlayer = pvpStartingPlayer === 1 ? 2 : 1;
+                    } else {
+                        cpuStarts = !cpuStarts;
+                        updateSettingsUI();
+                    }
+                }
+
+                board = ROW_COUNTS.map(count => Array(count).fill(true));
+                currentPlayer = (gameMode === 'cpu')
+                    ? (cpuStarts ? 2 : 1)
+                    : pvpStartingPlayer;
+
+                selectedRow = null;
+                selectedCols = [];
+                history = [];
+                isGameOver = false;
+
+                hideModal(resultModal);
+                hideModal(resetConfirmModal);
+
+                if (isCpuTurn()) {
+                    render();
+                    triggerCpuTurn();
+                } else {
+                    showFeedback('同じ段の「隣り合う棒」をタップして選択し、「決定」を押してください', 'info');
+                    render();
+                }
+            }
+
+            /**
+             * CPUの手番を実行（思考演出 → 選択ハイライト → 消去確定）
+             */
+            function triggerCpuTurn() {
+                if (!isCpuTurn()) return;
+                isCpuThinking = true;
+                selectedRow = null;
+                selectedCols = [];
+                showFeedback('CPUがどの棒を消すか考えています...', 'cpu');
+                render();
+
+                cpuTimerId = setTimeout(() => {
+                    const move = chooseCpuMove();
+                    if (!move) return;
+
+                    // CPUが選んだ棒を盤面上でハイライト表示して生徒に見せる
+                    selectedRow = move.row;
+                    selectedCols = move.cols;
+                    showFeedback(`CPUが ${move.row + 1}段目の棒を ${move.cols.length}本 選びました！`, 'cpu');
+                    render();
+
+                    cpuTimerId = setTimeout(() => {
+                        isCpuThinking = false;
+                        executeMove(move.row, move.cols);
+                    }, 650);
+                }, 550);
+            }
+
+            /**
+             * 残り本数の計算
+             */
+            function getRemainingCount() {
+                return board.reduce((sum, row) => sum + row.filter(Boolean).length, 0);
+            }
+
+            /**
+             * ガイド・通知メッセージ表示
+             */
+            function showFeedback(message, type = 'info') {
+                feedbackTextEl.textContent = message;
+                feedbackToastEl.classList.remove('warning', 'success', 'cpu-msg');
+
+                if (type === 'warning') {
+                    void feedbackToastEl.offsetWidth;
+                    feedbackToastEl.classList.add('warning');
+                } else if (type === 'success') {
+                    feedbackToastEl.classList.add('success');
+                } else if (type === 'cpu') {
+                    feedbackToastEl.classList.add('cpu-msg');
+                }
+            }
+
+            /**
+             * 棒をタップしたときの選択処理
+             */
+            function handleStickClick(rowIndex, colIndex) {
+                if (isGameOver || isCpuThinking || isCpuTurn()) return;
+                if (!board[rowIndex][colIndex]) return;
+
+                // 別の段をタップした場合
+                if (selectedRow === null || selectedRow !== rowIndex) {
+                    const prevRow = selectedRow;
+                    selectedRow = rowIndex;
+                    selectedCols = [colIndex];
+
+                    if (prevRow !== null && prevRow !== rowIndex) {
+                        showFeedback(`${rowIndex + 1}段目に選択を切り替えました（同じ段の隣り合う棒だけ選べます）`, 'info');
+                    } else {
+                        showFeedback(`${rowIndex + 1}段目の棒を 1 本選択中（隣の棒も追加できます）`, 'info');
+                    }
+                    render();
+                    return;
+                }
+
+                // すでに選択中の棒をタップした場合（解除判定）
+                const existingIdx = selectedCols.indexOf(colIndex);
+                if (existingIdx !== -1) {
+                    const minCol = selectedCols[0];
+                    const maxCol = selectedCols[selectedCols.length - 1];
+
+                    if (colIndex === minCol || colIndex === maxCol) {
+                        selectedCols.splice(existingIdx, 1);
+                        if (selectedCols.length === 0) {
+                            selectedRow = null;
+                            showFeedback('選択を解除しました', 'info');
+                        } else {
+                            showFeedback(`${rowIndex + 1}段目の棒を ${selectedCols.length} 本選択中`, 'info');
+                        }
+                        render();
+                    } else {
+                        showFeedback('間の棒だけを外すことはできません（端の棒から解除できます）', 'warning');
+                    }
+                    return;
+                }
+
+                // 同じ段の未選択の棒をタップした場合（隣接チェック）
+                const minCol = selectedCols[0];
+                const maxCol = selectedCols[selectedCols.length - 1];
+
+                if (colIndex === minCol - 1 || colIndex === maxCol + 1) {
+                    selectedCols.push(colIndex);
+                    selectedCols.sort((a, b) => a - b);
+                    showFeedback(`${rowIndex + 1}段目の隣り合う棒を ${selectedCols.length} 本選択中！`, 'success');
+                    render();
+                } else {
+                    selectedCols = [colIndex];
+                    showFeedback('隣り合う棒しか同時に消せないため、新しく選んだ棒に切り替えました', 'warning');
+                    render();
+                }
+            }
+
+            /**
+             * 選択解除
+             */
+            function clearSelection() {
+                if (isCpuThinking || isCpuTurn()) return;
+                selectedRow = null;
+                selectedCols = [];
+                showFeedback('選択を解除しました', 'info');
+                render();
+            }
+
+            /**
+             * プレイヤーの決定ボタン処理
+             */
+            function confirmMove() {
+                if (isGameOver || isCpuThinking || isCpuTurn()) return;
+                if (selectedRow === null || selectedCols.length === 0) return;
+                executeMove(selectedRow, selectedCols);
+            }
+
+            /**
+             * 実際に盤面から棒を消去し、勝敗判定・手番交代を行う共通処理
+             */
+            function executeMove(rowIndex, colsToRemove) {
+                // 履歴に保存
+                history.push({
+                    board: board.map(row => [...row]),
+                    player: currentPlayer
+                });
+
+                const removedCount = colsToRemove.length;
+                const removedRowNum = rowIndex + 1;
+
+                colsToRemove.forEach(col => {
+                    board[rowIndex][col] = false;
+                });
+
+                selectedRow = null;
+                selectedCols = [];
+
+                // 残り本数チェック
+                const remaining = getRemainingCount();
+                if (remaining === 0) {
+                    isGameOver = true;
+                    const loser = currentPlayer;
+                    const winner = currentPlayer === 1 ? 2 : 1;
+                    render();
+                    showResultModal(loser, winner);
+                    return;
+                }
+
+                const prevPlayer = currentPlayer;
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+
+                if (isCpuTurn()) {
+                    render();
+                    triggerCpuTurn();
+                } else {
+                    showFeedback(`${getPlayerName(prevPlayer)}が${removedRowNum}段目を${removedCount}本消しました → ${getPlayerName(currentPlayer)}の番`, 'info');
+                    render();
+                }
+            }
+
+            /**
+             * 1手戻る（アンドゥ）
+             * 対CPUモード時は「自分の前の手番」まで戻る
+             */
+            function undoMove() {
+                if (history.length === 0) return;
+
+                if (cpuTimerId) {
+                    clearTimeout(cpuTimerId);
+                    cpuTimerId = null;
+                }
+                isCpuThinking = false;
+
+                if (gameMode === 'cpu') {
+                    // 自分の手番（player === 1）の状態が見つかるまで履歴を巻き戻す
+                    let targetState = null;
+                    while (history.length > 0) {
+                        const popped = history.pop();
+                        if (popped.player === 1) {
+                            targetState = popped;
+                            break;
+                        }
+                    }
+                    if (!targetState) {
+                        // CPU先攻の1手目直後など、まだプレイヤーの手番が履歴にない場合は初期状態へ
+                        initGame(false);
+                        return;
+                    }
+                    board = targetState.board;
+                    currentPlayer = 1;
+                } else {
+                    const lastState = history.pop();
+                    board = lastState.board;
+                    currentPlayer = lastState.player;
+                }
+
+                selectedRow = null;
+                selectedCols = [];
+                isGameOver = false;
+
+                hideModal(resultModal);
+                showFeedback(`1手戻りました（${getPlayerName(currentPlayer)}の番）`, 'info');
+                render();
+            }
+
+            /**
+             * 勝敗モーダルの表示
+             */
+            function showResultModal(loser, winner) {
+                const loserTextEl = document.getElementById('result-loser-text');
+                const winnerTextEl = document.getElementById('result-winner-text');
+
+                loserTextEl.textContent = `${getPlayerName(loser)} が最後の棒を消しました`;
+                winnerTextEl.textContent = `${getPlayerName(winner)} の勝ち！`;
+
+                if (winner === 1) {
+                    winnerTextEl.style.color = '#2563eb';
+                } else {
+                    winnerTextEl.style.color = (gameMode === 'cpu') ? '#7c3aed' : '#ea580c';
+                }
+
+                showModal(resultModal);
+            }
+
+            function showModal(modalEl) {
+                modalEl.classList.add('open');
+            }
+
+            function hideModal(modalEl) {
+                modalEl.classList.remove('open');
+            }
+
+            /**
+             * 設定バーのUI状態同期
+             */
+            function updateSettingsUI() {
+                if (gameMode === 'pvp') {
+                    modePvpBtn.classList.add('active');
+                    modeCpuBtn.classList.remove('active');
+                    cpuOptionsEl.classList.add('hidden');
+                } else {
+                    modeCpuBtn.classList.add('active');
+                    modePvpBtn.classList.remove('active');
+                    cpuOptionsEl.classList.remove('hidden');
+
+                    if (!cpuStarts) {
+                        orderPlayerFirstBtn.classList.add('active-blue');
+                        orderCpuFirstBtn.classList.remove('active-blue');
+                    } else {
+                        orderCpuFirstBtn.classList.add('active-blue');
+                        orderPlayerFirstBtn.classList.remove('active-blue');
+                    }
+
+                    diffWeakBtn.classList.toggle('active-purple', cpuDifficulty === 'weak');
+                    diffNormalBtn.classList.toggle('active-purple', cpuDifficulty === 'normal');
+                    diffStrongBtn.classList.toggle('active-purple', cpuDifficulty === 'strong');
+                }
+            }
+
+            /**
+             * 画面全体の再描画
+             */
+            function render() {
+                const remaining = getRemainingCount();
+                remainingCountEl.textContent = remaining;
+                remainingCountMobileEl.textContent = remaining;
+
+                // バナーと盤面テーマ色の更新
+                turnBannerEl.classList.remove('p2-theme', 'cpu-theme');
+                boardContainerEl.classList.remove('p1-turn', 'p2-turn', 'cpu-turn');
+
+                const diffLabelMap = { weak: 'よわい', normal: 'ふつう', strong: 'つよい' };
+
+                if (currentPlayer === 1) {
+                    boardContainerEl.classList.add('p1-turn');
+                    playerBadgeEl.textContent = (gameMode === 'cpu') ? 'YOU' : 'P1';
+                    turnSubEl.textContent = (gameMode === 'cpu') ? 'あなたのターン' : '現在の手番';
+                    turnTextEl.textContent = isGameOver ? '対局終了' : `${getPlayerName(1)} の番`;
+                } else if (gameMode === 'cpu') {
+                    turnBannerEl.classList.add('cpu-theme');
+                    boardContainerEl.classList.add('cpu-turn');
+                    playerBadgeEl.textContent = 'CPU';
+                    turnSubEl.textContent = `難易度：${diffLabelMap[cpuDifficulty]}`;
+                    turnTextEl.textContent = isGameOver ? '対局終了' : 'CPU が考え中...';
+                } else {
+                    turnBannerEl.classList.add('p2-theme');
+                    boardContainerEl.classList.add('p2-turn');
+                    playerBadgeEl.textContent = 'P2';
+                    turnSubEl.textContent = '現在の手番';
+                    turnTextEl.textContent = isGameOver ? '対局終了' : 'プレイヤー2 の番';
+                }
+
+                // 選択状況とボタンの有効・無効
+                const selCount = selectedCols.length;
+                const locked = isGameOver || isCpuThinking || isCpuTurn();
+
+                if (isGameOver) {
+                    selectionStatusEl.textContent = 'ゲーム終了';
+                    btnConfirm.disabled = true;
+                    btnClear.disabled = true;
+                    confirmBtnTextEl.textContent = '選択した棒を消す';
+                } else if (isCpuTurn()) {
+                    selectionStatusEl.textContent = selCount > 0 ? `${selectedRow + 1}段目：${selCount}本 選択` : 'CPU思考中...';
+                    btnConfirm.disabled = true;
+                    btnClear.disabled = true;
+                    confirmBtnTextEl.textContent = 'CPUの番です';
+                } else if (selCount > 0) {
+                    selectionStatusEl.textContent = `${selectedRow + 1}段目：${selCount}本 選択中`;
+                    btnConfirm.disabled = false;
+                    btnClear.disabled = false;
+                    confirmBtnTextEl.textContent = `${selCount}本 消す（決定）`;
+                } else {
+                    selectionStatusEl.textContent = '消す棒を選んでください';
+                    btnConfirm.disabled = true;
+                    btnClear.disabled = true;
+                    confirmBtnTextEl.textContent = '選択した棒を消す';
+                }
+
+                // アンドゥボタン制御（CPU思考中または履歴なし時は無効）
+                btnUndo.disabled = isCpuThinking || history.length === 0;
+
+                // ピラミッド盤面の描画
+                pyramidBoardEl.innerHTML = '';
+
+                board.forEach((row, rowIndex) => {
+                    const rowWrapper = document.createElement('div');
+                    rowWrapper.className = 'board-row';
+
+                    const rowLabel = document.createElement('div');
+                    rowLabel.className = 'row-label';
+                    rowLabel.textContent = `${rowIndex + 1}段目`;
+                    rowWrapper.appendChild(rowLabel);
+
+                    const sticksContainer = document.createElement('div');
+                    sticksContainer.className = 'sticks-group';
+
+                    row.forEach((isAlive, colIndex) => {
+                        const isSelected = (selectedRow === rowIndex && selectedCols.includes(colIndex));
+
+                        const stickWrapper = document.createElement('button');
+                        stickWrapper.type = 'button';
+                        stickWrapper.setAttribute('aria-label', `${rowIndex + 1}段目の左から${colIndex + 1}本目の棒`);
+                        stickWrapper.className = 'stick-wrapper';
+
+                        if (!isAlive) {
+                            stickWrapper.classList.add('removed');
+                            stickWrapper.disabled = true;
+                        } else {
+                            if (isSelected) {
+                                stickWrapper.classList.add('selected');
+                            }
+                            if (locked) {
+                                stickWrapper.disabled = true;
+                            } else {
+                                stickWrapper.addEventListener('click', () => handleStickClick(rowIndex, colIndex));
+                            }
+                        }
+
+                        const stickBody = document.createElement('div');
+                        stickBody.className = 'stick-body';
+
+                        const stickHead = document.createElement('div');
+                        stickHead.className = 'stick-head';
+                        stickBody.appendChild(stickHead);
+
+                        stickWrapper.appendChild(stickBody);
+                        sticksContainer.appendChild(stickWrapper);
+                    });
+
+                    rowWrapper.appendChild(sticksContainer);
+                    pyramidBoardEl.appendChild(rowWrapper);
+                });
+            }
+
+            // =========================================================================
+            // イベントリスナー登録
+            // =========================================================================
+            modePvpBtn.addEventListener('click', () => {
+                if (gameMode === 'pvp') return;
+                gameMode = 'pvp';
+                updateSettingsUI();
+                initGame(false);
+            });
+
+            modeCpuBtn.addEventListener('click', () => {
+                if (gameMode === 'cpu') return;
+                gameMode = 'cpu';
+                updateSettingsUI();
+                initGame(false);
+            });
+
+            orderPlayerFirstBtn.addEventListener('click', () => {
+                if (!cpuStarts) return;
+                cpuStarts = false;
+                updateSettingsUI();
+                initGame(false);
+            });
+
+            orderCpuFirstBtn.addEventListener('click', () => {
+                if (cpuStarts) return;
+                cpuStarts = true;
+                updateSettingsUI();
+                initGame(false);
+            });
+
+            diffWeakBtn.addEventListener('click', () => {
+                if (cpuDifficulty === 'weak') return;
+                cpuDifficulty = 'weak';
+                updateSettingsUI();
+                showFeedback('CPUの強さを「よわい」に変更しました', 'info');
+                render();
+            });
+
+            diffNormalBtn.addEventListener('click', () => {
+                if (cpuDifficulty === 'normal') return;
+                cpuDifficulty = 'normal';
+                updateSettingsUI();
+                showFeedback('CPUの強さを「ふつう」に変更しました', 'info');
+                render();
+            });
+
+            diffStrongBtn.addEventListener('click', () => {
+                if (cpuDifficulty === 'strong') return;
+                cpuDifficulty = 'strong';
+                updateSettingsUI();
+                showFeedback('CPUの強さを「つよい」に変更しました（本気で勝負してきます）', 'info');
+                render();
+            });
+
+            btnConfirm.addEventListener('click', confirmMove);
+            btnClear.addEventListener('click', clearSelection);
+            btnUndo.addEventListener('click', undoMove);
+
+            btnReset.addEventListener('click', () => {
+                if (history.length === 0 && selectedCols.length === 0 && !isCpuThinking) {
+                    initGame(false);
+                } else {
+                    showModal(resetConfirmModal);
+                }
+            });
+            document.getElementById('btn-cancel-reset').addEventListener('click', () => hideModal(resetConfirmModal));
+            document.getElementById('btn-execute-reset').addEventListener('click', () => initGame(false));
+
+            document.getElementById('btn-rules').addEventListener('click', () => showModal(rulesModal));
+            document.getElementById('btn-close-rules').addEventListener('click', () => hideModal(rulesModal));
+            document.getElementById('btn-confirm-rules').addEventListener('click', () => hideModal(rulesModal));
+
+            document.getElementById('btn-rematch-swap').addEventListener('click', () => initGame(true));
+            document.getElementById('btn-rematch-same').addEventListener('click', () => initGame(false));
+            document.getElementById('btn-close-result').addEventListener('click', () => hideModal(resultModal));
+
+            [rulesModal, resetConfirmModal].forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) hideModal(modal);
+                });
+            });
+
+            // 初期UI設定とゲーム開始
+            updateSettingsUI();
+            initGame(false);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initBoukeshiGame);
+        } else {
+            initBoukeshiGame();
+        }
+    </script>
+</body>
+</html>
