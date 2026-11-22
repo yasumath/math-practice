@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>立体図形マスター | 3D図形の名前と特徴を覚えよう！</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* カードのホバー＆タップアニメーション */
+        .shape-card {
+            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+        }
+        .shape-card:hover:not(:disabled) {
+            transform: translateY(-4px);
+        }
+        .shape-card:active:not(:disabled) {
+            transform: scale(0.96);
+        }
+
+        /* 間違えたときのシェイクアニメーション */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            15%, 55% { transform: translateX(-8px); }
+            35%, 75% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+
+        /* 正解時のポップアニメーション */
+        @keyframes popSuccess {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.06); }
+            100% { transform: scale(1); }
+        }
+        .animate-pop-success {
+            animation: popSuccess 0.3s ease-out;
+        }
+
+        /* ペナルティ時のプログレスバー減少アニメーション */
+        @keyframes cooldownShrink {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        .cooldown-bar {
+            animation: cooldownShrink 2s linear forwards;
+        }
+
+        /* カスタムスクロールバー（リザルトの復習リスト用） */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- ヘッダー -->
+    <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
+        <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 cursor-pointer" onclick="confirmReturnTitle()">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-sm">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
+                        <line x1="12" y1="22" x2="12" y2="15.5"></line>
+                        <polyline points="22 8.5 12 15.5 2 8.5"></polyline>
+                    </svg>
+                </div>
+                <h1 class="font-extrabold text-lg sm:text-xl tracking-tight text-slate-800">
+                    立体図形<span class="text-indigo-600">マスター</span>
+                </h1>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- 効果音ミュート切替ボタン -->
+                <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors flex items-center gap-1.5 text-sm font-medium" title="効果音のオン/オフ">
+                    <span id="soundIconOn">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                        </svg>
+                    </span>
+                    <span id="soundIconOff" class="hidden">
+                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                        </svg>
+                    </span>
+                    <span class="hidden sm:inline text-xs font-bold" id="soundLabel">音あり</span>
+                </button>
+
+                <!-- プレイ中のみ表示する中断ボタン -->
+                <button id="quitBtn" onclick="returnToTitle()" class="hidden px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                    タイトルへ
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ領域 -->
+    <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-4 sm:py-6 flex flex-col justify-center">
+
+        <!-- ==================== 1. スタート画面 ==================== -->
+        <section id="startScreen" class="space-y-6 animate-fade-in">
+            <!-- ヒーローバナー -->
+            <div class="bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-600 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold tracking-wider mb-3">
+                        算数・数学 立体図形トレーニング
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-black tracking-tight mb-3 leading-tight">
+                        30秒で立体図形の<br class="sm:hidden">名前と特徴をマスター！
+                    </h2>
+                    <p class="text-blue-100 text-sm sm:text-base leading-relaxed">
+                        画面に並ぶ8枚の立体イラストから、お題に合うものを素早くタッチしよう！<br class="hidden sm:inline">
+                        間違えると<span class="font-bold text-amber-300 underline decoration-amber-300/60 underline-offset-2">2秒間の操作不可ペナルティ</span>があるから慎重かつスピーディーに！
+                    </p>
+                </div>
+                <!-- 背景装飾SVG -->
+                <svg class="hidden md:block absolute right-6 top-1/2 -translate-y-1/2 w-48 h-48 text-white/15 pointer-events-none" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="50,8 90,32 90,72 50,94 10,72 10,32" />
+                    <polyline points="10,32 50,54 90,32" />
+                    <line x1="50" y1="54" x2="50" y2="94" />
+                    <polyline points="10,72 50,50 90,72" stroke-dasharray="3 3" />
+                    <line x1="50" y1="8" x2="50" y2="50" stroke-dasharray="3 3" />
+                </svg>
+            </div>
+
+            <!-- モード選択カード -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <!-- ノーマルモード -->
+                <div class="bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-indigo-500 shadow-sm hover:shadow-xl transition-all flex flex-col justify-between group">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-extrabold">
+                                基本・名称編
+                            </span>
+                            <div class="flex items-center gap-1.5 text-sm font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                                <span>🏆 ベスト:</span>
+                                <span id="bestNormalDisplay" class="text-indigo-600 text-base font-black">0</span>
+                                <span class="text-xs">問</span>
+                            </div>
+                        </div>
+                        <h3 class="text-2xl font-black text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
+                            ノーマルモード
+                        </h3>
+                        <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                            「三角柱」「四角錐」「正八面体」「円錐」など、表示された<strong>立体の名前</strong>に一致するイラストを選びます。まずはここから！
+                        </p>
+                    </div>
+                    <button onclick="startGame('normal')" class="w-full py-3.5 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-extrabold text-base shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2">
+                        <span>ノーマルでスタート</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- ハードモード -->
+                <div class="bg-white rounded-3xl p-6 border-2 border-slate-200 hover:border-rose-500 shadow-sm hover:shadow-xl transition-all flex flex-col justify-between group">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-xs font-extrabold">
+                                応用・性質編
+                            </span>
+                            <div class="flex items-center gap-1.5 text-sm font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                                <span>🏆 ベスト:</span>
+                                <span id="bestHardDisplay" class="text-rose-600 text-base font-black">0</span>
+                                <span class="text-xs">問</span>
+                            </div>
+                        </div>
+                        <h3 class="text-2xl font-black text-slate-800 mb-2 group-hover:text-rose-600 transition-colors">
+                            ハードモード
+                        </h3>
+                        <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                            「底面が2つある立体」「辺の数が8本の立体」「側面が三角形の立体」など、<strong>立体の特徴・条件</strong>に当てはまるものを選びます。（複数正解あり！）
+                        </p>
+                    </div>
+                    <button onclick="startGame('hard')" class="w-full py-3.5 px-6 rounded-2xl bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-extrabold text-base shadow-md shadow-rose-200 transition-all flex items-center justify-center gap-2">
+                        <span>ハードでスタート</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 収録図形一覧プレビュー（学習用図鑑ミニバー） -->
+            <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-sm font-extrabold text-slate-700 flex items-center gap-1.5">
+                        <span class="text-indigo-500">📘</span> 登場する全13種類の立体図形
+                    </h4>
+                    <span class="text-xs text-slate-400">破線はかくれている辺を表しています</span>
+                </div>
+                <div id="catalogGrid" class="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                    <!-- JSで全13種類のミニプレビューを生成 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 2. プレイ画面 ==================== -->
+        <section id="playScreen" class="hidden flex-col gap-3 sm:gap-4">
+            <!-- ステータスバー（タイマー・モード・スコア） -->
+            <div class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between gap-4 mb-2">
+                    <!-- 残り時間 -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">TIME</span>
+                        <div class="flex items-baseline gap-0.5">
+                            <span id="timerText" class="text-2xl sm:text-3xl font-black text-slate-800 tabular-nums">30.0</span>
+                            <span class="text-xs font-bold text-slate-500">秒</span>
+                        </div>
+                    </div>
+
+                    <!-- モードバッジ -->
+                    <div id="playModeBadge" class="px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-100 text-indigo-700">
+                        ノーマルモード
+                    </div>
+
+                    <!-- スコア -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">SCORE</span>
+                        <div class="flex items-baseline gap-0.5">
+                            <span id="scoreText" class="text-2xl sm:text-3xl font-black text-indigo-600 tabular-nums">0</span>
+                            <span class="text-xs font-bold text-slate-500">問</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- タイムバー -->
+                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="timeProgressBar" class="h-full bg-indigo-600 transition-all duration-100 ease-linear rounded-full" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- 問題パネル -->
+            <div id="questionBox" class="bg-white rounded-2xl p-4 sm:p-5 border-2 border-indigo-200 shadow-sm text-center relative overflow-hidden">
+                <div class="text-xs font-bold text-indigo-500 mb-1" id="questionSubLabel">この名前の立体を選ぼう！</div>
+                <h2 id="questionText" class="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight leading-snug">
+                    三角柱
+                </h2>
+                <p id="questionHint" class="text-xs text-slate-500 mt-1 hidden"></p>
+            </div>
+
+            <!-- カードグリッド（PC: 4列×2行 / モバイル: 2列×4行） -->
+            <div class="relative">
+                <div id="cardsGrid" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+                    <!-- JSで8枚のカードを生成 -->
+                </div>
+
+                <!-- 2秒間操作不可（お手つきペナルティ）オーバーレイ -->
+                <div id="penaltyOverlay" class="hidden absolute inset-0 z-20 rounded-2xl bg-rose-950/75 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 text-white text-center">
+                    <div class="bg-rose-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg mb-2 animate-bounce">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-black tracking-wide mb-1">ちがいます！</div>
+                    <div id="penaltyWrongName" class="text-sm font-bold text-rose-200 mb-3">選んだ図形：〇〇</div>
+                    <div class="bg-black/40 px-4 py-2 rounded-xl border border-white/20 w-full max-w-xs">
+                        <div class="text-xs font-bold text-amber-300 mb-1.5">⏳ 2秒間ストップ（お手つきペナルティ）</div>
+                        <div class="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+                            <div id="penaltyProgressBar" class="h-full bg-amber-400 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 3. リザルト画面 ==================== -->
+        <section id="resultScreen" class="hidden space-y-5">
+            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-md text-center relative overflow-hidden">
+                <!-- 新記録バッジ -->
+                <div id="newRecordBanner" class="hidden mb-3">
+                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white font-black text-sm shadow-md animate-bounce">
+                        🎉 NEW RECORD! 新記録達成！
+                    </span>
+                </div>
+
+                <div class="text-sm font-bold text-slate-500 mb-1" id="resultModeLabel">ノーマルモード 結果発表</div>
+                <div class="flex items-baseline justify-center gap-2 my-2">
+                    <span class="text-lg font-bold text-slate-600">スコア</span>
+                    <span id="finalScoreText" class="text-6xl sm:text-7xl font-black text-indigo-600 tracking-tight">0</span>
+                    <span class="text-xl font-bold text-slate-600">問正解</span>
+                </div>
+
+                <div class="inline-flex items-center gap-4 bg-slate-100 px-5 py-2.5 rounded-2xl text-sm font-bold text-slate-700 mt-2">
+                    <div>
+                        🏆 ベストスコア: <span id="resultBestText" class="text-indigo-600 font-black text-base">0</span> 問
+                    </div>
+                    <div class="w-px h-4 bg-slate-300"></div>
+                    <div>
+                        ミス回数: <span id="resultMissText" class="text-rose-600 font-black text-base">0</span> 回
+                    </div>
+                </div>
+
+                <!-- アクションボタン -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto mt-6">
+                    <button onclick="restartSameMode()" class="py-3.5 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-extrabold text-base shadow-md shadow-indigo-200 transition-all">
+                        🔄 もう一度挑戦する
+                    </button>
+                    <button onclick="returnToTitle()" class="py-3.5 px-6 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 font-extrabold text-base transition-all">
+                        🏠 モード選択へ戻る
+                    </button>
+                </div>
+            </div>
+
+            <!-- 間違えた問題の復習エリア -->
+            <div id="reviewSection" class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm">
+                <h3 class="text-base sm:text-lg font-extrabold text-slate-800 mb-3 flex items-center gap-2">
+                    <span class="text-rose-500">📝</span> 今回のふりかえり（間違えた問題）
+                </h3>
+                <div id="mistakeList" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    <!-- JSで復習アイテムを生成 -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 確認モーダル（alert/confirmの代替） -->
+    <div id="confirmModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 text-center">
+            <h3 class="text-lg font-extrabold text-slate-800 mb-2">ゲームを中断しますか？</h3>
+            <p class="text-sm text-slate-600 mb-5">現在のスコアは記録されず、タイトル画面に戻ります。</p>
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">
+                    続ける
+                </button>
+                <button onclick="confirmQuitExec()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm">
+                    タイトルへ戻る
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. 立体図形マスターデータ & SVGイラスト生成
+        // ==========================================
+        // すべての立体図形に透視図（実線＋隠れ線の破線）と幾何学的プロパティを持たせる
+        const SHAPES = [
+            {
+                id: 'cube',
+                name: '立方体',
+                reading: 'りっぽうたい',
+                category: '角柱・正多面体',
+                faces: 6,
+                edges: 12,
+                vertices: 8,
+                bases: 2,
+                baseShape: '正方形',
+                sideShape: '正方形',
+                hasCurved: false,
+                isRegularPolyhedron: true,
+                netHasCircle: false,
+                description: '6つの面すべてが合同な正方形でできた立体（正六面体）。',
+                svg: `
+                <svg viewBox="0 0 120 120" class="w-full h-full">
+                    <!-- 隠れ線 -->
+                    <line x1="42" y1="24" x2="42" y2="76" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4 3"/>
+                    <line x1="42" y1="76" x2="22" y2="96" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4 3"/>
+                    <line x1="42" y1="76" x2="96" y2="76" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4 3"/>
+                    <!-- 塗り（立体感） -->
+                    <polygon points="22,44 76,44 76,96 22,96" fill="#e0e7ff" fill-opacity="0.45"/>
+                    <polygon points="22,44 42,24 96,24 76,44" fill="#c7d2fe" fill-opacity="0.55"/>
+                    <polygon points="76,44 96,24 96,76 76,96" fill="#a5b4fc" fill-opacity="0.45"/>
+                    <!-- 外形線 -->
+                    <polygon points="22,44 76,44 76,96 22,96" fill="none" stroke="#1e293b" stroke-width="2.4" stroke-linejoin="round"/>
+                    <polyline points="22,44 42,24 96,24 96,76 76,96" fill="none" stroke="#1e293b" stroke-width="2.4" stroke-linejoin="round"/>
+                    <line x1="76" y1="44" x2="96" y2="24" stroke="#1e293b" stroke-width="2.4"/>
+                </svg>`
+            },
+            {
+                id: 'cuboid',
+                name: '直方体',
+                reading: 'ちょくほうたい',
+                category: '角柱（四角柱）',
+                faces: 6,
+                edges: 12,
+                vertices: 8,
+                bases: 2,
+                baseShape: '長方形',
+                sideShape: '長方形',
+                hasCurved: false,
+                isRegularPolyhedron: false,
+                netHasCircle: false,
+                description: '6つの面がすべて長方形（または正方形と長方形）で囲まれた立体。',
+                svg: `
+                <svg viewBox="0 0 120 120" class="w-full h-full">
+                    <line x1="36" y1="36" x2="36" y2="78" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4 3"/>
+                    <line x1="36" y1="78" x2="14" y2="94" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4 3"/>
+                    <line x1="36" y1="78" x2="106" y2="78" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4 3"/>
+                    <polygon points="14,52 84,52 84,94 14,94" fill="#dbeafe" fill-opacity="0.5"/>
+                    <polygon points="14,52 36,36 106,36 84,52" fill="#bfdbfe" fill-opacity="0.6"/>
+                    <polygon points="84,52 106,36 106,78 84,94" fill="#93c5fd" fill-opacity="0.5"/>
+                    <polygon points="14,52 84,52 84,94 14,94" fill="none" stroke="#1e293b" stroke-width="2.4" stroke-linejoin="round"/>
+                    <polyline points="14,52 36,36 106,36 106,78 84,94" fill="none" stroke="#1e293b" stroke-width="2.4" stroke-linejoin="round"/>
+                    <line x1="84" y1="52" x2="106" y2="36" stroke="#1e293b" stroke-width="2.4"/>
+                </svg>`
+            },
+            {
+                id: 'triangular_prism',
+                name: '三角柱',
+                reading: 'さんかくちゅう',
+                category: '角柱',
+                faces: 5,
+                edges: 9,
+                vertices: 6,
+                bases: 2,
+                baseShape: '三角形',
+                sideShape: '長方形',
+                hasCurved: false,
+                isRegularPolyhedron: false,
+                netHasCircle: false,
+                description: '2つの底面が合同な三角形で、側面が3つの長方形の立体。',
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- 側面塗り -->
+                    <polygon points="18,34 82,34 82,82 18,82" fill="#99f6e4" fill-opacity="0.45"/>
+                    <!-- 上面塗り -->
+                    <polygon points="50,14 18,34 82,34" fill="#ccfbf1" fill-opacity="0.8"/>
+                    <!-- 隠れ線（奥の垂線と下面の奥2辺） -->
+                    <line x1="50" y1="14" x2="50" y2="62" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <polyline points="18,82 50,62 82,82" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <!-- 外形線（実線） -->
+                    <polygon points="50,14 18,34 82,34" fill="none" stroke="#1e293b" stroke-width="2.2" stroke-linejoin="round"/>
+                    <polyline points="18,34 18,82 82,82 82,34" fill="none" stroke="#1e293b" stroke-width="2.2" stroke-linejoin="round"/>
+                </svg>`
+            },
+            {
+                id: 'pentagonal_prism',
+                name: '五角柱',
+                reading: 'ごかくちゅう',
+                category: '角柱',
+                faces: 7,
+                edges: 15,
+                vertices: 10,
+                bases: 2,
+                baseShape: '五角形',
+                sideShape: '長方形',
+                hasCurved: false,
+                isRegularPolyhedron: false,
+                netHasCircle: false,
+                description: '2つの底面が五角形で、側面が5つの長方形でできた立体。',
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- 側面塗り -->
+                    <polygon points="18,22 28,38 28,84 18,68" fill="#fde68a" fill-opacity="0.5"/>
+                    <polygon points="28,38 72,38 72,84 28,84" fill="#fcd34d" fill-opacity="0.4"/>
+                    <polygon points="72,38 82,22 82,68 72,84" fill="#fbbf24" fill-opacity="0.35"/>
+                    <!-- 上面塗り -->
+                    <polygon points="50,10 18,22 28,38 72,38 82,22" fill="#fef3c7" fill-opacity="0.85"/>
+                    <!-- 隠れ線（奥中央の垂線と下面の奥2辺） -->
+                    <line x1="50" y1="10" x2="50" y2="56" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <polyline points="18,68 50,56 82,68" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <!-- 上面全5辺（実線） -->
+                    <polygon points="50,10 18,22 28,38 72,38 82,22" fill="none" stroke="#1e293b" stroke-width="2.1" stroke-linejoin="round"/>
+                    <!-- 手前・左右端の縦4辺と下面手前3辺（実線） -->
+                    <polyline points="18,22 18,68 28,84 72,84 82,68 82,22" fill="none" stroke="#1e293b" stroke-width="2.1" stroke-linejoin="round"/>
+                    <line x1="28" y1="38" x2="28" y2="84" stroke="#1e293b" stroke-width="2.1"/>
+                    <line x1="72" y1="38" x2="72" y2="84" stroke="#1e293b" stroke-width="2.1"/>
+                </svg>`
+            },
+            {
+                id: 'hexagonal_prism',
+                name: '六角柱',
+                reading: 'ろっかくちゅう',
+                category: '角柱',
+                faces: 8,
+                edges: 18,
+                vertices: 12,
+                bases: 2,
+                baseShape: '六角形',
+                sideShape: '長方形',
+                hasCurved: false,
+                isRegularPolyhedron: false,
+                netHasCircle: false,
+                description: '2つの底面が六角形で、側面が6つの長方形でできた立体。',
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- 側面塗り -->
+                    <polygon points="16,24 34,36 34,84 16,72" fill="#bbf7d0" fill-opacity="0.5"/>
+                    <polygon points="34,36 66,36 66,84 34,84" fill="#86efac" fill-opacity="0.4"/>
+                    <polygon points="66,36 84,24 84,72 66,84" fill="#4ade80" fill-opacity="0.35"/>
+                    <!-- 上面塗り -->
+                    <polygon points="34,12 66,12 84,24 66,36 34,36 16,24" fill="#dcfce7" fill-opacity="0.85"/>
+                    <!-- 隠れ線（奥の垂線2本と下面奥3辺） -->
+                    <line x1="34" y1="12" x2="34" y2="60" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <line x1="66" y1="12" x2="66" y2="60" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <polyline points="16,72 34,60 66,60 84,72" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <!-- 上面全6辺（実線） -->
+                    <polygon points="34,12 66,12 84,24 66,36 34,36 16,24" fill="none" stroke="#1e293b" stroke-width="2.1" stroke-linejoin="round"/>
+                    <!-- 縦4辺と下面手前3辺（実線） -->
+                    <polyline points="16,24 16,72 34,84 66,84 84,72 84,24" fill="none" stroke="#1e293b" stroke-width="2.1" stroke-linejoin="round"/>
+                    <line x1="34" y1="36" x2="34" y2="84" stroke="#1e293b" stroke-width="2.1"/>
+                    <line x1="66" y1="36" x2="66" y2="84" stroke="#1e293b" stroke-width="2.1"/>
+                </svg>`
+            },
+            {
+                id: 'cylinder',
+                name: '円柱',
+                reading: 'えんちゅう',
+                category: '回転体・柱体',
+                faces: 3,
+                edges: 2,
+                vertices: 0,
+                bases: 2,
+                baseShape: '円',
+                sideShape: '曲面（展開すると長方形）',
+                hasCurved: true,
+                isRegularPolyhedron: false,
+                netHasCircle: true,
+                description: '2つの底面が合同な円で、側面が曲面になっている立体。',
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- 側面塗り -->
+                    <path d="M 22,24 L 22,74 A 28,11 0 0 0 78,74 L 78,24 Z" fill="#e0f2fe" fill-opacity="0.55"/>
+                    <!-- 上底面 -->
+                    <ellipse cx="50" cy="24" rx="28" ry="11" fill="#bae6fd" fill-opacity="0.85" stroke="#1e293b" stroke-width="2.2"/>
+                    <!-- 下底面（奥の破線） -->
+                    <path d="M 22,74 A 28,11 0 0 1 78,74" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <!-- 下底面（手前の実線）と母線 -->
+                    <path d="M 22,24 L 22,74 A 28,11 0 0 0 78,74 L 78,24" fill="none" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round"/>
+                </svg>`
+            },
+            {
+                id: 'tetrahedron',
+                name: '正四面体（三角錐）',
+                reading: 'せいしめんたい（さんかくすい）',
+                category: '角錐・正多面体',
+                faces: 4,
+                edges: 6,
+                vertices: 4,
+                bases: 1,
+                baseShape: '三角形',
+                sideShape: '三角形',
+                hasCurved: false,
+                isRegularPolyhedron: true,
+                netHasCircle: false,
+                description: '4つの面すべてが合同な正三角形でできた立体。底面も側面も三角形。',
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- 塗り -->
+                    <polygon points="50,14 16,74 54,86" fill="#fae8ff" fill-opacity="0.65"/>
+                    <polygon points="50,14 54,86 84,66" fill="#f5d0fe" fill-opacity="0.55"/>
+                    <!-- 隠れ線 -->
+                    <line x1="16" y1="74" x2="84" y2="66" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <!-- 外形線 -->
+                    <polygon points="50,14 16,74 54,86 84,66" fill="none" stroke="#1e293b" stroke-width="2.2" stroke-linejoin="round"/>
+                    <line x1="50" y1="14" x2="54" y2="86" stroke="#1e293b" stroke-width="2.2"/>
+                </svg>`
+            },
+            {
+                id: 'square_pyramid',
+                name: '四角錐',
+                reading: 'しかくすい',
+                category: '角錐',
+                faces: 5,
+                edges: 8,
+                vertices: 5,
+                bases: 1,
+                baseShape: '四角形',
+                sideShape: '三角形',
+                hasCurved: false,
+                isRegularPolyhedron: false,
+                netHasCircle: false,
+                description: '底面が四角形で、側面が4つの三角形でできたピラミッド型の立体。',
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- 塗り -->
+                    <polygon points="50,14 16,80 66,80" fill="#ffe4e6" fill-opacity="0.65"/>
+                    <polygon points="50,14 66,80 84,64" fill="#fecdd3" fill-opacity="0.55"/>
+                    <!-- 隠れ線 -->
+                    <line x1="50" y1="14" x2="34" y2="64" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <polyline points="16,80 34,64 84,64" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <!-- 外形線 -->
+                    <polyline points="16,80 66,80 84,64" fill="none" stroke="#1e293b" stroke-width="2.2" stroke-linejoin="round"/>
+                    <line x1="50" y1="14" x2="16" y2="80" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round"/>
+                    <line x1="50" y1="14" x2="66" y2="80" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round"/>
+                    <line x1="50" y1="14" x2="84" y2="64" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round"/>
+                </svg>`
+            },
+            {
+                id: 'pentagonal_pyramid',
+                name: '五角錐',
+                reading: 'ごかくすい',
+                category: '角錐',
+                faces: 6,
+                edges: 10,
+                vertices: 6,
+                bases: 1,
+                baseShape: '五角形',
+                sideShape: '三角形',
+                hasCurved: false,
+                isRegularPolyhedron: false,
+                netHasCircle: false,
+                description: '底面が五角形で、側面が5つの三角形でできた立体。',
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- 塗り -->
+                    <polygon points="50,10 18,68 28,84" fill="#ffedd5" fill-opacity="0.65"/>
+                    <polygon points="50,10 28,84 72,84" fill="#fed7aa" fill-opacity="0.55"/>
+                    <polygon points="50,10 72,84 82,68" fill="#fdba74" fill-opacity="0.45"/>
+                    <!-- 隠れ線（奥の辺 P-B1, B1-B2, B1-B5） -->
+                    <line x1="50" y1="10" x2="50" y2="56" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <polyline points="18,68 50,56 82,68" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <!-- 外形線（実線） -->
+                    <polyline points="18,68 28,84 72,84 82,68" fill="none" stroke="#1e293b" stroke-width="2.1" stroke-linejoin="round"/>
+                    <line x1="50" y1="10" x2="18" y2="68" stroke="#1e293b" stroke-width="2.1" stroke-linecap="round"/>
+                    <line x1="50" y1="10" x2="28" y2="84" stroke="#1e293b" stroke-width="2.1" stroke-linecap="round"/>
+                    <line x1="50" y1="10" x2="72" y2="84" stroke="#1e293b" stroke-width="2.1" stroke-linecap="round"/>
+                    <line x1="50" y1="10" x2="82" y2="68" stroke="#1e293b" stroke-width="2.1" stroke-linecap="round"/>
+                </svg>`
+            },
+            {
+                id: 'cone',
+                name: '円錐',
+                reading: 'えんすい',
+                category: '回転体・錐体',
+                faces: 2,
+                edges: 1,
+                vertices: 1,
+                bases: 1,
+                baseShape: '円',
+                sideShape: '曲面（展開するとおうぎ形）',
+                hasCurved: true,
+                isRegularPolyhedron: false,
+                netHasCircle: true,
+                description: '底面が1つの円で、とがった頂点をもつ立体。展開図はおうぎ形と円。',
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- 側面塗り -->
+                    <path d="M 50,14 L 20,76 A 30,11 0 0 0 80,76 Z" fill="#fef9c3" fill-opacity="0.75"/>
+                    <!-- 底面（奥の破線） -->
+                    <path d="M 20,76 A 30,11 0 0 1 80,76" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <!-- 外形線 -->
+                    <path d="M 50,14 L 20,76 A 30,11 0 0 0 80,76 Z" fill="none" stroke="#1e293b" stroke-width="2.2" stroke-linejoin="round"/>
+                </svg>`
+            },
+            {
+                id: 'sphere',
+                name: '球',
+                reading: 'きゅう',
+                category: '回転体',
+                faces: 1,
+                edges: 0,
+                vertices: 0,
+                bases: 0,
+                baseShape: 'なし',
+                sideShape: '曲面のみ',
+                hasCurved: true,
+                isRegularPolyhedron: false,
+                netHasCircle: false,
+                description: 'どこから見ても円に見える、曲面だけでできた立体。頂点も辺もない。',
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <defs>
+                        <radialGradient id="sphereGrad" cx="38%" cy="32%" r="65%">
+                            <stop offset="0%" stop-color="#ffffff"/>
+                            <stop offset="45%" stop-color="#c7d2fe"/>
+                            <stop offset="100%" stop-color="#818cf8"/>
+                        </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="34" fill="url(#sphereGrad)" fill-opacity="0.65" stroke="#1e293b" stroke-width="2.2"/>
+                    <!-- 赤道線（立体感） -->
+                    <path d="M 16,50 A 34,11 0 0 1 84,50" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3.5 2.5"/>
+                    <path d="M 16,50 A 34,11 0 0 0 84,50" fill="none" stroke="#475569" stroke-width="1.7"/>
+                </svg>`
+            },
+            {
+                id: 'octahedron',
+                name: '正八面体',
+                reading: 'せいはちめんたい',
+                category: '正多面体',
+                faces: 8,
+                edges: 12,
+                vertices: 6,
+                bases: 0,
+                baseShape: 'なし',
+                sideShape: '正三角形',
+                hasCurved: false,
+                isRegularPolyhedron: true,
+                netHasCircle: false,
+                description: '8つの面すべてが合同な正三角形でできたダイヤ型の正多面体。',
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- 塗り -->
+                    <polygon points="50,12 18,50 62,58" fill="#d1fae5" fill-opacity="0.65"/>
+                    <polygon points="50,12 62,58 82,50" fill="#a7f3d0" fill-opacity="0.55"/>
+                    <polygon points="50,88 18,50 62,58" fill="#6ee7b7" fill-opacity="0.45"/>
+                    <polygon points="50,88 62,58 82,50" fill="#34d399" fill-opacity="0.4"/>
+                    <!-- 隠れ線 -->
+                    <polyline points="18,50 38,42 82,50" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3.5 2.5"/>
+                    <line x1="50" y1="12" x2="38" y2="42" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3.5 2.5"/>
+                    <line x1="50" y1="88" x2="38" y2="42" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3.5 2.5"/>
+                    <!-- 外形線 -->
+                    <polygon points="50,12 82,50 50,88 18,50" fill="none" stroke="#1e293b" stroke-width="2.2" stroke-linejoin="round"/>
+                    <polyline points="18,50 62,58 82,50" fill="none" stroke="#1e293b" stroke-width="2.2" stroke-linejoin="round"/>
+                    <line x1="50" y1="12" x2="62" y2="58" stroke="#1e293b" stroke-width="2.2"/>
+                    <line x1="50" y1="88" x2="62" y2="58" stroke="#1e293b" stroke-width="2.2"/>
+                </svg>`
+            },
+            {
+                id: 'hemisphere',
+                name: '半球',
+                reading: 'はんきゅう',
+                category: '回転体',
+                faces: 2,
+                edges: 1,
+                vertices: 0,
+                bases: 1,
+                baseShape: '円',
+                sideShape: '曲面',
+                hasCurved: true,
+                isRegularPolyhedron: false,
+                netHasCircle: false,
+                description: '球をちょうど半分に切った立体。切り口は円になっている。',
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <path d="M 18,64 A 32,32 0 0 1 82,64 A 32,11 0 0 1 18,64 Z" fill="#ede9fe" fill-opacity="0.75"/>
+                    <!-- 切り口の奥破線 -->
+                    <path d="M 18,64 A 32,11 0 0 1 82,64" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3.5 2.5"/>
+                    <!-- 外形線 -->
+                    <path d="M 18,64 A 32,32 0 0 1 82,64 A 32,11 0 0 1 18,64 Z" fill="none" stroke="#1e293b" stroke-width="2.2"/>
+                </svg>`
+            }
+        ];
+
+        // ==========================================
+        // 2. ハードモード用 条件問題リスト
+        // ==========================================
+        const HARD_QUESTIONS = [
+            {
+                text: '底面が2つある立体',
+                hint: '上下（または左右）に向かい合う2つの底面をもつ立体（柱体）',
+                check: (s) => s.bases === 2
+            },
+            {
+                text: '底面が1つだけの立体',
+                hint: '底面が1つで、上がとがっている立体（錐体）や半球など',
+                check: (s) => s.bases === 1
+            },
+            {
+                text: '側面が三角形の立体',
+                hint: '角錐や正八面体など、側面の形が三角形になっているもの',
+                check: (s) => s.sideShape.includes('三角形')
+            },
+            {
+                text: '辺の数が 8本 の立体',
+                hint: '底面の辺4本 ＋ 側面の辺4本 ＝ 合計8本',
+                check: (s) => s.edges === 8
+            },
+            {
+                text: '辺の数が 12本 の立体',
+                hint: '四角柱（立方体・直方体）や正八面体など',
+                check: (s) => s.edges === 12
+            },
+            {
+                text: '頂点の数が 6個 の立体',
+                hint: '三角柱、五角錐、正八面体が該当します',
+                check: (s) => s.vertices === 6
+            },
+            {
+                text: '頂点が 1つもない 立体',
+                hint: 'とがった角がない立体（円柱・球・半球）',
+                check: (s) => s.vertices === 0
+            },
+            {
+                text: '曲面を持つ立体',
+                hint: '平らな面だけでなく、曲がった面をもつ立体',
+                check: (s) => s.hasCurved === true
+            },
+            {
+                text: 'すべての面が合同な正多角形（正多面体）',
+                hint: '正四面体・立方体（正六面体）・正八面体など',
+                check: (s) => s.isRegularPolyhedron === true
+            },
+            {
+                text: '展開図に「円」が含まれる立体',
+                hint: '底面が円になっている柱体・錐体（円柱・円錐）',
+                check: (s) => s.netHasCircle === true
+            },
+            {
+                text: '底面が「三角形」の立体',
+                hint: '三角柱や三角錐（正四面体）',
+                check: (s) => s.baseShape === '三角形'
+            },
+            {
+                text: '面が 5つ ある立体',
+                hint: '三角柱（底面2＋側面3）や四角錐（底面1＋側面4）',
+                check: (s) => s.faces === 5
+            },
+            {
+                text: '面が 6つ ある立体',
+                hint: '立方体・直方体・五角錐が該当します',
+                check: (s) => s.faces === 6
+            },
+            {
+                text: '底面が「五角形」の立体',
+                hint: '五角柱または五角錐',
+                check: (s) => s.baseShape === '五角形'
+            },
+            {
+                text: '辺の数が 6本 の立体',
+                hint: 'すべての面が三角形の三角錐（正四面体）',
+                check: (s) => s.edges === 6
+            }
+        ];
+
+        // ==========================================
+        // 3. ゲーム状態管理 & サウンド (Web Audio API)
+        // ==========================================
+        const GAME_DURATION = 30.0; // 30秒
+        const PENALTY_DURATION = 2000; // 2秒 (ミリ秒)
+        const STORAGE_KEY_NORMAL = 'solid_shapes_best_normal_v1';
+        const STORAGE_KEY_HARD = 'solid_shapes_best_hard_v1';
+
+        let state = {
+            mode: 'normal', // 'normal' | 'hard'
+            isPlaying: false,
+            isPenalized: false,
+            score: 0,
+            misses: 0,
+            timeLeft: GAME_DURATION,
+            timerInterval: null,
+            penaltyTimeout: null,
+            currentCards: [],
+            currentQuestion: null, // { label, hint, isCorrectFn, sampleAnswerNames }
+            mistakesHistory: [],
+            soundEnabled: true,
+            lastQuestionKey: ''
+        };
+
+        // Web Audio API コンテキスト
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioCtx = new AudioContext();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(type) {
+            if (!state.soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                // ピンポン♪（軽快な2音）
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(659.25, now); // E5
+                osc.frequency.setValueAtTime(880.00, now + 0.08); // A5
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                osc.start(now);
+                osc.stop(now + 0.28);
+            } else if (type === 'wrong') {
+                // ブブー（低い鋸歯状波）
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.35);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+                osc.start(now);
+                osc.stop(now + 0.38);
+            } else if (type === 'finish') {
+                // 終了ファンファーレ風
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.3); // C6
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+                osc.start(now);
+                osc.stop(now + 0.65);
+            }
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            document.getElementById('soundIconOn').classList.toggle('hidden', !state.soundEnabled);
+            document.getElementById('soundIconOff').classList.toggle('hidden', state.soundEnabled);
+            document.getElementById('soundLabel').textContent = state.soundEnabled ? '音あり' : '消音';
+            if (state.soundEnabled) {
+                initAudio();
+                playTone('correct');
+            }
+        }
+
+        // ==========================================
+        // 4. 初期化・ベストスコア管理・図鑑生成
+        // ==========================================
+        function getBestScore(mode) {
+            const key = mode === 'normal' ? STORAGE_KEY_NORMAL : STORAGE_KEY_HARD;
+            const val = localStorage.getItem(key);
+            return val ? parseInt(val, 10) : 0;
+        }
+
+        function setBestScore(mode, score) {
+            const key = mode === 'normal' ? STORAGE_KEY_NORMAL : STORAGE_KEY_HARD;
+            localStorage.setItem(key, String(score));
+        }
+
+        function updateBestScoreDisplays() {
+            document.getElementById('bestNormalDisplay').textContent = getBestScore('normal');
+            document.getElementById('bestHardDisplay').textContent = getBestScore('hard');
+        }
+
+        function renderCatalog() {
+            const grid = document.getElementById('catalogGrid');
+            grid.innerHTML = SHAPES.map(shape => `
+                <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-2 flex flex-col items-center text-center" title="${shape.description}">
+                    <div class="w-11 h-11 sm:w-12 sm:h-12 mb-1">
+                        ${shape.svg}
+                    </div>
+                    <span class="text-[10px] sm:text-xs font-bold text-slate-700 leading-tight line-clamp-1">
+                        ${shape.name.replace('（三角錐）', '')}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        // ==========================================
+        // 5. ゲーム進行ロジック
+        // ==========================================
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function startGame(mode) {
+            initAudio();
+            state.mode = mode;
+            state.isPlaying = true;
+            state.isPenalized = false;
+            state.score = 0;
+            state.misses = 0;
+            state.timeLeft = GAME_DURATION;
+            state.mistakesHistory = [];
+            state.lastQuestionKey = '';
+
+            // UI切り替え
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.add('hidden');
+            const playScreen = document.getElementById('playScreen');
+            playScreen.classList.remove('hidden');
+            playScreen.classList.add('flex');
+            document.getElementById('quitBtn').classList.remove('hidden');
+            document.getElementById('penaltyOverlay').classList.add('hidden');
+
+            // モード別のバッジ・色調整
+            const badge = document.getElementById('playModeBadge');
+            const qBox = document.getElementById('questionBox');
+            const qSub = document.getElementById('questionSubLabel');
+            const timeBar = document.getElementById('timeProgressBar');
+
+            if (mode === 'normal') {
+                badge.textContent = 'ノーマルモード';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-100 text-indigo-700';
+                qBox.className = 'bg-white rounded-2xl p-4 sm:p-5 border-2 border-indigo-200 shadow-sm text-center relative overflow-hidden';
+                qSub.textContent = 'この名前の立体を選ぼう！';
+                qSub.className = 'text-xs font-bold text-indigo-500 mb-1';
+                timeBar.className = 'h-full bg-indigo-600 transition-all duration-100 ease-linear rounded-full';
+            } else {
+                badge.textContent = 'ハードモード';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-700';
+                qBox.className = 'bg-white rounded-2xl p-4 sm:p-5 border-2 border-rose-200 shadow-sm text-center relative overflow-hidden';
+                qSub.textContent = '次の条件に当てはまる立体を選ぼう！';
+                qSub.className = 'text-xs font-bold text-rose-500 mb-1';
+                timeBar.className = 'h-full bg-rose-600 transition-all duration-100 ease-linear rounded-full';
+            }
+
+            updateScoreUI();
+            updateTimerUI();
+            generateNextRound();
+
+            // タイマーループ開始 (0.1秒刻み)
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            const startTime = performance.now();
+            const initialDuration = GAME_DURATION;
+
+            state.timerInterval = setInterval(() => {
+                if (!state.isPlaying) return;
+                const elapsed = (performance.now() - startTime) / 1000;
+                state.timeLeft = Math.max(0, initialDuration - elapsed);
+                updateTimerUI();
+
+                if (state.timeLeft <= 0) {
+                    endGame();
+                }
+            }, 50);
+        }
+
+        function generateNextRound() {
+            // 13種類からランダムに8枚を選出
+            let selectedCards = shuffleArray(SHAPES).slice(0, 8);
+
+            if (state.mode === 'normal') {
+                // 8枚の中から正解の1枚を選ぶ（連続で同じ問題にならないよう配慮）
+                let candidates = selectedCards.filter(s => s.id !== state.lastQuestionKey);
+                if (candidates.length === 0) candidates = selectedCards;
+                const target = candidates[Math.floor(Math.random() * candidates.length)];
+
+                state.lastQuestionKey = target.id;
+                state.currentCards = selectedCards;
+                state.currentQuestion = {
+                    label: target.name,
+                    hint: '',
+                    isCorrectFn: (shape) => shape.id === target.id,
+                    correctShapes: [target]
+                };
+            } else {
+                // ハードモード：条件をランダムに選び、8枚の中に1枚以上正解が含まれるようにする
+                let qCandidates = HARD_QUESTIONS.filter(q => q.text !== state.lastQuestionKey);
+                const chosenQ = qCandidates[Math.floor(Math.random() * qCandidates.length)];
+                state.lastQuestionKey = chosenQ.text;
+
+                // 条件を満たす図形が8枚に含まれているか確認
+                let matchingIn8 = selectedCards.filter(chosenQ.check);
+                if (matchingIn8.length === 0) {
+                    // 全図形から条件を満たすものを1つ抽出し、8枚のうちランダムな1枚と入れ替える
+                    const allMatching = SHAPES.filter(chosenQ.check);
+                    const guaranteedShape = allMatching[Math.floor(Math.random() * allMatching.length)];
+                    const replaceIdx = Math.floor(Math.random() * 8);
+                    selectedCards[replaceIdx] = guaranteedShape;
+                    selectedCards = shuffleArray(selectedCards);
+                    matchingIn8 = selectedCards.filter(chosenQ.check);
+                }
+
+                state.currentCards = selectedCards;
+                state.currentQuestion = {
+                    label: chosenQ.text,
+                    hint: chosenQ.hint,
+                    isCorrectFn: chosenQ.check,
+                    correctShapes: matchingIn8
+                };
+            }
+
+            renderRoundUI();
+        }
+
+        function renderRoundUI() {
+            const qText = document.getElementById('questionText');
+            const qHint = document.getElementById('questionHint');
+            qText.textContent = state.currentQuestion.label;
+
+            if (state.mode === 'hard' && state.currentQuestion.hint) {
+                qHint.textContent = `ヒント: ${state.currentQuestion.hint}`;
+                qHint.classList.remove('hidden');
+            } else {
+                qHint.classList.add('hidden');
+            }
+
+            const grid = document.getElementById('cardsGrid');
+            grid.innerHTML = state.currentCards.map((shape, index) => `
+                <button
+                    type="button"
+                    id="card-${index}"
+                    onclick="handleCardSelect(${index})"
+                    class="shape-card bg-white hover:bg-indigo-50/40 border-2 border-slate-200 hover:border-indigo-400 rounded-2xl p-3 sm:p-4 flex flex-col items-center justify-center shadow-sm aspect-[4/3] sm:aspect-square relative overflow-hidden focus:outline-none"
+                >
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 pointer-events-none">
+                        ${shape.svg}
+                    </div>
+                    <!-- 正解時のチェックマークオーバーレイ -->
+                    <div id="card-badge-${index}" class="hidden absolute inset-0 bg-emerald-500/20 flex items-center justify-center pointer-events-none">
+                        <div class="bg-emerald-500 text-white rounded-full p-2 shadow-md">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function handleCardSelect(index) {
+            if (!state.isPlaying || state.isPenalized) return;
+
+            const chosenShape = state.currentCards[index];
+            const isCorrect = state.currentQuestion.isCorrectFn(chosenShape);
+            const cardEl = document.getElementById(`card-${index}`);
+
+            if (isCorrect) {
+                // 正解処理
+                playTone('correct');
+                state.score += 1;
+                updateScoreUI();
+
+                // 正解エフェクトを少し見せてから次の問題へ
+                cardEl.classList.remove('border-slate-200');
+                cardEl.classList.add('border-emerald-500', 'bg-emerald-50', 'animate-pop-success');
+                const badgeEl = document.getElementById(`card-badge-${index}`);
+                if (badgeEl) badgeEl.classList.remove('hidden');
+
+                // 二重タップ防止のため一時的にボタン無効化
+                disableAllCards(true);
+                setTimeout(() => {
+                    if (state.isPlaying) {
+                        generateNextRound();
+                    }
+                }, 160);
+            } else {
+                // 不正解（お手つきペナルティ：2秒間操作不可）
+                playTone('wrong');
+                state.misses += 1;
+
+                // 間違えた履歴を記録（重複する同じ問題文はまとめても良いが、学習用に記録）
+                state.mistakesHistory.push({
+                    question: state.currentQuestion.label,
+                    chosen: chosenShape,
+                    corrects: state.currentQuestion.correctShapes
+                });
+
+                triggerPenalty(cardEl, chosenShape);
+            }
+        }
+
+        function disableAllCards(disabled) {
+            for (let i = 0; i < 8; i++) {
+                const btn = document.getElementById(`card-${i}`);
+                if (btn) btn.disabled = disabled;
+            }
+        }
+
+        function triggerPenalty(cardEl, chosenShape) {
+            state.isPenalized = true;
+            disableAllCards(true);
+
+            // 選んだカードを赤くしてシェイク
+            cardEl.classList.remove('border-slate-200');
+            cardEl.classList.add('border-rose-500', 'bg-rose-50', 'animate-shake');
+
+            // オーバーレイ表示
+            const overlay = document.getElementById('penaltyOverlay');
+            const wrongNameEl = document.getElementById('penaltyWrongName');
+            const progressEl = document.getElementById('penaltyProgressBar');
+
+            wrongNameEl.textContent = `あなたが選んだ立体：「${chosenShape.name}」`;
+            overlay.classList.remove('hidden');
+
+            // アニメーションリセットして2秒バー開始
+            progressEl.classList.remove('cooldown-bar');
+            void progressEl.offsetWidth; // リフロー強制
+            progressEl.classList.add('cooldown-bar');
+
+            if (state.penaltyTimeout) clearTimeout(state.penaltyTimeout);
+            state.penaltyTimeout = setTimeout(() => {
+                state.isPenalized = false;
+                overlay.classList.add('hidden');
+                cardEl.classList.remove('border-rose-500', 'bg-rose-50', 'animate-shake');
+                cardEl.classList.add('border-slate-200');
+                if (state.isPlaying) {
+                    disableAllCards(false);
+                }
+            }, PENALTY_DURATION);
+        }
+
+        function updateScoreUI() {
+            document.getElementById('scoreText').textContent = state.score;
+        }
+
+        function updateTimerUI() {
+            const timerEl = document.getElementById('timerText');
+            const barEl = document.getElementById('timeProgressBar');
+            timerEl.textContent = state.timeLeft.toFixed(1);
+
+            const pct = (state.timeLeft / GAME_DURATION) * 100;
+            barEl.style.width = `${pct}%`;
+
+            // 残り5秒以下で赤く強調
+            if (state.timeLeft <= 5.0) {
+                timerEl.classList.remove('text-slate-800');
+                timerEl.classList.add('text-rose-600');
+                barEl.classList.remove('bg-indigo-600', 'bg-rose-600');
+                barEl.classList.add('bg-amber-500');
+            } else {
+                timerEl.classList.add('text-slate-800');
+                timerEl.classList.remove('text-rose-600');
+            }
+        }
+
+        // ==========================================
+        // 6. ゲーム終了・リザルト表示
+        // ==========================================
+        function endGame() {
+            state.isPlaying = false;
+            state.isPenalized = false;
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            if (state.penaltyTimeout) clearTimeout(state.penaltyTimeout);
+
+            playTone('finish');
+
+            // 画面切り替え
+            const playScreen = document.getElementById('playScreen');
+            playScreen.classList.add('hidden');
+            playScreen.classList.remove('flex');
+            document.getElementById('quitBtn').classList.add('hidden');
+            document.getElementById('penaltyOverlay').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+
+            // ベストスコア判定＆保存
+            const prevBest = getBestScore(state.mode);
+            let isNewRecord = false;
+            let currentBest = prevBest;
+
+            if (state.score > prevBest) {
+                setBestScore(state.mode, state.score);
+                currentBest = state.score;
+                isNewRecord = true;
+            }
+
+            // リザルト数値反映
+            document.getElementById('resultModeLabel').textContent =
+                state.mode === 'normal' ? 'ノーマルモード 結果発表' : 'ハードモード 結果発表';
+            document.getElementById('finalScoreText').textContent = state.score;
+            document.getElementById('resultBestText').textContent = currentBest;
+            document.getElementById('resultMissText').textContent = state.misses;
+
+            const newRecordBanner = document.getElementById('newRecordBanner');
+            if (isNewRecord && state.score > 0) {
+                newRecordBanner.classList.remove('hidden');
+            } else {
+                newRecordBanner.classList.add('hidden');
+            }
+
+            renderMistakeReview();
+        }
+
+        function renderMistakeReview() {
+            const listEl = document.getElementById('mistakeList');
+            if (state.mistakesHistory.length === 0) {
+                listEl.innerHTML = `
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center text-emerald-800 font-bold text-sm">
+                        ✨ ミス0回！パーフェクトな判断力です！
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = state.mistakesHistory.map((item, idx) => {
+                const correctNames = item.corrects.map(c => c.name).join(' / ');
+                const firstCorrect = item.corrects[0];
+                return `
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <div class="text-xs font-bold text-slate-400">ミス #${idx + 1}</div>
+                            <div class="text-sm font-extrabold text-slate-800">お題：「${item.question}」</div>
+                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                                <span class="text-rose-600 font-bold">❌ あなたの選択: ${item.chosen.name}</span>
+                                <span class="text-emerald-700 font-bold">⭕ 正解の例: ${correctNames}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 pt-0.5">${firstCorrect.description}</p>
+                        </div>
+                        <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-white rounded-xl border border-rose-200 p-1">${item.chosen.svg}</div>
+                                <span class="text-[10px] text-rose-600 font-bold">誤答</span>
+                            </div>
+                            <span class="text-slate-400 text-xs">→</span>
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-white rounded-xl border border-emerald-300 p-1">${firstCorrect.svg}</div>
+                                <span class="text-[10px] text-emerald-600 font-bold">正解</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ==========================================
+        // 7. ナビゲーション・モーダル制御
+        // ==========================================
+        function restartSameMode() {
+            startGame(state.mode);
+        }
+
+        function returnToTitle() {
+            state.isPlaying = false;
+            state.isPenalized = false;
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            if (state.penaltyTimeout) clearTimeout(state.penaltyTimeout);
+
+            document.getElementById('confirmModal').classList.add('hidden');
+            const playScreen = document.getElementById('playScreen');
+            playScreen.classList.add('hidden');
+            playScreen.classList.remove('flex');
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('quitBtn').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+
+            updateBestScoreDisplays();
+        }
+
+        function confirmReturnTitle() {
+            if (state.isPlaying) {
+                document.getElementById('confirmModal').classList.remove('hidden');
+            } else {
+                returnToTitle();
+            }
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        function confirmQuitExec() {
+            returnToTitle();
+        }
+
+        // 初期ロード時のセットアップ
+        window.addEventListener('DOMContentLoaded', () => {
+            updateBestScoreDisplays();
+            renderCatalog();
+        });
+    </script>
+</body>
+</html>
