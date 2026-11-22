@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>座標トレジャーハンター</title>
+  <style>
+    /* ==========================================================================
+       ベース設定・カラー変数（発掘・冒険テーマの温かみあるポップな配色）
+       ========================================================================== */
+    :root {
+      --bg-gradient-start: #fef3c7;
+      --bg-gradient-end: #d9f99d;
+      --card-bg: #ffffff;
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --accent: #f59e0b;
+      --accent-dark: #b45309;
+      --earth-dark: #451a03;
+      --earth-mid: #78350f;
+      --danger: #ef4444;
+      --success: #10b981;
+      --text-main: #1e293b;
+      --text-sub: #475569;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Yu Gothic", "Meiryo", sans-serif;
+      background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+      color: var(--text-main);
+    }
+
+    /* 1画面に収まるレスポンシブコンテナ */
+    #app {
+      width: 100%;
+      height: 100dvh;
+      max-width: 540px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8px 12px;
+      position: relative;
+    }
+
+    /* ==========================================================================
+       共通ボタンスタイル
+       ========================================================================== */
+    .btn {
+      border: none;
+      border-radius: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: inherit;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25) !important;
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      filter: grayscale(40%);
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #38bdf8, #0284c7);
+      color: #ffffff;
+      box-shadow: 0 4px 0 #0369a1;
+    }
+
+    .btn-accent {
+      background: linear-gradient(180deg, #fbbf24, #d97706);
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 5px 0 #92400e;
+    }
+
+    .btn-secondary {
+      background: #f8fafc;
+      color: var(--text-main);
+      border: 2px solid #cbd5e1;
+      box-shadow: 0 3px 0 #94a3b8;
+    }
+
+    /* ==========================================================================
+       ヘッダー
+       ========================================================================== */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 36px;
+      flex-shrink: 0;
+    }
+
+    .app-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 900;
+      font-size: 0.92rem;
+      color: var(--earth-dark);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 2px solid #fde68a;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.92);
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      height: 34px;
+      padding: 0 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ==========================================================================
+       画面切り替え
+       ========================================================================== */
+    .screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* ==========================================================================
+       1. タイトル画面
+       ========================================================================== */
+    #title-screen {
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      padding: 4px;
+    }
+
+    .title-card {
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 18px 16px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(120, 53, 15, 0.16);
+      border: 3px solid #fcd34d;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .mole-preview-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .game-logo {
+      font-size: 1.55rem;
+      font-weight: 900;
+      line-height: 1.25;
+      color: var(--earth-dark);
+      letter-spacing: 0.02em;
+    }
+
+    .game-logo span {
+      display: inline-block;
+      background: linear-gradient(90deg, #d97706, #0284c7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .rule-box {
+      background: #fffbeb;
+      border-radius: 14px;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 0.82rem;
+      line-height: 1.48;
+      color: var(--text-sub);
+      border: 1px solid #fde68a;
+    }
+
+    .rule-box strong {
+      color: var(--earth-mid);
+    }
+
+    .difficulty-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .diff-card {
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 10px 8px;
+      background: #ffffff;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .diff-card.selected {
+      border-color: #d97706;
+      background: #fef3c7;
+      box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.25);
+    }
+
+    .diff-title {
+      font-weight: 900;
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    .diff-desc {
+      font-size: 0.72rem;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+
+    .diff-best {
+      margin-top: 6px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+      background: #e0f2fe;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .start-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 1.15rem;
+      margin-top: 2px;
+    }
+
+    /* ==========================================================================
+       2. プレイ画面
+       ========================================================================== */
+    #play-screen {
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    /* 上部ステータスバー */
+    .hud-panel {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 7px 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border: 2px solid #fcd34d;
+      display: grid;
+      grid-template-columns: 1.38fr 1fr;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .target-box {
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+      border: 2px solid #f59e0b;
+      border-radius: 12px;
+      padding: 4px 8px;
+      text-align: center;
+    }
+
+    .target-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--accent-dark);
+    }
+
+    .target-coord {
+      font-size: 1.55rem;
+      font-weight: 900;
+      color: #78350f;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
+    }
+
+    .stats-col {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+      padding: 3px 8px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .treasure-dots {
+      display: flex;
+      gap: 2px;
+      font-size: 0.9rem;
+    }
+
+    .timer-val {
+      font-variant-numeric: tabular-nums;
+      color: var(--primary-dark);
+      font-size: 0.92rem;
+    }
+
+    .timer-val.warning {
+      color: var(--danger);
+      animation: pulse 0.6s infinite alternate;
+    }
+
+    /* 補助ステータスバー */
+    .sub-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 10px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      min-height: 28px;
+      flex-shrink: 0;
+      border: 1px solid #e2e8f0;
+    }
+
+    .current-pos-badge {
+      color: var(--primary-dark);
+    }
+
+    .feedback-msg {
+      font-weight: 900;
+      transition: opacity 0.2s;
+      text-align: right;
+    }
+
+    .feedback-msg.ok { color: var(--success); }
+    .feedback-msg.ng { color: var(--danger); }
+
+    /* 迷路キャンバスエリア */
+    .canvas-wrapper {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      width: 100%;
+    }
+
+    canvas#maze-canvas {
+      background: #2b1d12;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(69, 26, 3, 0.3);
+      border: 3px solid #78350f;
+      display: block;
+      touch-action: none;
+    }
+
+    /* ポップアップバナー */
+    .floating-banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      padding: 10px 20px;
+      border-radius: 16px;
+      font-weight: 900;
+      font-size: 1.1rem;
+      color: #fff;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 10;
+      text-align: center;
+      white-space: nowrap;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.38);
+    }
+
+    .floating-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .floating-banner.success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: 2px solid #a7f3d0;
+    }
+
+    .floating-banner.error {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      border: 2px solid #fecaca;
+    }
+
+    /* 操作コントローラーエリア */
+    .controls-panel {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 10px;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.94);
+      padding: 8px 12px;
+      border-radius: 18px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border: 2px solid #fde68a;
+      flex-shrink: 0;
+    }
+
+    /* 十字キー */
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 46px);
+      grid-template-rows: repeat(3, 42px);
+      gap: 4px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .dpad-btn {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 11px;
+      background: linear-gradient(180deg, #f8fafc, #e2e8f0);
+      box-shadow: 0 3px 0 #94a3b8;
+      color: var(--text-main);
+      font-size: 1.1rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dpad-btn:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #94a3b8;
+      background: #cbd5e1;
+    }
+
+    .dpad-btn:disabled {
+      opacity: 0.45;
+    }
+
+    .dpad-up { grid-column: 2; grid-row: 1; }
+    .dpad-left { grid-column: 1; grid-row: 2; }
+    .dpad-center {
+      grid-column: 2;
+      grid-row: 2;
+      width: 18px;
+      height: 18px;
+      background: #cbd5e1;
+      border-radius: 50%;
+      margin: auto;
+    }
+    .dpad-right { grid-column: 3; grid-row: 2; }
+    .dpad-down { grid-column: 2; grid-row: 3; }
+
+    /* 穴を掘るボタン */
+    .dig-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .dig-btn {
+      width: 100%;
+      height: 92px;
+      border-radius: 18px;
+      font-size: 1.15rem;
+      flex-direction: column;
+      gap: 2px;
+      line-height: 1.2;
+    }
+
+    .dig-btn .dig-icon {
+      font-size: 1.65rem;
+    }
+
+    .dig-btn .dig-sub {
+      font-size: 0.68rem;
+      opacity: 0.92;
+    }
+
+    /* ==========================================================================
+       3. リザルト画面
+       ========================================================================== */
+    #result-screen {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .result-card {
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 22px 18px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+      border: 3px solid #fde68a;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .result-title {
+      font-size: 1.65rem;
+      font-weight: 900;
+    }
+
+    .result-title.clear { color: #d97706; }
+    .result-title.over { color: var(--danger); }
+
+    .new-record-badge {
+      display: inline-block;
+      background: linear-gradient(90deg, #f43f5e, #f59e0b);
+      color: #fff;
+      font-weight: 900;
+      font-size: 0.85rem;
+      padding: 4px 14px;
+      border-radius: 999px;
+      animation: bounce 0.6s infinite alternate;
+      margin: 0 auto;
+    }
+
+    .result-stats {
+      background: #fffbeb;
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border: 1px solid #fde68a;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+
+    .result-score {
+      font-size: 1.5rem;
+      color: var(--primary-dark);
+      font-weight: 900;
+    }
+
+    .result-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .result-actions .btn {
+      padding: 13px 10px;
+      font-size: 0.95rem;
+    }
+
+    /* アニメーション */
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.08); }
+    }
+
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-4px); }
+    }
+
+    .shake {
+      animation: shakeAnim 0.35s ease;
+    }
+
+    @keyframes shakeAnim {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+
+    @media (max-height: 640px) {
+      #app { padding: 4px 10px; }
+      header { height: 30px; }
+      .hud-panel { padding: 5px 10px; }
+      .target-coord { font-size: 1.3rem; }
+      .controls-panel { padding: 6px 10px; }
+      .dpad {
+        grid-template-columns: repeat(3, 40px);
+        grid-template-rows: repeat(3, 36px);
+      }
+      .dig-btn { height: 78px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- ヘッダー -->
+    <header>
+      <div class="app-badge">🐹 座標トレジャーハンター</div>
+      <div class="header-actions">
+        <button id="sound-toggle-btn" class="icon-btn" aria-label="サウンド切替">🔊 音ON</button>
+        <button id="quit-btn" class="icon-btn" style="display: none;">タイトルへ</button>
+      </div>
+    </header>
+
+    <!-- ========================================================================
+         1. タイトル画面
+         ======================================================================== -->
+    <main id="title-screen" class="screen active">
+      <div class="title-card">
+        <div>
+          <!-- タイトル用の可愛いモグラ探検家イラストCanvas -->
+          <div class="mole-preview-wrap">
+            <canvas id="title-mole-canvas" width="96" height="84"></canvas>
+          </div>
+          <h1 class="game-logo">座標<span>トレジャーハンター</span></h1>
+        </div>
+
+        <div class="rule-box">
+          <strong>【あそびかた】</strong><br>
+          ① 中央の<strong>原点 O(0, 0)</strong> からモグラの探検家がスタート！<br>
+          ② 上に表示された<strong>お宝の場所 (x, y)</strong> のマスまで迷路を進もう。<br>
+          ③ 到着したら<strong>「穴を掘る！」</strong>ボタンでお宝ゲット！<br>
+          ④ 制限時間 <strong>90秒</strong> 以内に <strong>5個</strong> 見つけたタイムを競おう！
+        </div>
+
+        <div>
+          <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-sub); margin-bottom: 6px;">
+            ▼ コース（難易度）をえらぼう
+          </div>
+          <div class="difficulty-group">
+            <div class="diff-card selected" data-diff="beginner" id="diff-beginner">
+              <div class="diff-title">🌱 初級コース</div>
+              <div class="diff-desc">現在地 (x, y) 表示あり<br>座標の動きに慣れよう！</div>
+              <div class="diff-best" id="best-beginner">BEST: --.--秒</div>
+            </div>
+            <div class="diff-card" data-diff="intermediate" id="diff-intermediate">
+              <div class="diff-title">🔥 中級コース</div>
+              <div class="diff-desc">現在地の表示なし<br>目盛りを数えて自力で探索！</div>
+              <div class="diff-best" id="best-intermediate">BEST: --.--秒</div>
+            </div>
+          </div>
+        </div>
+
+        <button id="start-btn" class="btn btn-accent start-btn">
+          ⛏️ 発掘スタート！
+        </button>
+      </div>
+    </main>
+
+    <!-- ========================================================================
+         2. プレイ画面
+         ======================================================================== -->
+    <main id="play-screen" class="screen">
+      <!-- 目標座標・お宝進捗・制限時間 -->
+      <section class="hud-panel">
+        <div class="target-box">
+          <div class="target-label">💎 お宝の場所</div>
+          <div class="target-coord" id="target-coord-display">(0, 0)</div>
+        </div>
+        <div class="stats-col">
+          <div class="stat-row">
+            <span>お宝</span>
+            <span class="treasure-dots" id="treasure-progress">💎⚪⚪⚪⚪</span>
+          </div>
+          <div class="stat-row">
+            <span>残り時間</span>
+            <span class="timer-val" id="timer-display">90.0秒</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 現在座標 / フィードバック -->
+      <section class="sub-status-bar">
+        <div class="current-pos-badge" id="current-pos-display">現在地: (0, 0)</div>
+        <div class="feedback-msg" id="feedback-msg">横(x)→縦(y)の順に数えよう</div>
+      </section>
+
+      <!-- 正方形の壁線型迷路キャンバス -->
+      <section class="canvas-wrapper" id="canvas-wrapper">
+        <canvas id="maze-canvas"></canvas>
+        <div id="floating-banner" class="floating-banner">お宝発見！</div>
+      </section>
+
+      <!-- 操作コントローラー -->
+      <section class="controls-panel">
+        <div class="dpad" aria-label="移動ボタン">
+          <button class="dpad-btn dpad-up" data-dir="up" aria-label="上へ">▲</button>
+          <button class="dpad-btn dpad-left" data-dir="left" aria-label="左へ">◀</button>
+          <div class="dpad-center"></div>
+          <button class="dpad-btn dpad-right" data-dir="right" aria-label="右へ">▶</button>
+          <button class="dpad-btn dpad-down" data-dir="down" aria-label="下へ">▼</button>
+        </div>
+
+        <div class="dig-area">
+          <button id="dig-btn" class="btn btn-accent dig-btn">
+            <span class="dig-icon">⛏️</span>
+            <span>穴を掘る！</span>
+            <span class="dig-sub">(Space / Enter)</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========================================================================
+         3. リザルト画面
+         ======================================================================== -->
+    <main id="result-screen" class="screen">
+      <div class="result-card">
+        <div id="result-emoji" style="font-size: 2.8rem; line-height: 1;">🏆</div>
+        <h2 id="result-title" class="result-title clear">クリアおめでとう！</h2>
+        <div id="new-record-badge" class="new-record-badge" style="display: none;">
+          🎉 NEW RECORD! 最速記録更新！
+        </div>
+
+        <div class="result-stats">
+          <div class="result-row">
+            <span>選択コース</span>
+            <span id="result-diff-label">初級コース</span>
+          </div>
+          <div class="result-row">
+            <span>見つけたお宝</span>
+            <span id="result-treasures">5 / 5 個</span>
+          </div>
+          <div class="result-row">
+            <span>クリアタイム</span>
+            <span id="result-time" class="result-score">32.45 秒</span>
+          </div>
+          <div class="result-row" style="border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+            <span>ベストタイム</span>
+            <span id="result-best" style="color: var(--accent-dark);">32.45 秒</span>
+          </div>
+        </div>
+
+        <div class="result-actions">
+          <button id="to-title-btn" class="btn btn-secondary">🏠 タイトルへ</button>
+          <button id="retry-btn" class="btn btn-primary">🔄 もう一度遊ぶ</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    /**
+     * ==========================================================================
+     * 座標トレジャーハンター（壁線型迷路 ＆ モグラ探検家バージョン）
+     * - 11x11 (x: -5〜5, y: -5〜5) の全121マスが通行可能な「壁線型迷路」を採用。
+     * - 全121座標すべてがお宝の候補になり、確実に到達可能。
+     * - プレイヤーは探検ヘルメットとスコップを持つ可愛いモグラキャラクター。
+     * ==========================================================================
+     */
+    (() => {
+      'use strict';
+
+      // --- 定数設定 ---
+      const AXIS_MIN = -5;
+      const AXIS_MAX = 5;
+      const GRID_SIZE = AXIS_MAX - AXIS_MIN + 1; // 11 x 11 マス（全121座標）
+      const GOAL_TREASURES = 5;
+      const TIME_LIMIT = 90.0; // 秒
+      const PENALTY_LOCK_MS = 2000; // 不正解時の2.0秒クールダウン硬直
+      const STORAGE_KEYS = {
+        beginner: 'coord_mole_best_beginner_v1',
+        intermediate: 'coord_mole_best_intermediate_v1'
+      };
+
+      // --- ゲーム状態 ---
+      const state = {
+        difficulty: 'beginner', // 'beginner' | 'intermediate'
+        soundEnabled: true,
+        isPlaying: false,
+        isLocked: false,
+        lockEndTime: 0,
+        // 壁線型迷路データ:
+        // hWalls[r][c] : マス(r,c)とマス(r+1,c)の間の水平壁 (r: 0〜9, c: 0〜10) true=壁あり
+        // vWalls[r][c] : マス(r,c)とマス(r,c+1)の間の垂直壁 (r: 0〜10, c: 0〜9) true=壁あり
+        hWalls: [],
+        vWalls: [],
+        // プレイヤー状態（スムージング移動＆向き＆スコップアクション）
+        player: {
+          x: 0,
+          y: 0,
+          visualX: 0, // 滑らかな移動補間用
+          visualY: 0,
+          facing: 'down', // 'up' | 'down' | 'left' | 'right'
+          walkPhase: 0,
+          digAnimEnd: 0,
+          digSuccess: false
+        },
+        target: { x: 0, y: 0 },
+        usedTargets: [],
+        particles: [], // 土煙・キラキラ宝石パーティクル
+        foundMarks: [], // 掘り当てたお宝跡
+        missMarks: [], // 現在の問題でハズレた穴の跡
+        treasuresFound: 0,
+        startTime: 0,
+        elapsedTime: 0,
+        animationFrameId: null,
+        bannerTimeoutId: null
+      };
+
+      // --- DOM要素 ---
+      const els = {
+        soundToggleBtn: document.getElementById('sound-toggle-btn'),
+        quitBtn: document.getElementById('quit-btn'),
+        screens: {
+          title: document.getElementById('title-screen'),
+          play: document.getElementById('play-screen'),
+          result: document.getElementById('result-screen')
+        },
+        titleMoleCanvas: document.getElementById('title-mole-canvas'),
+        diffCards: document.querySelectorAll('.diff-card'),
+        bestBeginner: document.getElementById('best-beginner'),
+        bestIntermediate: document.getElementById('best-intermediate'),
+        startBtn: document.getElementById('start-btn'),
+        targetCoordDisplay: document.getElementById('target-coord-display'),
+        treasureProgress: document.getElementById('treasure-progress'),
+        timerDisplay: document.getElementById('timer-display'),
+        currentPosDisplay: document.getElementById('current-pos-display'),
+        feedbackMsg: document.getElementById('feedback-msg'),
+        canvasWrapper: document.getElementById('canvas-wrapper'),
+        canvas: document.getElementById('maze-canvas'),
+        floatingBanner: document.getElementById('floating-banner'),
+        dpadBtns: document.querySelectorAll('.dpad-btn'),
+        digBtn: document.getElementById('dig-btn'),
+        resultEmoji: document.getElementById('result-emoji'),
+        resultTitle: document.getElementById('result-title'),
+        newRecordBadge: document.getElementById('new-record-badge'),
+        resultDiffLabel: document.getElementById('result-diff-label'),
+        resultTreasures: document.getElementById('result-treasures'),
+        resultTime: document.getElementById('result-time'),
+        resultBest: document.getElementById('result-best'),
+        toTitleBtn: document.getElementById('to-title-btn'),
+        retryBtn: document.getElementById('retry-btn')
+      };
+
+      const ctx = els.canvas.getContext('2d');
+
+      // ========================================================================
+      // Web Audio API サウンドエンジン
+      // ========================================================================
+      let audioCtx = null;
+
+      function ensureAudioContext() {
+        if (!audioCtx && (window.AudioContext || window.webkitAudioContext)) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      }
+
+      function playSound(type) {
+        if (!state.soundEnabled) return;
+        try {
+          ensureAudioContext();
+          if (!audioCtx) return;
+
+          const now = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          if (type === 'move') {
+            // モグラのトコトコ足音
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(480, now + 0.05);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
+            osc.start(now);
+            osc.stop(now + 0.06);
+          } else if (type === 'wall') {
+            // 土壁にコツンと当たる音
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(140, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.07);
+            gain.gain.setValueAtTime(0.11, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+            osc.start(now);
+            osc.stop(now + 0.08);
+          } else if (type === 'dig') {
+            // ザクッ！と土を掘る音
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(90, now + 0.11);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            osc.start(now);
+            osc.stop(now + 0.13);
+          } else if (type === 'treasure') {
+            // お宝発見ファンファーレ
+            const notes = [523.25, 659.25, 783.99, 1046.5];
+            notes.forEach((freq, i) => {
+              const o = audioCtx.createOscillator();
+              const g = audioCtx.createGain();
+              o.type = 'triangle';
+              o.connect(g);
+              g.connect(audioCtx.destination);
+              const t = now + i * 0.065;
+              o.frequency.setValueAtTime(freq, t);
+              g.gain.setValueAtTime(0.16, t);
+              g.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+              o.start(t);
+              o.stop(t + 0.26);
+            });
+          } else if (type === 'miss') {
+            // ハズレ音
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(160, now);
+            osc.frequency.linearRampToValueAtTime(105, now + 0.28);
+            gain.gain.setValueAtTime(0.13, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.32);
+          } else if (type === 'clear') {
+            const melody = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+            const times = [0, 0.1, 0.2, 0.32, 0.48, 0.62];
+            melody.forEach((freq, idx) => {
+              const o = audioCtx.createOscillator();
+              const g = audioCtx.createGain();
+              o.type = 'triangle';
+              o.connect(g);
+              g.connect(audioCtx.destination);
+              const t = now + times[idx];
+              o.frequency.setValueAtTime(freq, t);
+              g.gain.setValueAtTime(0.18, t);
+              g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+              o.start(t);
+              o.stop(t + 0.38);
+            });
+          } else if (type === 'gameover') {
+            const notes = [392.0, 349.23, 329.63, 261.63];
+            notes.forEach((freq, idx) => {
+              const o = audioCtx.createOscillator();
+              const g = audioCtx.createGain();
+              o.type = 'sine';
+              o.connect(g);
+              g.connect(audioCtx.destination);
+              const t = now + idx * 0.18;
+              o.frequency.setValueAtTime(freq, t);
+              g.gain.setValueAtTime(0.15, t);
+              g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+              o.start(t);
+              o.stop(t + 0.32);
+            });
+          }
+        } catch (e) {
+          // オーディオ非対応・制限時は無視
+        }
+      }
+
+      // ========================================================================
+      // 座標変換ヘルパー（数学座標 (x, y) ⇔ グリッド (row, col)）
+      // ========================================================================
+      function mathToGrid(x, y) {
+        return {
+          col: x - AXIS_MIN, // x = -5 -> col 0, x = 0 -> col 5, x = 5 -> col 10
+          row: AXIS_MAX - y  // y = 5 -> row 0, y = 0 -> row 5, y = -5 -> row 10
+        };
+      }
+
+      // ========================================================================
+      // 壁線型迷路の自動生成（全121マス連結保証 ＋ ループ通路付き）
+      // ========================================================================
+      function generateWallMaze() {
+        // 1. すべての境界壁を「あり(true)」で初期化
+        const hWalls = Array.from({ length: GRID_SIZE - 1 }, () => Array(GRID_SIZE).fill(true));
+        const vWalls = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE - 1).fill(true));
+        const visited = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(false));
+
+        // 2. 深さ優先探索（DFS）で全121マスを繋ぐ全域木（迷路の基本骨格）を生成
+        function carve(r, c) {
+          visited[r][c] = true;
+          const dirs = [
+            { dr: -1, dc: 0 }, // 上
+            { dr: 1, dc: 0 },  // 下
+            { dr: 0, dc: -1 }, // 左
+            { dr: 0, dc: 1 }   // 右
+          ];
+          // ランダムシャッフル
+          for (let i = dirs.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
+          }
+
+          for (const { dr, dc } of dirs) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE && !visited[nr][nc]) {
+              // 間の壁を取り払う
+              if (dr === -1) hWalls[nr][c] = false;
+              else if (dr === 1) hWalls[r][c] = false;
+              else if (dc === -1) vWalls[r][nc] = false;
+              else if (dc === 1) vWalls[r][c] = false;
+
+              carve(nr, nc);
+            }
+          }
+        }
+
+        // 原点 (0, 0) [row=5, col=5] から生成開始
+        carve(5, 5);
+
+        // 3. 遠回りしすぎてストレスにならないよう、壁の約25%をランダムに開通してループを作る
+        for (let r = 0; r < GRID_SIZE - 1; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            if (hWalls[r][c] && Math.random() < 0.25) {
+              hWalls[r][c] = false;
+            }
+          }
+        }
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE - 1; c++) {
+            if (vWalls[r][c] && Math.random() < 0.25) {
+              vWalls[r][c] = false;
+            }
+          }
+        }
+
+        state.hWalls = hWalls;
+        state.vWalls = vWalls;
+      }
+
+      // 指定方向へ1マス移動できるか判定（境界線壁チェック）
+      function canMoveTo(x, y, dir) {
+        const { row, col } = mathToGrid(x, y);
+        if (dir === 'up') {
+          if (row <= 0) return false;
+          return !state.hWalls[row - 1][col];
+        }
+        if (dir === 'down') {
+          if (row >= GRID_SIZE - 1) return false;
+          return !state.hWalls[row][col];
+        }
+        if (dir === 'left') {
+          if (col <= 0) return false;
+          return !state.vWalls[row][col - 1];
+        }
+        if (dir === 'right') {
+          if (col >= GRID_SIZE - 1) return false;
+          return !state.vWalls[row][col];
+        }
+        return false;
+      }
+
+      // ========================================================================
+      // 次の目標座標の抽選（全121座標から出題）
+      // ========================================================================
+      function pickNextTarget() {
+        const allCoords = [];
+        for (let x = AXIS_MIN; x <= AXIS_MAX; x++) {
+          for (let y = AXIS_MIN; y <= AXIS_MAX; y++) {
+            allCoords.push({ x, y });
+          }
+        }
+
+        // 現在地と出題済み座標を除外
+        let candidates = allCoords.filter(pt => {
+          if (pt.x === state.player.x && pt.y === state.player.y) return false;
+          if (pt.x === 0 && pt.y === 0 && state.usedTargets.length === 0) return false;
+          return !state.usedTargets.some(u => u.x === pt.x && u.y === pt.y);
+        });
+
+        // マンハッタン距離3以上のマスを優先して適度な探索距離を確保
+        const farCandidates = candidates.filter(
+          pt => Math.abs(pt.x - state.player.x) + Math.abs(pt.y - state.player.y) >= 3
+        );
+        const pool = farCandidates.length > 0 ? farCandidates : candidates;
+
+        const chosen = pool[Math.floor(Math.random() * pool.length)];
+        state.target = { x: chosen.x, y: chosen.y };
+        state.usedTargets.push({ x: chosen.x, y: chosen.y });
+        state.missMarks = [];
+
+        els.targetCoordDisplay.textContent = `(${state.target.x}, ${state.target.y})`;
+      }
+
+      // ========================================================================
+      // ベストスコア（localStorage）
+      // ========================================================================
+      function getBestTime(diff) {
+        try {
+          const val = localStorage.getItem(STORAGE_KEYS[diff]);
+          return val ? parseFloat(val) : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function saveBestTime(diff, timeSec) {
+        try {
+          const prev = getBestTime(diff);
+          if (prev === null || timeSec < prev) {
+            localStorage.setItem(STORAGE_KEYS[diff], timeSec.toFixed(2));
+            return true;
+          }
+        } catch (e) {}
+        return false;
+      }
+
+      function updateBestTimeDisplays() {
+        const bBeg = getBestTime('beginner');
+        const bInt = getBestTime('intermediate');
+        els.bestBeginner.textContent = bBeg !== null ? `BEST: ${bBeg.toFixed(2)}秒` : 'BEST: --.--秒';
+        els.bestIntermediate.textContent = bInt !== null ? `BEST: ${bInt.toFixed(2)}秒` : 'BEST: --.--秒';
+      }
+
+      // ========================================================================
+      // 画面切り替え & HUD更新
+      // ========================================================================
+      function showScreen(screenName) {
+        Object.entries(els.screens).forEach(([key, el]) => {
+          el.classList.toggle('active', key === screenName);
+        });
+        els.quitBtn.style.display = screenName === 'play' ? 'flex' : 'none';
+      }
+
+      function updateHUD() {
+        let dots = '';
+        for (let i = 0; i < GOAL_TREASURES; i++) {
+          dots += i < state.treasuresFound ? '💎' : '⚪';
+        }
+        els.treasureProgress.textContent = dots;
+
+        if (state.difficulty === 'beginner') {
+          els.currentPosDisplay.textContent = `現在地: (${state.player.x}, ${state.player.y})`;
+          els.currentPosDisplay.style.color = 'var(--primary-dark)';
+        } else {
+          els.currentPosDisplay.textContent = '現在地: ？？？ (中級)';
+          els.currentPosDisplay.style.color = '#b45309';
+        }
+      }
+
+      function showBanner(text, type) {
+        els.floatingBanner.textContent = text;
+        els.floatingBanner.className = `floating-banner ${type} show`;
+        if (state.bannerTimeoutId) clearTimeout(state.bannerTimeoutId);
+        state.bannerTimeoutId = setTimeout(() => {
+          els.floatingBanner.classList.remove('show');
+        }, 1200);
+      }
+
+      function setControlLock(locked) {
+        state.isLocked = locked;
+        els.dpadBtns.forEach(btn => (btn.disabled = locked));
+        els.digBtn.disabled = locked;
+      }
+
+      // ========================================================================
+      // パーティクル生成（穴掘り時の土煙・宝石の輝き）
+      // ========================================================================
+      function spawnDigParticles(x, y, isTreasure) {
+        const count = isTreasure ? 22 : 14;
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
+          const speed = 1.2 + Math.random() * 2.4;
+          state.particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - (isTreasure ? 1.2 : 0.6),
+            size: isTreasure ? 4 + Math.random() * 4 : 3.5 + Math.random() * 3.5,
+            color: isTreasure
+              ? ['#fde047', '#38bdf8', '#34d399', '#f472b6'][i % 4]
+              : ['#a16207', '#78350f', '#d97706', '#ca8a04'][i % 4],
+            life: 1.0,
+            decay: 0.025 + Math.random() * 0.015,
+            isGem: isTreasure && i % 3 === 0
+          });
+        }
+      }
+
+      // ========================================================================
+      // モグラの移動＆穴を掘るアクション
+      // ========================================================================
+      function movePlayer(dir) {
+        if (!state.isPlaying || state.isLocked) return;
+
+        // 向きは壁があっても変更して反応をわかりやすくする
+        state.player.facing = dir;
+
+        if (canMoveTo(state.player.x, state.player.y, dir)) {
+          if (dir === 'up') state.player.y += 1;
+          else if (dir === 'down') state.player.y -= 1;
+          else if (dir === 'left') state.player.x -= 1;
+          else if (dir === 'right') state.player.x += 1;
+
+          state.player.walkPhase += 1;
+          playSound('move');
+          updateHUD();
+        } else {
+          playSound('wall');
+        }
+      }
+
+      function digAction() {
+        if (!state.isPlaying || state.isLocked) return;
+
+        const now = performance.now();
+        const isCorrect = state.player.x === state.target.x && state.player.y === state.target.y;
+
+        // スコップを振るアニメーション開始
+        state.player.digAnimEnd = now + 450;
+        state.player.digSuccess = isCorrect;
+        playSound('dig');
+
+        if (isCorrect) {
+          // 正解！お宝ゲット
+          state.treasuresFound += 1;
+          spawnDigParticles(state.player.x, state.player.y, true);
+          state.foundMarks.push({ x: state.player.x, y: state.player.y, createdAt: now });
+
+          setTimeout(() => playSound('treasure'), 90);
+          updateHUD();
+
+          els.feedbackMsg.textContent = `✨ (${state.target.x}, ${state.target.y}) でお宝発見！`;
+          els.feedbackMsg.className = 'feedback-msg ok';
+
+          if (state.treasuresFound >= GOAL_TREASURES) {
+            showBanner('🎉 お宝5個コンプリート！', 'success');
+            finishGame(true);
+          } else {
+            showBanner(`💎 お宝発見！ (${state.treasuresFound}/${GOAL_TREASURES})`, 'success');
+            pickNextTarget();
+          }
+        } else {
+          // 不正解！土煙が舞い、2秒間の硬直ペナルティ
+          spawnDigParticles(state.player.x, state.player.y, false);
+          state.missMarks.push({ x: state.player.x, y: state.player.y });
+
+          setTimeout(() => playSound('miss'), 90);
+
+          els.canvas.classList.remove('shake');
+          void els.canvas.offsetWidth;
+          els.canvas.classList.add('shake');
+
+          const hintText =
+            state.difficulty === 'beginner'
+              ? `ハズレ！ここは (${state.player.x}, ${state.player.y}) だ…`
+              : 'ハズレ！ここは別の場所だ… (2秒硬直)';
+
+          els.feedbackMsg.textContent = `💦 ${hintText}`;
+          els.feedbackMsg.className = 'feedback-msg ng';
+          showBanner('❌ ハズレ！ここは別の場所だ…', 'error');
+
+          setControlLock(true);
+          state.lockEndTime = now + PENALTY_LOCK_MS;
+        }
+      }
+
+      // ========================================================================
+      // ゲーム開始・終了
+      // ========================================================================
+      function startGame() {
+        ensureAudioContext();
+        generateWallMaze();
+
+        state.player = {
+          x: 0,
+          y: 0,
+          visualX: 0,
+          visualY: 0,
+          facing: 'down',
+          walkPhase: 0,
+          digAnimEnd: 0,
+          digSuccess: false
+        };
+        state.treasuresFound = 0;
+        state.usedTargets = [];
+        state.particles = [];
+        state.foundMarks = [];
+        state.missMarks = [];
+        state.isPlaying = true;
+        setControlLock(false);
+
+        pickNextTarget();
+        updateHUD();
+
+        els.feedbackMsg.textContent = '横(x)→縦(y)の順に数えよう';
+        els.feedbackMsg.className = 'feedback-msg';
+
+        showScreen('play');
+        resizeCanvas();
+
+        state.startTime = performance.now();
+        state.elapsedTime = 0;
+
+        if (state.animationFrameId) cancelAnimationFrame(state.animationFrameId);
+        gameLoop(performance.now());
+      }
+
+      function finishGame(isClear) {
+        state.isPlaying = false;
+        setControlLock(false);
+
+        if (state.animationFrameId) {
+          cancelAnimationFrame(state.animationFrameId);
+          state.animationFrameId = null;
+        }
+
+        const finalTime = Math.min(state.elapsedTime, TIME_LIMIT);
+
+        setTimeout(() => {
+          showScreen('result');
+          els.resultDiffLabel.textContent =
+            state.difficulty === 'beginner' ? '🌱 初級コース' : '🔥 中級コース';
+          els.resultTreasures.textContent = `${state.treasuresFound} / ${GOAL_TREASURES} 個`;
+
+          if (isClear) {
+            playSound('clear');
+            els.resultEmoji.textContent = '🏆';
+            els.resultTitle.textContent = 'クリアおめでとう！';
+            els.resultTitle.className = 'result-title clear';
+            els.resultTime.textContent = `${finalTime.toFixed(2)} 秒`;
+
+            const isNew = saveBestTime(state.difficulty, finalTime);
+            els.newRecordBadge.style.display = isNew ? 'inline-block' : 'none';
+          } else {
+            playSound('gameover');
+            els.resultEmoji.textContent = '⏰';
+            els.resultTitle.textContent = 'タイムアップ！';
+            els.resultTitle.className = 'result-title over';
+            els.resultTime.textContent = '記録なし (時間切れ)';
+            els.newRecordBadge.style.display = 'none';
+          }
+
+          const best = getBestTime(state.difficulty);
+          els.resultBest.textContent = best !== null ? `${best.toFixed(2)} 秒` : '--.-- 秒';
+          updateBestTimeDisplays();
+        }, isClear ? 750 : 200);
+      }
+
+      // ========================================================================
+      // 可愛いモグラ探検家（ヘルメット＋スコップ装備）のカスタム描画関数
+      // ========================================================================
+      function drawMoleExplorer(c, cx, cy, size, options = {}) {
+        const {
+          facing = 'down',
+          walkBob = 0,
+          digProgress = 0, // 0〜1（穴掘り中アニメーション）
+          isLocked = false
+        } = options;
+
+        c.save();
+        c.translate(cx, cy + walkBob);
+
+        // 足元の影
+        c.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        c.beginPath();
+        c.ellipse(0, size * 0.36 - walkBob, size * 0.34, size * 0.13, 0, 0, Math.PI * 2);
+        c.fill();
+
+        // 体の傾き（穴掘り時に少し前傾する）
+        const bodyTilt = digProgress > 0 ? Math.sin(digProgress * Math.PI) * 0.22 : 0;
+        c.rotate(facing === 'left' ? -bodyTilt : bodyTilt);
+
+        // 1. モグラのふっくらした胴体
+        c.fillStyle = isLocked ? '#64748b' : '#5c3a21';
+        c.beginPath();
+        c.ellipse(0, size * 0.06, size * 0.32, size * 0.34, 0, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = '#2e1a0c';
+        c.lineWidth = Math.max(1.2, size * 0.04);
+        c.stroke();
+
+        // お腹の明るいベージュ模様（後ろ向きの時は見えなくする）
+        if (facing !== 'up') {
+          c.fillStyle = isLocked ? '#94a3b8' : '#d6b48c';
+          c.beginPath();
+          c.ellipse(
+            facing === 'left' ? -size * 0.06 : facing === 'right' ? size * 0.06 : 0,
+            size * 0.14,
+            size * 0.18,
+            size * 0.2,
+            0,
+            0,
+            Math.PI * 2
+          );
+          c.fill();
+        }
+
+        // 2. ピンクの可愛い手（左右の爪付き前足）
+        const leftHandX = facing === 'right' ? -size * 0.18 : -size * 0.31;
+        const rightHandX = facing === 'left' ? size * 0.18 : size * 0.31;
+        c.fillStyle = '#fda4af';
+        c.beginPath();
+        c.arc(leftHandX, size * 0.12, size * 0.085, 0, Math.PI * 2);
+        c.arc(rightHandX, size * 0.12, size * 0.085, 0, Math.PI * 2);
+        c.fill();
+
+        // 3. 顔のパーツ（向きに応じて位置を調整）
+        if (facing !== 'up') {
+          const lookOffsetX = facing === 'left' ? -size * 0.1 : facing === 'right' ? size * 0.1 : 0;
+
+          // マズル（鼻まわりのベージュ部分）
+          c.fillStyle = isLocked ? '#cbd5e1' : '#e7c9a9';
+          c.beginPath();
+          c.ellipse(lookOffsetX, size * 0.03, size * 0.16, size * 0.11, 0, 0, Math.PI * 2);
+          c.fill();
+
+          // ピンクの丸い鼻
+          c.fillStyle = '#fb7185';
+          c.beginPath();
+          c.arc(lookOffsetX, size * 0.01, size * 0.055, 0, Math.PI * 2);
+          c.fill();
+
+          // ヒゲ（左右2本ずつ）
+          c.strokeStyle = '#2e1a0c';
+          c.lineWidth = Math.max(1, size * 0.025);
+          c.beginPath();
+          c.moveTo(lookOffsetX - size * 0.12, size * 0.02);
+          c.lineTo(lookOffsetX - size * 0.23, size * 0.0);
+          c.moveTo(lookOffsetX - size * 0.12, size * 0.06);
+          c.lineTo(lookOffsetX - size * 0.22, size * 0.08);
+          c.moveTo(lookOffsetX + size * 0.12, size * 0.02);
+          c.lineTo(lookOffsetX + size * 0.23, size * 0.0);
+          c.moveTo(lookOffsetX + size * 0.12, size * 0.06);
+          c.lineTo(lookOffsetX + size * 0.22, size * 0.08);
+          c.stroke();
+
+          // つぶらな瞳（硬直時は「＞＜」の困り顔に変化！）
+          c.strokeStyle = '#1e293b';
+          c.fillStyle = '#1e293b';
+          if (isLocked) {
+            // ＞＜ 顔
+            c.lineWidth = Math.max(1.5, size * 0.04);
+            c.beginPath();
+            c.moveTo(lookOffsetX - size * 0.15, -size * 0.11);
+            c.lineTo(lookOffsetX - size * 0.08, -size * 0.07);
+            c.lineTo(lookOffsetX - size * 0.15, -size * 0.03);
+            c.moveTo(lookOffsetX + size * 0.15, -size * 0.11);
+            c.lineTo(lookOffsetX + size * 0.08, -size * 0.07);
+            c.lineTo(lookOffsetX + size * 0.15, -size * 0.03);
+            c.stroke();
+          } else {
+            // キラッと光る丸い目
+            const eyeY = -size * 0.08;
+            const eyeDx = facing === 'down' ? size * 0.11 : size * 0.08;
+            c.beginPath();
+            c.arc(lookOffsetX - eyeDx, eyeY, size * 0.042, 0, Math.PI * 2);
+            c.arc(lookOffsetX + eyeDx, eyeY, size * 0.042, 0, Math.PI * 2);
+            c.fill();
+
+            // 目のハイライト
+            c.fillStyle = '#ffffff';
+            c.beginPath();
+            c.arc(lookOffsetX - eyeDx - size * 0.012, eyeY - size * 0.015, size * 0.016, 0, Math.PI * 2);
+            c.arc(lookOffsetX + eyeDx - size * 0.012, eyeY - size * 0.015, size * 0.016, 0, Math.PI * 2);
+            c.fill();
+          }
+        }
+
+        // 4. 黄色の探検ヘルメット（ヘッドライト付き！）
+        c.fillStyle = isLocked ? '#94a3b8' : '#facc15';
+        c.beginPath();
+        c.arc(0, -size * 0.17, size * 0.27, Math.PI, 0, false);
+        c.closePath();
+        c.fill();
+        c.strokeStyle = '#a16207';
+        c.lineWidth = Math.max(1.2, size * 0.035);
+        c.stroke();
+
+        // ヘルメットのつば
+        c.fillStyle = isLocked ? '#64748b' : '#eab308';
+        c.beginPath();
+        c.ellipse(0, -size * 0.17, size * 0.31, size * 0.065, 0, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+
+        // ヘルメットのヘッドライト（上向きの時は後ろ側なので非表示）
+        if (facing !== 'up') {
+          const lampX = facing === 'left' ? -size * 0.1 : facing === 'right' ? size * 0.1 : 0;
+          c.fillStyle = '#334155';
+          c.beginPath();
+          c.arc(lampX, -size * 0.27, size * 0.075, 0, Math.PI * 2);
+          c.fill();
+
+          c.fillStyle = isLocked ? '#cbd5e1' : '#fef08a';
+          c.beginPath();
+          c.arc(lampX, -size * 0.27, size * 0.05, 0, Math.PI * 2);
+          c.fill();
+        }
+
+        // 5. スコップ装備（穴掘り時に大きく振り下ろすアニメーション！）
+        const shovelSide = facing === 'left' ? -1 : 1;
+        c.save();
+        c.translate(shovelSide * size * 0.34, size * 0.08);
+        // 穴掘りアニメーション中は角度を大きく回転
+        const swingAngle =
+          digProgress > 0
+            ? shovelSide * (-0.4 + Math.sin(digProgress * Math.PI * 2) * 1.15)
+            : shovelSide * 0.25;
+        c.rotate(swingAngle);
+
+        // スコップの柄（木製）
+        c.strokeStyle = '#b45309';
+        c.lineWidth = Math.max(2, size * 0.055);
+        c.lineCap = 'round';
+        c.beginPath();
+        c.moveTo(0, -size * 0.24);
+        c.lineTo(0, size * 0.22);
+        c.stroke();
+
+        // スコップの持ち手（D型グリップ）
+        c.strokeStyle = '#dc2626';
+        c.lineWidth = Math.max(1.8, size * 0.05);
+        c.beginPath();
+        c.moveTo(-size * 0.06, -size * 0.25);
+        c.lineTo(size * 0.06, -size * 0.25);
+        c.stroke();
+
+        // スコップの刃先（シルバー金属）
+        c.fillStyle = '#cbd5e1';
+        c.strokeStyle = '#475569';
+        c.lineWidth = Math.max(1, size * 0.03);
+        c.beginPath();
+        c.moveTo(-size * 0.09, size * 0.16);
+        c.lineTo(size * 0.09, size * 0.16);
+        c.lineTo(size * 0.07, size * 0.31);
+        c.lineTo(0, size * 0.36);
+        c.lineTo(-size * 0.07, size * 0.31);
+        c.closePath();
+        c.fill();
+        c.stroke();
+
+        c.restore();
+        c.restore();
+      }
+
+      // タイトル画面のモグラアイコンを描画
+      function renderTitleMole() {
+        const tCtx = els.titleMoleCanvas.getContext('2d');
+        tCtx.clearRect(0, 0, 96, 84);
+        drawMoleExplorer(tCtx, 48, 46, 78, { facing: 'down', walkBob: 0 });
+      }
+
+      // ========================================================================
+      // キャンバスリサイズ & 壁線型迷路・座標軸・モグラのメイン描画
+      // ========================================================================
+      function resizeCanvas() {
+        const wrapperRect = els.canvasWrapper.getBoundingClientRect();
+        const size = Math.floor(Math.min(wrapperRect.width, wrapperRect.height));
+        if (size <= 0) return;
+
+        const dpr = window.devicePixelRatio || 1;
+        els.canvas.style.width = `${size}px`;
+        els.canvas.style.height = `${size}px`;
+        els.canvas.width = Math.floor(size * dpr);
+        els.canvas.height = Math.floor(size * dpr);
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        renderCanvas(performance.now());
+      }
+
+      function renderCanvas(now) {
+        const size = parseFloat(els.canvas.style.width) || 320;
+        ctx.clearRect(0, 0, size, size);
+
+        // 周囲に軸名(x, y)や目盛り用の余白を取り、内側に11x11グリッドを配置
+        const pad = Math.max(24, size * 0.072);
+        const boardSize = size - pad * 2;
+        const cellSize = boardSize / GRID_SIZE;
+
+        // 1. 外枠の背景（地中・岩盤カラー）
+        ctx.fillStyle = '#3b2314';
+        ctx.fillRect(0, 0, size, size);
+
+        // 2. 全121マスの地面タイル（市松模様風の温かみある土タイルでマス目がくっきり見える）
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            const x0 = pad + c * cellSize;
+            const y0 = pad + r * cellSize;
+            const isEven = (r + c) % 2 === 0;
+            ctx.fillStyle = isEven ? '#5c3a21' : '#52331c';
+            ctx.fillRect(x0, y0, cellSize, cellSize);
+
+            // マスの境界グリッド線（座標の交点・マスが数えやすい）
+            ctx.strokeStyle = 'rgba(254, 243, 199, 0.16)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x0, y0, cellSize, cellSize);
+          }
+        }
+
+        // 3. 座標軸（x軸・y軸）の太線＆矢印を描画
+        const originCol = 5; // x = 0
+        const originRow = 5; // y = 0
+        const originCenterX = pad + (originCol + 0.5) * cellSize;
+        const originCenterY = pad + (originRow + 0.5) * cellSize;
+
+        ctx.save();
+        ctx.strokeStyle = '#fbbf24'; // 視認性抜群のゴールドイエロー
+        ctx.lineWidth = Math.max(2.5, cellSize * 0.085);
+
+        // x軸（横線）
+        ctx.beginPath();
+        ctx.moveTo(pad - 4, originCenterY);
+        ctx.lineTo(pad + boardSize + 8, originCenterY);
+        ctx.stroke();
+
+        // x軸矢印
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.moveTo(pad + boardSize + 13, originCenterY);
+        ctx.lineTo(pad + boardSize + 5, originCenterY - 4.5);
+        ctx.lineTo(pad + boardSize + 5, originCenterY + 4.5);
+        ctx.closePath();
+        ctx.fill();
+
+        // y軸（縦線）
+        ctx.beginPath();
+        ctx.moveTo(originCenterX, pad + boardSize + 4);
+        ctx.lineTo(originCenterX, pad - 8);
+        ctx.stroke();
+
+        // y軸矢印
+        ctx.beginPath();
+        ctx.moveTo(originCenterX, pad - 13);
+        ctx.lineTo(originCenterX - 4.5, pad - 5);
+        ctx.lineTo(originCenterX + 4.5, pad - 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // 4. 壁線型迷路の壁（芝生と土の立体壁ライン）を描画
+        const wallThickness = Math.max(3.5, cellSize * 0.13);
+        ctx.lineCap = 'round';
+
+        // 水平壁 hWalls[r][c]
+        for (let r = 0; r < GRID_SIZE - 1; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            if (state.hWalls[r][c]) {
+              const x1 = pad + c * cellSize;
+              const x2 = x1 + cellSize;
+              const y = pad + (r + 1) * cellSize;
+
+              // 土の影
+              ctx.strokeStyle = '#1f1108';
+              ctx.lineWidth = wallThickness + 1.5;
+              ctx.beginPath();
+              ctx.moveTo(x1, y);
+              ctx.lineTo(x2, y);
+              ctx.stroke();
+
+              // 芝生グリーンの壁本体
+              ctx.strokeStyle = '#65a30d';
+              ctx.lineWidth = wallThickness - 0.5;
+              ctx.beginPath();
+              ctx.moveTo(x1, y);
+              ctx.lineTo(x2, y);
+              ctx.stroke();
+            }
+          }
+        }
+
+        // 垂直壁 vWalls[r][c]
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE - 1; c++) {
+            if (state.vWalls[r][c]) {
+              const x = pad + (c + 1) * cellSize;
+              const y1 = pad + r * cellSize;
+              const y2 = y1 + cellSize;
+
+              ctx.strokeStyle = '#1f1108';
+              ctx.lineWidth = wallThickness + 1.5;
+              ctx.beginPath();
+              ctx.moveTo(x, y1);
+              ctx.lineTo(x, y2);
+              ctx.stroke();
+
+              ctx.strokeStyle = '#65a30d';
+              ctx.lineWidth = wallThickness - 0.5;
+              ctx.beginPath();
+              ctx.moveTo(x, y1);
+              ctx.lineTo(x, y2);
+              ctx.stroke();
+            }
+          }
+        }
+
+        // 外周フレーム枠
+        ctx.strokeStyle = '#84cc16';
+        ctx.lineWidth = wallThickness;
+        ctx.strokeRect(pad, pad, boardSize, boardSize);
+
+        // 5. 軸名 ('x', 'y', 'O') と目盛り数字 (-5〜5) の描画
+        const fontSize = Math.max(10, Math.floor(cellSize * 0.36));
+        ctx.font = `900 ${fontSize}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // 軸名 x と y
+        ctx.fillStyle = '#fde047';
+        ctx.fillText('x', pad + boardSize + pad * 0.62, originCenterY);
+        ctx.fillText('y', originCenterX, pad * 0.35);
+
+        // x軸目盛り（正は水色系、負はピンク系で符号を直感的に区別）
+        for (let x = AXIS_MIN; x <= AXIS_MAX; x++) {
+          if (x === 0) continue;
+          const col = x - AXIS_MIN;
+          const cx = pad + (col + 0.5) * cellSize;
+          ctx.fillStyle = x > 0 ? '#7dd3fc' : '#fda4af';
+          ctx.fillText(String(x), cx, pad + boardSize + pad * 0.54);
+        }
+
+        // y軸目盛り（左端に配置）
+        for (let y = AXIS_MIN; y <= AXIS_MAX; y++) {
+          if (y === 0) continue;
+          const row = AXIS_MAX - y;
+          const cy = pad + (row + 0.5) * cellSize;
+          ctx.fillStyle = y > 0 ? '#7dd3fc' : '#fda4af';
+          ctx.fillText(String(y), pad * 0.45, cy);
+        }
+
+        // 原点 O(0, 0) マーク
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(originCenterX, originCenterY, Math.max(3.5, cellSize * 0.12), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText('O', originCenterX - cellSize * 0.32, originCenterY + cellSize * 0.32);
+
+        // 6. 掘った穴の跡（ハズレ穴＆お宝発見穴）
+        state.missMarks.forEach(m => {
+          const { row, col } = mathToGrid(m.x, m.y);
+          const cx = pad + (col + 0.5) * cellSize;
+          const cy = pad + (row + 0.5) * cellSize;
+          ctx.fillStyle = '#29170b';
+          ctx.beginPath();
+          ctx.ellipse(cx, cy + cellSize * 0.15, cellSize * 0.28, cellSize * 0.16, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+
+        state.foundMarks.forEach(f => {
+          const { row, col } = mathToGrid(f.x, f.y);
+          const cx = pad + (col + 0.5) * cellSize;
+          const cy = pad + (row + 0.5) * cellSize;
+          ctx.font = `${Math.floor(cellSize * 0.52)}px sans-serif`;
+          ctx.fillText('💎', cx, cy + cellSize * 0.05);
+        });
+
+        // 7. スムージング移動補間 & 可愛いモグラ探検家の描画
+        state.player.visualX += (state.player.x - state.player.visualX) * 0.38;
+        state.player.visualY += (state.player.y - state.player.visualY) * 0.38;
+
+        const vCol = state.player.visualX - AXIS_MIN;
+        const vRow = AXIS_MAX - state.player.visualY;
+        const px = pad + (vCol + 0.5) * cellSize;
+        const py = pad + (vRow + 0.5) * cellSize;
+
+        // 歩行時のぴょこぴょこ上下バウンス
+        const distMoving =
+          Math.abs(state.player.x - state.player.visualX) +
+          Math.abs(state.player.y - state.player.visualY);
+        const walkBob = distMoving > 0.03 ? -Math.abs(Math.sin(now * 0.035)) * cellSize * 0.12 : 0;
+
+        // 穴掘りアニメーション進行度 (0〜1)
+        const digRemaining = Math.max(0, state.player.digAnimEnd - now);
+        const digProgress = digRemaining > 0 ? 1 - digRemaining / 450 : 0;
+
+        drawMoleExplorer(ctx, px, py, cellSize * 0.94, {
+          facing: state.player.facing,
+          walkBob,
+          digProgress,
+          isLocked: state.isLocked
+        });
+
+        // 8. 土煙・キラキラ宝石パーティクルの更新＆描画
+        state.particles = state.particles.filter(p => p.life > 0);
+        state.particles.forEach(p => {
+          p.x += p.vx * 0.03;
+          p.y += p.vy * 0.03;
+          p.vy -= 0.12; // 重力（数学座標のy上向きなのでマイナス）
+          p.life -= p.decay;
+
+          const pCol = p.x - AXIS_MIN;
+          const pRow = AXIS_MAX - p.y;
+          const sx = pad + (pCol + 0.5) * cellSize;
+          const sy = pad + (pRow + 0.5) * cellSize;
+
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.life);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          if (p.isGem) {
+            // ひし形のキラキラ
+            ctx.moveTo(sx, sy - p.size);
+            ctx.lineTo(sx + p.size, sy);
+            ctx.lineTo(sx, sy + p.size);
+            ctx.lineTo(sx - p.size, sy);
+            ctx.closePath();
+          } else {
+            // 土煙の粒
+            ctx.arc(sx, sy, p.size, 0, Math.PI * 2);
+          }
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      // ========================================================================
+      // メインゲームループ
+      // ========================================================================
+      function gameLoop(now) {
+        if (!state.isPlaying) return;
+
+        if (state.isLocked && now >= state.lockEndTime) {
+          setControlLock(false);
+          els.feedbackMsg.textContent = '探索再開！目標座標を探そう';
+          els.feedbackMsg.className = 'feedback-msg';
+        }
+
+        state.elapsedTime = (now - state.startTime) / 1000;
+        const remaining = Math.max(0, TIME_LIMIT - state.elapsedTime);
+
+        els.timerDisplay.textContent = `${remaining.toFixed(1)}秒`;
+        els.timerDisplay.classList.toggle('warning', remaining <= 15.0);
+
+        if (remaining <= 0) {
+          finishGame(false);
+          return;
+        }
+
+        renderCanvas(now);
+        state.animationFrameId = requestAnimationFrame(gameLoop);
+      }
+
+      // ========================================================================
+      // イベントリスナー登録
+      // ========================================================================
+      els.soundToggleBtn.addEventListener('click', () => {
+        state.soundEnabled = !state.soundEnabled;
+        els.soundToggleBtn.textContent = state.soundEnabled ? '🔊 音ON' : '🔇 音OFF';
+        if (state.soundEnabled) playSound('move');
+      });
+
+      els.diffCards.forEach(card => {
+        card.addEventListener('click', () => {
+          els.diffCards.forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          state.difficulty = card.dataset.diff;
+          playSound('move');
+        });
+      });
+
+      els.startBtn.addEventListener('click', startGame);
+      els.retryBtn.addEventListener('click', startGame);
+      els.toTitleBtn.addEventListener('click', () => {
+        updateBestTimeDisplays();
+        showScreen('title');
+      });
+
+      els.quitBtn.addEventListener('click', () => {
+        state.isPlaying = false;
+        if (state.animationFrameId) cancelAnimationFrame(state.animationFrameId);
+        updateBestTimeDisplays();
+        showScreen('title');
+      });
+
+      els.dpadBtns.forEach(btn => {
+        btn.addEventListener('pointerdown', e => {
+          e.preventDefault();
+          movePlayer(btn.dataset.dir);
+        });
+      });
+
+      els.digBtn.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        digAction();
+      });
+
+      // キャンバススワイプ操作
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      els.canvas.addEventListener(
+        'touchstart',
+        e => {
+          if (e.touches.length > 0) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+          }
+        },
+        { passive: true }
+      );
+
+      els.canvas.addEventListener(
+        'touchend',
+        e => {
+          if (!state.isPlaying || e.changedTouches.length === 0) return;
+          const dx = e.changedTouches[0].clientX - touchStartX;
+          const dy = e.changedTouches[0].clientY - touchStartY;
+          const threshold = 22;
+          if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
+
+          if (Math.abs(dx) > Math.abs(dy)) {
+            movePlayer(dx > 0 ? 'right' : 'left');
+          } else {
+            movePlayer(dy > 0 ? 'down' : 'up');
+          }
+        },
+        { passive: true }
+      );
+
+      // PCキーボード操作
+      window.addEventListener('keydown', e => {
+        if (!state.isPlaying) return;
+        switch (e.key) {
+          case 'ArrowUp':
+          case 'w':
+          case 'W':
+            e.preventDefault();
+            movePlayer('up');
+            break;
+          case 'ArrowDown':
+          case 's':
+          case 'S':
+            e.preventDefault();
+            movePlayer('down');
+            break;
+          case 'ArrowLeft':
+          case 'a':
+          case 'A':
+            e.preventDefault();
+            movePlayer('left');
+            break;
+          case 'ArrowRight':
+          case 'd':
+          case 'D':
+            e.preventDefault();
+            movePlayer('right');
+            break;
+          case ' ':
+          case 'Enter':
+            e.preventDefault();
+            digAction();
+            break;
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        if (state.isPlaying) resizeCanvas();
+      });
+
+      // 初期化
+      renderTitleMole();
+      updateBestTimeDisplays();
+    })();
+  </script>
+</body>
+</html>
