@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>約分ラッシュ extra | 平方根・単項式アクションパズル</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-jp: 'M PLUS Rounded 1c', sans-serif;
+            --font-math: 'Outfit', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-jp);
+            background-color: #f8fafc;
+            color: #1e293b;
+            overflow: hidden;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 白ベース・ポップ方眼＆ドット背景 */
+        .pop-grid-bg {
+            background-color: #f8fafc;
+            background-image: 
+                radial-gradient(rgba(56, 189, 248, 0.22) 2px, transparent 2px),
+                radial-gradient(rgba(255, 94, 126, 0.14) 2px, transparent 2px),
+                linear-gradient(180deg, #ffffff 0%, #f0f9ff 50%, #fdf2f8 100%);
+            background-size: 32px 32px, 32px 32px, 100% 100%;
+            background-position: 0 0, 16px 16px, 0 0;
+        }
+
+        .font-math {
+            font-family: var(--font-math);
+        }
+
+        /* ==================== タイル（ブロック）デザイン ==================== */
+        .factor-tile {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            font-family: var(--font-math);
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+            will-change: left, transform;
+            z-index: 15;
+            letter-spacing: -0.02em;
+        }
+
+        .factor-tile:active {
+            transform: translateY(-45%) scale(0.93);
+        }
+
+        /* 1. 整数タイル（コーラルピンク・オレンジ系） */
+        .tile-num {
+            background: linear-gradient(145deg, #ff7a59 0%, #ff5277 100%);
+            border: 2.5px solid #ffffff;
+            color: #ffffff;
+            box-shadow: 0 4px 0 #e11d48, 0 6px 14px rgba(255, 82, 119, 0.28);
+        }
+
+        /* 2. 平方根（根号）タイル（フレッシュミント・エメラルド系） */
+        .tile-rad {
+            background: linear-gradient(145deg, #10b981 0%, #059669 100%);
+            border: 2.5px solid #ffffff;
+            color: #ffffff;
+            box-shadow: 0 4px 0 #047857, 0 6px 14px rgba(16, 185, 129, 0.28);
+        }
+
+        /* 3. 文字タイル（スカイブルー系） */
+        .tile-var {
+            background: linear-gradient(145deg, #38bdf8 0%, #2563eb 100%);
+            border: 2.5px solid #ffffff;
+            color: #ffffff;
+            box-shadow: 0 4px 0 #1d4ed8, 0 6px 14px rgba(37, 99, 235, 0.25);
+        }
+
+        /* 選択中のハイライト */
+        .factor-tile.selected {
+            transform: translateY(-54%) scale(1.1);
+            z-index: 25;
+            box-shadow: 0 0 0 4px #facc15, 0 8px 20px rgba(250, 204, 21, 0.6);
+        }
+
+        /* 乗算ドット装飾 */
+        .factor-tile::after {
+            content: '・';
+            position: absolute;
+            right: -11px;
+            color: #94a3b8;
+            font-size: 1.1rem;
+            font-weight: 900;
+            pointer-events: none;
+        }
+        .factor-tile:last-child::after {
+            display: none;
+        }
+
+        /* ==================== アニメーション ==================== */
+        @keyframes tileShake {
+            0%, 100% { transform: translateY(-50%) translateX(0); }
+            20% { transform: translateY(-50%) translateX(-7px) rotate(-4deg); }
+            40% { transform: translateY(-50%) translateX(7px) rotate(4deg); }
+            60% { transform: translateY(-50%) translateX(-5px) rotate(-2deg); }
+            80% { transform: translateY(-50%) translateX(5px) rotate(2deg); }
+        }
+
+        .factor-tile.shake {
+            animation: tileShake 0.34s ease-in-out;
+            box-shadow: 0 0 0 4px #ef4444, 0 6px 16px rgba(239, 68, 68, 0.45);
+        }
+
+        @keyframes tilePop {
+            0% { transform: translateY(-50%) scale(1.25); filter: brightness(1.2); }
+            100% { transform: translateY(-50%) scale(1); filter: brightness(1); }
+        }
+
+        .factor-tile.pop {
+            animation: tilePop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(-3deg); }
+            50% { transform: translateY(-7px) rotate(3deg); }
+        }
+        .animate-float-1 { animation: floatSlow 3.6s ease-in-out infinite; }
+        .animate-float-2 { animation: floatSlow 4.2s ease-in-out 0.8s infinite; }
+
+        @keyframes dangerPulse {
+            0%, 100% { opacity: 0.25; }
+            50% { opacity: 0.72; }
+        }
+        .danger-zone-active {
+            animation: dangerPulse 0.6s infinite ease-in-out;
+        }
+
+        @keyframes floatUpFade {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(0.85); }
+            25% { opacity: 1; transform: translate(-50%, -12px) scale(1.08); }
+            100% { opacity: 0; transform: translate(-50%, -48px) scale(0.95); }
+        }
+        .floating-feedback {
+            position: absolute;
+            pointer-events: none;
+            z-index: 40;
+            font-weight: 900;
+            text-shadow: 0 2px 0 #ffffff, 0 -2px 0 #ffffff, 2px 0 0 #ffffff, -2px 0 0 #ffffff, 0 4px 10px rgba(15, 23, 42, 0.2);
+            animation: floatUpFade 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            white-space: nowrap;
+        }
+
+        @keyframes particleFly {
+            0% { opacity: 1; transform: translate(0, 0) scale(1); }
+            100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
+        }
+        .spark-particle {
+            position: absolute;
+            border-radius: 9999px;
+            pointer-events: none;
+            z-index: 35;
+            animation: particleFly 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="pop-grid-bg h-screen w-screen flex flex-col justify-between overflow-hidden">
+
+    <!-- ==================== トップ HUD（プレイ中ステータスバー） ==================== -->
+    <header class="w-full px-3 py-2 sm:px-6 sm:py-2.5 bg-white/90 backdrop-blur-md border-b-2 border-slate-200/80 flex items-center justify-between z-30 shrink-0 shadow-sm">
+        <div class="flex items-center gap-2 sm:gap-4">
+            <!-- タイム（スコア） -->
+            <div class="bg-sky-50 border-2 border-sky-200 px-3 py-1 sm:px-4 sm:py-1.5 rounded-2xl flex items-baseline gap-1.5 shadow-sm">
+                <span class="text-xs sm:text-sm font-black text-sky-600">TIME</span>
+                <span id="hud-time" class="font-math text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">0.0</span>
+                <span class="text-xs sm:text-sm font-extrabold text-slate-500">秒</span>
+            </div>
+
+            <!-- 約分数＆スピード（PC/タブレット） -->
+            <div class="hidden sm:flex items-center gap-3 bg-slate-50 border-2 border-slate-200/80 px-3.5 py-1.5 rounded-2xl">
+                <div class="text-center">
+                    <div class="text-[10px] text-slate-400 font-extrabold leading-none">約分回数</div>
+                    <div id="hud-reductions" class="font-math text-lg font-black text-emerald-600 leading-tight">0</div>
+                </div>
+                <div class="h-6 w-0.5 bg-slate-200"></div>
+                <div class="text-center">
+                    <div class="text-[10px] text-slate-400 font-extrabold leading-none">スピード</div>
+                    <div id="hud-speed" class="font-math text-lg font-black text-rose-500 leading-tight">x1.0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- モバイル用ミニステータス -->
+        <div class="flex sm:hidden items-center gap-1.5 text-xs font-extrabold">
+            <span class="bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-xl text-emerald-700">約分:<span id="hud-reductions-mobile" class="font-math ml-0.5">0</span></span>
+            <span class="bg-rose-50 border border-rose-200 px-2 py-1 rounded-xl text-rose-600"><span id="hud-speed-mobile" class="font-math">x1.0</span></span>
+        </div>
+
+        <!-- 右側ボタン群（サウンド・一時停止） -->
+        <div class="flex items-center gap-2">
+            <button id="btn-sound" title="効果音オン/オフ" class="p-2 sm:p-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-600 transition active:scale-95 shadow-sm">
+                <svg id="icon-sound-on" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/>
+                </svg>
+                <svg id="icon-sound-off" class="w-5 h-5 text-slate-400 hidden" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/>
+                </svg>
+            </button>
+
+            <button id="btn-pause" title="一時停止" class="p-2 sm:p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 text-slate-700 transition active:scale-95 shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- ==================== メインゲームステージ ==================== -->
+    <main id="game-stage" class="relative flex-1 w-full flex flex-col justify-center overflow-hidden select-none">
+        
+        <!-- 左端の限界ライン（危険ウォール） -->
+        <div id="limit-wall" class="absolute top-0 bottom-0 left-0 w-9 sm:w-12 bg-gradient-to-r from-rose-500/25 via-rose-400/10 to-transparent border-r-[3px] border-dashed border-rose-500 z-20 pointer-events-none flex flex-col justify-between py-4 items-center">
+            <span class="px-1 py-1.5 rounded-md bg-rose-500 text-white text-[10px] font-black tracking-widest [writing-mode:vertical-rl] shadow-sm">限界ライン</span>
+            <span class="px-1 py-1.5 rounded-md bg-rose-500 text-white text-[10px] font-black tracking-widest [writing-mode:vertical-rl] shadow-sm">限界ライン</span>
+        </div>
+
+        <!-- 危険点滅オーバーレイ -->
+        <div id="danger-overlay-top" class="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-r from-rose-500/20 via-transparent to-transparent pointer-events-none opacity-0 transition-opacity duration-300 z-0"></div>
+        <div id="danger-overlay-bottom" class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-r from-rose-500/20 via-transparent to-transparent pointer-events-none opacity-0 transition-opacity duration-300 z-0"></div>
+
+        <!-- 分数レーン全体（中央の括線にピタッと寄せてコンパクト配置） -->
+        <div class="relative w-full flex flex-col justify-center z-10">
+
+            <!-- 分子レーンヘッダー -->
+            <div class="w-full pl-11 sm:pl-14 pr-3 pb-1 flex items-center justify-between pointer-events-none">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[11px] sm:text-xs font-black shadow-sm">分子</span>
+                    <div class="w-20 sm:w-28 h-2.5 bg-slate-200 rounded-full overflow-hidden border border-slate-300/70">
+                        <div id="gauge-num" class="h-full bg-gradient-to-r from-sky-400 via-amber-400 to-rose-500 transition-all duration-150" style="width: 0%"></div>
+                    </div>
+                    <span id="count-num" class="text-[11px] font-math font-extrabold text-slate-500">0/11</span>
+                </div>
+
+                <!-- 選択中インジケーター（分子） -->
+                <div id="selected-hint-num" class="hidden px-2.5 py-0.5 rounded-full bg-amber-300 border-2 border-amber-500 text-slate-900 text-xs font-black shadow-sm animate-bounce">
+                    選択中: <span class="font-math text-sm"></span>
+                </div>
+            </div>
+
+            <!-- 分子レーン -->
+            <section id="numerator-lane" class="relative w-full h-[74px] sm:h-[84px] flex items-center bg-white/40">
+                <div id="numerator-container" class="relative w-full h-full"></div>
+            </section>
+
+            <!-- 中央の分数の横棒（括線） -->
+            <div class="relative w-full pl-10 sm:pl-14 pr-3 sm:pr-6 my-[5px] sm:my-[6px] flex items-center justify-center z-20 pointer-events-none">
+                <div class="w-full h-[5px] sm:h-[6px] bg-slate-800 rounded-full shadow-[0_2px_8px_rgba(30,41,59,0.2)]"></div>
+            </div>
+
+            <!-- 分母レーン -->
+            <section id="denominator-lane" class="relative w-full h-[74px] sm:h-[84px] flex items-center bg-white/40">
+                <div id="denominator-container" class="relative w-full h-full"></div>
+            </section>
+
+            <!-- 分母レーンフッター -->
+            <div class="w-full pl-11 sm:pl-14 pr-3 pt-1 flex items-center justify-between pointer-events-none">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full bg-indigo-500 text-white text-[11px] sm:text-xs font-black shadow-sm">分母</span>
+                    <div class="w-20 sm:w-28 h-2.5 bg-slate-200 rounded-full overflow-hidden border border-slate-300/70">
+                        <div id="gauge-den" class="h-full bg-gradient-to-r from-indigo-400 via-amber-400 to-rose-500 transition-all duration-150" style="width: 0%"></div>
+                    </div>
+                    <span id="count-den" class="text-[11px] font-math font-extrabold text-slate-500">0/11</span>
+                </div>
+
+                <!-- 選択中インジケーター（分母） -->
+                <div id="selected-hint-den" class="hidden px-2.5 py-0.5 rounded-full bg-amber-300 border-2 border-amber-500 text-slate-900 text-xs font-black shadow-sm animate-bounce">
+                    選択中: <span class="font-math text-sm"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- エフェクトレイヤー -->
+        <div id="fx-layer" class="absolute inset-0 pointer-events-none z-40 overflow-hidden"></div>
+    </main>
+
+    <!-- ==================== フッターヒント ==================== -->
+    <footer class="w-full py-2 px-3 bg-white/90 border-t-2 border-slate-200/70 text-center text-[11px] sm:text-sm font-bold text-slate-600 shrink-0">
+        <span>ヒント: <strong class="text-emerald-600 font-math">√12 (=2√3)</strong> のように整数を外に出せる <strong class="text-emerald-600 font-math">√</strong> は <strong class="text-rose-500">整数タイル</strong> とも約分できるぞ！</span>
+    </footer>
+
+    <!-- ==================== トップページ（白ベース・ポップデザイン） ==================== -->
+    <div id="screen-start" class="fixed inset-0 pop-grid-bg z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="max-w-2xl w-full bg-white/95 backdrop-blur-md border-[3px] border-slate-200/90 rounded-[28px] p-4 sm:p-7 shadow-[0_20px_50px_rgba(15,23,42,0.12)] text-center relative overflow-hidden my-auto">
+            
+            <!-- 背景デコレーション（浮遊する分数バッジ） -->
+            <div class="hidden sm:flex flex-col items-center px-2.5 py-1 rounded-2xl bg-emerald-50 border-2 border-emerald-200 text-emerald-600 font-math font-black text-xs absolute top-5 left-5 animate-float-1 pointer-events-none">
+                <span>√12</span>
+                <span class="w-5 h-0.5 bg-emerald-500 my-0.5"></span>
+                <span>2</span>
+            </div>
+            <div class="hidden sm:flex flex-col items-center px-2.5 py-1 rounded-2xl bg-rose-50 border-2 border-rose-200 text-rose-500 font-math font-black text-xs absolute top-5 right-5 animate-float-2 pointer-events-none">
+                <span>√8</span>
+                <span class="w-5 h-0.5 bg-rose-500 my-0.5"></span>
+                <span>√2</span>
+            </div>
+
+            <!-- 続編ポップバッジ -->
+            <div class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-300 border-2 border-amber-400 text-slate-900 text-xs font-black mb-2 shadow-sm">
+                <span>✨ SEQUEL / 平方根（√）＆ a√b 変形参戦！ ✨</span>
+            </div>
+
+            <!-- タイトルロゴ -->
+            <h1 class="text-3xl sm:text-5xl font-black text-slate-800 tracking-tight mb-1.5 flex items-center justify-center gap-2 flex-wrap">
+                <span>約分ラッシュ</span>
+                <span class="px-3 py-0.5 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-violet-500 text-white font-math italic text-2xl sm:text-4xl shadow-[0_4px_0_#be185d] -rotate-2">extra</span>
+            </h1>
+
+            <p class="text-slate-600 text-xs sm:text-sm font-bold mb-4">
+                分母と分子からペアをタップして高速約分！<br class="sm:hidden">左の限界ラインに届くまで生き残ろう！
+            </p>
+
+            <!-- 4種類の約分ルールカード（2x2グリッド） -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 mb-5 text-left">
+                <!-- 1. 整数どうし -->
+                <div class="bg-rose-50/90 border-2 border-rose-200 rounded-2xl p-2.5 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5">
+                        <span class="px-2 py-0.5 rounded-lg bg-rose-500 text-white text-[11px] font-black shrink-0">整数</span>
+                        <span class="text-xs font-extrabold text-rose-900">公約数で約分</span>
+                    </div>
+                    <div class="font-math text-xs sm:text-sm font-black text-rose-700 bg-white px-2.5 py-1 rounded-xl border border-rose-200 shrink-0">
+                        6 と 4 → 3 と 2
+                    </div>
+                </div>
+
+                <!-- 2. 根号どうし -->
+                <div class="bg-emerald-50/90 border-2 border-emerald-200 rounded-2xl p-2.5 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5">
+                        <span class="px-2 py-0.5 rounded-lg bg-emerald-500 text-white text-[11px] font-black shrink-0">√どうし</span>
+                        <span class="text-xs font-extrabold text-emerald-900">中身で約分</span>
+                    </div>
+                    <div class="font-math text-xs sm:text-sm font-black text-emerald-700 bg-white px-2.5 py-1 rounded-xl border border-emerald-200 shrink-0">
+                        √12 と √3 → 2
+                    </div>
+                </div>
+
+                <!-- 3. 根号 × 整数（NEW） -->
+                <div class="bg-amber-50/95 border-2 border-amber-300 rounded-2xl p-2.5 flex items-center justify-between gap-2 relative">
+                    <span class="absolute -top-2 left-2 px-1.5 py-0.2 rounded-md bg-rose-500 text-white text-[9px] font-black">NEW!</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="px-2 py-0.5 rounded-lg bg-amber-500 text-white text-[11px] font-black shrink-0">√ と整数</span>
+                        <span class="text-xs font-extrabold text-amber-950">外に出して約分</span>
+                    </div>
+                    <div class="font-math text-xs sm:text-sm font-black text-amber-800 bg-white px-2.5 py-1 rounded-xl border border-amber-300 shrink-0">
+                        √12 と 2 → √3
+                    </div>
+                </div>
+
+                <!-- 4. 文字どうし -->
+                <div class="bg-sky-50/90 border-2 border-sky-200 rounded-2xl p-2.5 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5">
+                        <span class="px-2 py-0.5 rounded-lg bg-sky-500 text-white text-[11px] font-black shrink-0">文字</span>
+                        <span class="text-xs font-extrabold text-sky-900">同じ文字で約分</span>
+                    </div>
+                    <div class="font-math text-xs sm:text-sm font-black text-sky-700 bg-white px-2.5 py-1 rounded-xl border border-sky-200 shrink-0">
+                        x² と x → x
+                    </div>
+                </div>
+            </div>
+
+            <!-- 難易度選択（根号の出現量＆ベストタイム付き） -->
+            <div class="mb-5">
+                <div class="text-xs font-black text-slate-500 mb-2">
+                    難易度を選択（√ の出現量＆大きさが変わるよ！）
+                </div>
+                <div class="grid grid-cols-3 gap-2 sm:gap-3" id="difficulty-selector">
+                    <!-- 初級 -->
+                    <button data-diff="easy" class="diff-btn flex flex-col items-center p-2.5 sm:p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-white text-slate-600 transition">
+                        <span class="text-sm sm:text-base font-black text-slate-800">初級</span>
+                        <span class="mt-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] sm:text-[11px] font-extrabold">√ 少なめ (25%)</span>
+                        <span class="mt-1.5 text-[10px] sm:text-xs font-bold text-slate-400">BEST: <strong id="best-easy" class="font-math text-slate-700">0.0</strong>秒</span>
+                    </button>
+
+                    <!-- 中級 -->
+                    <button data-diff="normal" class="diff-btn active flex flex-col items-center p-2.5 sm:p-3 rounded-2xl border-[3px] border-sky-400 bg-sky-50 text-slate-800 shadow-[0_4px_12px_rgba(56,189,248,0.25)] transition">
+                        <span class="text-sm sm:text-base font-black text-sky-700">中級</span>
+                        <span class="mt-1 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] sm:text-[11px] font-extrabold">√ ふつう (40%)</span>
+                        <span class="mt-1.5 text-[10px] sm:text-xs font-bold text-slate-500">BEST: <strong id="best-normal" class="font-math text-sky-700">0.0</strong>秒</span>
+                    </button>
+
+                    <!-- 上級 -->
+                    <button data-diff="hard" class="diff-btn flex flex-col items-center p-2.5 sm:p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-white text-slate-600 transition">
+                        <span class="text-sm sm:text-base font-black text-slate-800">上級</span>
+                        <span class="mt-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] sm:text-[11px] font-extrabold">√ 多め (55%)</span>
+                        <span class="mt-1.5 text-[10px] sm:text-xs font-bold text-slate-400">BEST: <strong id="best-hard" class="font-math text-slate-700">0.0</strong>秒</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ゲームスタートボタン -->
+            <button id="btn-start" class="w-full py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 hover:from-sky-500 hover:to-indigo-600 text-white font-black text-lg sm:text-xl shadow-[0_6px_0_#1d4ed8,0_12px_24px_rgba(37,99,235,0.3)] active:translate-y-1 active:shadow-[0_2px_0_#1d4ed8] transition-all flex items-center justify-center gap-2">
+                <span>ゲームスタート！</span>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== 一時停止モーダル ==================== -->
+    <div id="screen-pause" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="max-w-sm w-full bg-white border-[3px] border-slate-200 rounded-[28px] p-6 text-center shadow-2xl">
+            <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-500 flex items-center justify-center mx-auto mb-3">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6"/>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-black text-slate-800 mb-1">一時停止中</h2>
+            <p class="text-slate-500 text-xs sm:text-sm font-bold mb-6">深呼吸したらすぐに再開できるよ！</p>
+            <div class="space-y-2.5">
+                <button id="btn-resume" class="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-base shadow-[0_4px_0_#047857] active:translate-y-0.5 transition">
+                    ゲームを再開する
+                </button>
+                <button id="btn-quit" class="w-full py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-sm transition">
+                    トップページに戻る
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ゲームオーバーモーダル ==================== -->
+    <div id="screen-gameover" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white border-[3px] border-rose-300 rounded-[28px] p-6 sm:p-8 text-center shadow-2xl relative overflow-hidden">
+            <div class="inline-block px-3.5 py-1 rounded-full bg-rose-100 border border-rose-300 text-rose-600 text-xs font-black mb-2">
+                限界ライン到達！
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-black text-slate-800 mb-4">ゲームオーバー</h2>
+
+            <!-- スコアカード -->
+            <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 mb-6 space-y-4">
+                <div>
+                    <div class="text-xs font-extrabold text-slate-500 mb-1">生存タイム（スコア）</div>
+                    <div class="flex items-baseline justify-center gap-1.5">
+                        <span id="result-time" class="font-math text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-amber-500 to-sky-500">0.0</span>
+                        <span class="text-lg font-black text-slate-600">秒</span>
+                    </div>
+                    <div id="new-record-badge" class="hidden mt-2 inline-block px-3 py-1 rounded-full bg-amber-300 border-2 border-amber-400 text-slate-900 text-xs font-black animate-bounce">
+                        🎉 NEW RECORD! 新記録達成！
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-3 border-t-2 border-slate-200/80">
+                    <div class="bg-white border border-slate-200 rounded-xl p-2.5">
+                        <div class="text-[11px] text-slate-500 font-extrabold">約分した回数</div>
+                        <div id="result-reductions" class="font-math text-2xl font-black text-emerald-600">0</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-xl p-2.5">
+                        <div class="text-[11px] text-slate-500 font-extrabold">ベスト記録</div>
+                        <div class="font-math text-2xl font-black text-sky-600"><span id="result-best">0.0</span><span class="text-xs ml-0.5">秒</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2.5">
+                <button id="btn-retry" class="w-full py-4 rounded-2xl bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 hover:from-sky-500 hover:to-indigo-600 text-white font-black text-lg shadow-[0_5px_0_#1d4ed8] active:translate-y-1 transition">
+                    もういちど挑戦する！
+                </button>
+                <button id="btn-to-title" class="w-full py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-sm transition">
+                    トップページへ戻る
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 1. サウンドシステム (Web Audio API) ====================
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        this.ctx = new AudioCtx();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playSelect() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(580, now);
+                osc.frequency.exponentialRampToValueAtTime(860, now + 0.06);
+
+                gain.gain.setValueAtTime(0.14, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.07);
+            }
+
+            playReduce(isComplete = false, isRadical = false) {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const freqs = isRadical
+                    ? (isComplete ? [659.25, 987.77, 1318.51] : [587.33, 783.99])
+                    : (isComplete ? [587.33, 880, 1174.66] : [523.25, 659.25]);
+
+                freqs.forEach((f, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(f, now + idx * 0.03);
+
+                    gain.gain.setValueAtTime(0.16, now + idx * 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.03 + 0.24);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.03);
+                    osc.stop(now + idx * 0.03 + 0.25);
+                });
+            }
+
+            playError() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(175, now);
+                osc.frequency.linearRampToValueAtTime(135, now + 0.15);
+
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.17);
+            }
+
+            playRescue() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.05);
+
+                    gain.gain.setValueAtTime(0.15, now + i * 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.24);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.05);
+                    osc.stop(now + i * 0.05 + 0.25);
+                });
+            }
+
+            playGameOver() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const notes = [392.00, 349.23, 329.63, 261.63];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.13);
+
+                    gain.gain.setValueAtTime(0.13, now + i * 0.13);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.13 + 0.24);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.13);
+                    osc.stop(now + i * 0.13 + 0.25);
+                });
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        // ==================== 2. 数学ヘルパー関数 ====================
+        function gcd(a, b) {
+            a = Math.abs(a);
+            b = Math.abs(b);
+            while (b !== 0) {
+                const t = b;
+                b = a % b;
+                a = t;
+            }
+            return a;
+        }
+
+        /**
+         * 平方根 √n を k√m に分解する（kは外に出せる最大の整数）
+         * 例: 12 -> { outer: 2, inner: 3 }, 18 -> { outer: 3, inner: 2 }, 6 -> { outer: 1, inner: 6 }
+         */
+        function simplifyRadicand(n) {
+            let outer = 1;
+            let inner = n;
+            for (let k = Math.floor(Math.sqrt(n)); k >= 2; k--) {
+                const sq = k * k;
+                if (inner % sq === 0) {
+                    outer = k;
+                    inner = inner / sq;
+                    break;
+                }
+            }
+            return { outer, inner };
+        }
+
+        const SUPERSCRIPTS = { 1: '', 2: '²', 3: '³', 4: '⁴' };
+
+        // 表示フォーマット：指数1は必ず文字のみ、根号は「√12」のように表示
+        function formatFactorText(item) {
+            if (item.kind === 'number') {
+                return String(item.value);
+            } else if (item.kind === 'radical') {
+                return `√${item.radicand}`;
+            } else {
+                const exp = Number(item.exp);
+                if (exp <= 1) {
+                    return item.base;
+                }
+                return `${item.base}${SUPERSCRIPTS[exp] !== undefined ? SUPERSCRIPTS[exp] : `^${exp}`}`;
+            }
+        }
+
+        // ==================== 3. 難易度設定＆ゲーム状態 ====================
+        // 外に整数を出せる根号数（8, 12, 18, 20, 24, 27, 28, 32, 45, 48, 50, 72 など）を豊富に収録
+        const DIFFICULTY_CONFIG = {
+            easy: {
+                baseSpeed: 42,
+                speedGrowth: 1.4,
+                spawnInterval: 2.3,
+                minInterval: 1.02,
+                weights: { number: 0.60, radical: 0.25, var: 0.15 },
+                numbers: [2, 3, 4, 6, 8, 9, 10, 12],
+                radicals: [2, 3, 5, 8, 12, 18, 20],
+                vars: ['x', 'y'],
+                maxExp: 2
+            },
+            normal: {
+                baseSpeed: 54,
+                speedGrowth: 1.8,
+                spawnInterval: 1.95,
+                minInterval: 0.85,
+                weights: { number: 0.45, radical: 0.40, var: 0.15 },
+                numbers: [2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 18],
+                radicals: [2, 3, 5, 6, 8, 12, 18, 20, 24, 27, 28, 32, 45, 48, 50, 72],
+                vars: ['x', 'y', 'a', 'b'],
+                maxExp: 3
+            },
+            hard: {
+                baseSpeed: 72,
+                speedGrowth: 2.3,
+                spawnInterval: 1.65,
+                minInterval: 0.72,
+                weights: { number: 0.30, radical: 0.55, var: 0.15 },
+                numbers: [3, 4, 5, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20, 24],
+                radicals: [6, 8, 12, 18, 20, 24, 27, 28, 32, 40, 44, 45, 48, 50, 54, 60, 63, 72, 75, 80, 98],
+                vars: ['x', 'y', 'a', 'b'],
+                maxExp: 3
+            }
+        };
+
+        const MAX_CAPACITY = 11;
+
+        const state = {
+            status: 'start',
+            difficulty: 'normal',
+            elapsedTime: 0,
+            reductionCount: 0,
+            speedMultiplier: 1.0,
+            spawnTimer: 0,
+            rescueCooldown: 0,
+            nextId: 1,
+            numerator: [],
+            denominator: [],
+            selectedNumId: null,
+            selectedDenId: null,
+            lastFrameTime: 0,
+            bestScores: {
+                easy: parseFloat(localStorage.getItem('extra_best_easy') || '0'),
+                normal: parseFloat(localStorage.getItem('extra_best_normal') || '0'),
+                hard: parseFloat(localStorage.getItem('extra_best_hard') || '0')
+            }
+        };
+
+        const els = {
+            stage: document.getElementById('game-stage'),
+            numContainer: document.getElementById('numerator-container'),
+            denContainer: document.getElementById('denominator-container'),
+            fxLayer: document.getElementById('fx-layer'),
+            hudTime: document.getElementById('hud-time'),
+            hudReductions: document.getElementById('hud-reductions'),
+            hudReductionsMobile: document.getElementById('hud-reductions-mobile'),
+            hudSpeed: document.getElementById('hud-speed'),
+            hudSpeedMobile: document.getElementById('hud-speed-mobile'),
+            gaugeNum: document.getElementById('gauge-num'),
+            gaugeDen: document.getElementById('gauge-den'),
+            countNum: document.getElementById('count-num'),
+            countDen: document.getElementById('count-den'),
+            dangerTop: document.getElementById('danger-overlay-top'),
+            dangerBottom: document.getElementById('danger-overlay-bottom'),
+            hintNum: document.getElementById('selected-hint-num'),
+            hintDen: document.getElementById('selected-hint-den'),
+            screenStart: document.getElementById('screen-start'),
+            screenPause: document.getElementById('screen-pause'),
+            screenGameOver: document.getElementById('screen-gameover'),
+            bestEasy: document.getElementById('best-easy'),
+            bestNormal: document.getElementById('best-normal'),
+            bestHard: document.getElementById('best-hard'),
+            resultTime: document.getElementById('result-time'),
+            resultReductions: document.getElementById('result-reductions'),
+            resultBest: document.getElementById('result-best'),
+            newRecordBadge: document.getElementById('new-record-badge')
+        };
+
+        // ==================== 4. スマート生成＆詰み防止ロジック ====================
+        function canPairReduce(a, b) {
+            // 整数 × 整数
+            if (a.kind === 'number' && b.kind === 'number') {
+                return gcd(a.value, b.value) > 1;
+            }
+            // 根号 × 根号
+            if (a.kind === 'radical' && b.kind === 'radical') {
+                return gcd(a.radicand, b.radicand) > 1;
+            }
+            // 根号 × 整数（根号の外に整数が出せて、その整数と公約数がある場合）
+            if (a.kind === 'radical' && b.kind === 'number') {
+                const { outer } = simplifyRadicand(a.radicand);
+                return outer > 1 && gcd(outer, b.value) > 1;
+            }
+            if (a.kind === 'number' && b.kind === 'radical') {
+                const { outer } = simplifyRadicand(b.radicand);
+                return outer > 1 && gcd(outer, a.value) > 1;
+            }
+            // 文字 × 文字
+            if (a.kind === 'var' && b.kind === 'var') {
+                return a.base === b.base;
+            }
+            return false;
+        }
+
+        function countReduciblePairs() {
+            let count = 0;
+            for (const n of state.numerator) {
+                for (const d of state.denominator) {
+                    if (canPairReduce(n, d)) count++;
+                }
+            }
+            return count;
+        }
+
+        function createWeightedRandomFactor(cfg) {
+            const r = Math.random();
+            if (r < cfg.weights.number) {
+                const val = cfg.numbers[Math.floor(Math.random() * cfg.numbers.length)];
+                return { kind: 'number', value: val };
+            } else if (r < cfg.weights.number + cfg.weights.radical) {
+                const rad = cfg.radicals[Math.floor(Math.random() * cfg.radicals.length)];
+                return { kind: 'radical', radicand: rad };
+            } else {
+                const base = cfg.vars[Math.floor(Math.random() * cfg.vars.length)];
+                const exp = (cfg.maxExp >= 2 && Math.random() > 0.6) ? (cfg.maxExp >= 3 && Math.random() > 0.75 ? 3 : 2) : 1;
+                return { kind: 'var', base, exp };
+            }
+        }
+
+        function createMatchingFactorFor(target, cfg) {
+            if (target.kind === 'number') {
+                // 45%の確率で「この整数と約分できる k√m 型の根号カード」を生成！
+                if (Math.random() < 0.45) {
+                    const radCandidates = cfg.radicals.filter(r => {
+                        const { outer } = simplifyRadicand(r);
+                        return outer > 1 && gcd(outer, target.value) > 1;
+                    });
+                    if (radCandidates.length > 0) {
+                        return { kind: 'radical', radicand: radCandidates[Math.floor(Math.random() * radCandidates.length)] };
+                    }
+                }
+                const numCandidates = cfg.numbers.filter(n => gcd(n, target.value) > 1);
+                if (numCandidates.length > 0) {
+                    return { kind: 'number', value: numCandidates[Math.floor(Math.random() * numCandidates.length)] };
+                }
+            } else if (target.kind === 'radical') {
+                const { outer } = simplifyRadicand(target.radicand);
+                // 外に出せる数 k > 1 がある場合、50%の確率で対応する整数タイルを生成
+                if (outer > 1 && Math.random() < 0.5) {
+                    const numCandidates = cfg.numbers.filter(n => gcd(n, outer) > 1);
+                    if (numCandidates.length > 0) {
+                        return { kind: 'number', value: numCandidates[Math.floor(Math.random() * numCandidates.length)] };
+                    }
+                }
+                const radCandidates = cfg.radicals.filter(r => gcd(r, target.radicand) > 1);
+                if (radCandidates.length > 0) {
+                    return { kind: 'radical', radicand: radCandidates[Math.floor(Math.random() * radCandidates.length)] };
+                }
+            } else if (target.kind === 'var') {
+                const exp = (cfg.maxExp >= 2 && Math.random() > 0.65) ? 2 : 1;
+                return { kind: 'var', base: target.base, exp };
+            }
+            return null;
+        }
+
+        function createSmartFactor(targetSide) {
+            const cfg = DIFFICULTY_CONFIG[state.difficulty];
+            const oppositeList = targetSide === 'numerator' ? state.denominator : state.numerator;
+            const sameList = targetSide === 'numerator' ? state.numerator : state.denominator;
+
+            const currentPairs = countReduciblePairs();
+            const isCrowded = oppositeList.length >= MAX_CAPACITY - 4 || sameList.length >= MAX_CAPACITY - 4;
+            const forceMatch = currentPairs < 2 || isCrowded;
+
+            if (oppositeList.length > 0 && (forceMatch || Math.random() < 0.8)) {
+                const shuffled = [...oppositeList].sort(() => Math.random() - 0.5);
+                for (const target of shuffled) {
+                    const matched = createMatchingFactorFor(target, cfg);
+                    if (matched) return matched;
+                }
+            }
+
+            return createWeightedRandomFactor(cfg);
+        }
+
+        function mutateFactorItem(item, newSpec) {
+            item.kind = newSpec.kind;
+            delete item.value;
+            delete item.radicand;
+            delete item.base;
+            delete item.exp;
+
+            Object.assign(item, newSpec);
+
+            if (item.el) {
+                item.el.className = `factor-tile ${getTileColorClass(item)}`;
+                if (item.id === state.selectedNumId || item.id === state.selectedDenId) {
+                    item.el.classList.add('selected');
+                }
+                item.el.textContent = formatFactorText(item);
+                triggerPopAnimation(item.el);
+            }
+        }
+
+        function checkAndPerformDeadlockRescue() {
+            if (state.rescueCooldown > 0) return;
+            if (state.numerator.length === 0 || state.denominator.length === 0) return;
+
+            const pairs = countReduciblePairs();
+            const maxLen = Math.max(state.numerator.length, state.denominator.length);
+
+            if (pairs === 0 && (maxLen >= 8 || state.numerator.length + state.denominator.length >= 10)) {
+                const cfg = DIFFICULTY_CONFIG[state.difficulty];
+                const convertCount = Math.min(2, state.numerator.length, state.denominator.length);
+
+                for (let i = 0; i < convertCount; i++) {
+                    const numTarget = state.numerator[i];
+                    const denTarget = state.denominator[i];
+
+                    if (i % 2 === 0) {
+                        // k√m 型の根号と整数のペアに変換
+                        mutateFactorItem(numTarget, { kind: 'radical', radicand: 12 });
+                        mutateFactorItem(denTarget, { kind: 'number', value: 2 });
+                    } else {
+                        const baseNum = cfg.numbers[Math.floor(Math.random() * cfg.numbers.length)];
+                        const matchSpec = createMatchingFactorFor({ kind: 'number', value: baseNum }, cfg) || { kind: 'number', value: baseNum };
+                        mutateFactorItem(numTarget, { kind: 'number', value: baseNum });
+                        mutateFactorItem(denTarget, matchSpec);
+                    }
+
+                    spawnSparkles(numTarget.el, '#facc15');
+                    spawnSparkles(denTarget.el, '#facc15');
+                }
+
+                showRescueBanner();
+                sfx.playRescue();
+                state.rescueCooldown = 2.5;
+            }
+        }
+
+        function showRescueBanner() {
+            const banner = document.createElement('div');
+            banner.className = 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-300 text-slate-900 font-black text-sm sm:text-lg shadow-[0_8px_25px_rgba(250,204,21,0.5)] border-2 border-amber-500 pointer-events-none animate-bounce whitespace-nowrap';
+            banner.textContent = '✨ リフレッシュ救済！約分ペア出現 ✨';
+            els.fxLayer.appendChild(banner);
+            setTimeout(() => banner.remove(), 1400);
+        }
+
+        function spawnFactor(side, customSpec = null) {
+            const stageWidth = els.stage.clientWidth || window.innerWidth;
+            const list = side === 'numerator' ? state.numerator : state.denominator;
+            const container = side === 'numerator' ? els.numContainer : els.denContainer;
+
+            const spec = customSpec || createSmartFactor(side);
+            const tileSize = getTileMetrics();
+
+            let spawnX = stageWidth + 10;
+            if (list.length > 0) {
+                const rightmost = list[list.length - 1];
+                const minGap = tileSize.width + tileSize.gap;
+                if (rightmost.x + minGap > spawnX) {
+                    spawnX = rightmost.x + minGap;
+                }
+            }
+
+            const item = {
+                id: state.nextId++,
+                side,
+                ...spec,
+                x: spawnX,
+                el: null
+            };
+
+            const el = document.createElement('div');
+            el.className = `factor-tile ${getTileColorClass(item)}`;
+            el.style.width = `${tileSize.width}px`;
+            el.style.height = `${tileSize.height}px`;
+            el.style.fontSize = `${tileSize.fontSize}px`;
+            el.style.left = `${item.x}px`;
+            el.textContent = formatFactorText(item);
+
+            el.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                handleTileTap(item);
+            });
+
+            container.appendChild(el);
+            item.el = el;
+            list.push(item);
+        }
+
+        function getTileColorClass(item) {
+            if (item.kind === 'number') return 'tile-num';
+            if (item.kind === 'radical') return 'tile-rad';
+            return 'tile-var';
+        }
+
+        function getTileMetrics() {
+            const w = window.innerWidth;
+            if (w < 480) {
+                return { width: 48, height: 50, gap: 9, fontSize: 18, wallX: 40 };
+            } else if (w < 768) {
+                return { width: 56, height: 58, gap: 12, fontSize: 21, wallX: 48 };
+            } else {
+                return { width: 64, height: 64, gap: 15, fontSize: 24, wallX: 54 };
+            }
+        }
+
+        // ==================== 5. タップ選択＆約分処理（整数・平方根・√と整数・文字） ====================
+        function handleTileTap(item) {
+            if (state.status !== 'playing') return;
+
+            if (item.side === 'numerator') {
+                state.selectedNumId = (state.selectedNumId === item.id) ? null : item.id;
+            } else {
+                state.selectedDenId = (state.selectedDenId === item.id) ? null : item.id;
+            }
+            sfx.playSelect();
+            updateSelectionVisuals();
+
+            if (state.selectedNumId !== null && state.selectedDenId !== null) {
+                attemptReduction();
+            }
+        }
+
+        function updateSelectionVisuals() {
+            let selectedNumObj = null;
+            state.numerator.forEach(item => {
+                if (item.id === state.selectedNumId) {
+                    item.el.classList.add('selected');
+                    selectedNumObj = item;
+                } else {
+                    item.el.classList.remove('selected');
+                }
+            });
+
+            let selectedDenObj = null;
+            state.denominator.forEach(item => {
+                if (item.id === state.selectedDenId) {
+                    item.el.classList.add('selected');
+                    selectedDenObj = item;
+                } else {
+                    item.el.classList.remove('selected');
+                }
+            });
+
+            if (selectedNumObj) {
+                els.hintNum.classList.remove('hidden');
+                els.hintNum.querySelector('span').textContent = formatFactorText(selectedNumObj);
+            } else {
+                els.hintNum.classList.add('hidden');
+            }
+
+            if (selectedDenObj) {
+                els.hintDen.classList.remove('hidden');
+                els.hintDen.querySelector('span').textContent = formatFactorText(selectedDenObj);
+            } else {
+                els.hintDen.classList.add('hidden');
+            }
+        }
+
+        /**
+         * 根号タイルの更新ヘルパー：
+         * 中身が 1 なら消去、平方数（4, 9, 16など）なら整数タイルへ自動昇格、それ以外は √n を更新
+         */
+        function applyRadicalUpdate(side, index, newRadicand) {
+            const list = side === 'numerator' ? state.numerator : state.denominator;
+            const item = list[index];
+
+            if (newRadicand === 1) {
+                removeFactor(side, index);
+                return true; // 消滅
+            }
+
+            const rootInt = Math.round(Math.sqrt(newRadicand));
+            if (rootInt * rootInt === newRadicand) {
+                // √4 -> 2, √9 -> 3 のように整数タイルへ自動変換
+                mutateFactorItem(item, { kind: 'number', value: rootInt });
+                return false;
+            }
+
+            item.radicand = newRadicand;
+            item.el.textContent = formatFactorText(item);
+            triggerPopAnimation(item.el);
+            return false;
+        }
+
+        function attemptReduction() {
+            const numIdx = state.numerator.findIndex(i => i.id === state.selectedNumId);
+            const denIdx = state.denominator.findIndex(i => i.id === state.selectedDenId);
+
+            if (numIdx === -1 || denIdx === -1) {
+                state.selectedNumId = null;
+                state.selectedDenId = null;
+                updateSelectionVisuals();
+                return;
+            }
+
+            const numItem = state.numerator[numIdx];
+            const denItem = state.denominator[denIdx];
+
+            // 1. 整数どうしの約分
+            if (numItem.kind === 'number' && denItem.kind === 'number') {
+                const divisor = gcd(numItem.value, denItem.value);
+                if (divisor > 1) {
+                    const newNumVal = numItem.value / divisor;
+                    const newDenVal = denItem.value / divisor;
+
+                    spawnSparkles(numItem.el, '#ff5277');
+                    spawnSparkles(denItem.el, '#ff5277');
+                    showFloatingText(numItem.el, `÷${divisor}`, '#e11d48');
+                    showFloatingText(denItem.el, `÷${divisor}`, '#e11d48');
+
+                    let bothVanished = true;
+
+                    if (newNumVal === 1) {
+                        removeFactor('numerator', numIdx);
+                    } else {
+                        numItem.value = newNumVal;
+                        numItem.el.textContent = formatFactorText(numItem);
+                        triggerPopAnimation(numItem.el);
+                        bothVanished = false;
+                    }
+
+                    if (newDenVal === 1) {
+                        removeFactor('denominator', denIdx);
+                    } else {
+                        denItem.value = newDenVal;
+                        denItem.el.textContent = formatFactorText(denItem);
+                        triggerPopAnimation(denItem.el);
+                        bothVanished = false;
+                    }
+
+                    onReductionSuccess(bothVanished, false);
+                    return;
+                }
+            }
+
+            // 2. 平方根（根号）どうしの約分
+            if (numItem.kind === 'radical' && denItem.kind === 'radical') {
+                const divisor = gcd(numItem.radicand, denItem.radicand);
+                if (divisor > 1) {
+                    const newNumRad = numItem.radicand / divisor;
+                    const newDenRad = denItem.radicand / divisor;
+
+                    spawnSparkles(numItem.el, '#10b981');
+                    spawnSparkles(denItem.el, '#10b981');
+                    showFloatingText(numItem.el, `÷√${divisor}`, '#059669');
+                    showFloatingText(denItem.el, `÷√${divisor}`, '#059669');
+
+                    const numVanished = applyRadicalUpdate('numerator', numIdx, newNumRad);
+                    const denVanished = applyRadicalUpdate('denominator', denIdx, newDenRad);
+
+                    onReductionSuccess(numVanished && denVanished, true);
+                    return;
+                }
+            }
+
+            // 3. 根号 × 整数 のクロス約分（例：√12 = 2√3 と 2 -> √3 と 1）
+            const isRadNumPair =
+                (numItem.kind === 'radical' && denItem.kind === 'number') ||
+                (numItem.kind === 'number' && denItem.kind === 'radical');
+
+            if (isRadNumPair) {
+                const radSide = numItem.kind === 'radical' ? 'numerator' : 'denominator';
+                const numSide = radSide === 'numerator' ? 'denominator' : 'numerator';
+                const radIdx = radSide === 'numerator' ? numIdx : denIdx;
+                const intIdx = numSide === 'numerator' ? numIdx : denIdx;
+
+                const radItem = radSide === 'numerator' ? numItem : denItem;
+                const intItem = numSide === 'numerator' ? numItem : denItem;
+
+                const { outer, inner } = simplifyRadicand(radItem.radicand);
+                const divisor = outer > 1 ? gcd(outer, intItem.value) : 1;
+
+                if (divisor > 1) {
+                    const remOuter = outer / divisor;
+                    const newRadicand = remOuter * remOuter * inner;
+                    const newIntVal = intItem.value / divisor;
+
+                    spawnSparkles(radItem.el, '#f59e0b');
+                    spawnSparkles(intItem.el, '#f59e0b');
+                    showFloatingText(radItem.el, `${outer}√${inner} → ÷${divisor}`, '#d97706');
+                    showFloatingText(intItem.el, `÷${divisor}`, '#d97706');
+
+                    const radVanished = applyRadicalUpdate(radSide, radIdx, newRadicand);
+                    let intVanished = false;
+                    if (newIntVal === 1) {
+                        removeFactor(numSide, intIdx);
+                        intVanished = true;
+                    } else {
+                        intItem.value = newIntVal;
+                        intItem.el.textContent = formatFactorText(intItem);
+                        triggerPopAnimation(intItem.el);
+                    }
+
+                    onReductionSuccess(radVanished && intVanished, true);
+                    return;
+                }
+            }
+
+            // 4. 文字どうしの約分
+            if (numItem.kind === 'var' && denItem.kind === 'var' && numItem.base === denItem.base) {
+                const cancelExp = Math.min(numItem.exp, denItem.exp);
+                const newNumExp = numItem.exp - cancelExp;
+                const newDenExp = denItem.exp - cancelExp;
+                const label = cancelExp === 1 ? `÷${numItem.base}` : `÷${numItem.base}${SUPERSCRIPTS[cancelExp]}`;
+
+                spawnSparkles(numItem.el, '#38bdf8');
+                spawnSparkles(denItem.el, '#38bdf8');
+                showFloatingText(numItem.el, label, '#2563eb');
+                showFloatingText(denItem.el, label, '#2563eb');
+
+                let bothVanished = true;
+
+                if (newNumExp === 0) {
+                    removeFactor('numerator', numIdx);
+                } else {
+                    numItem.exp = newNumExp;
+                    numItem.el.textContent = formatFactorText(numItem);
+                    triggerPopAnimation(numItem.el);
+                    bothVanished = false;
+                }
+
+                if (newDenExp === 0) {
+                    removeFactor('denominator', denIdx);
+                } else {
+                    denItem.exp = newDenExp;
+                    denItem.el.textContent = formatFactorText(denItem);
+                    triggerPopAnimation(denItem.el);
+                    bothVanished = false;
+                }
+
+                onReductionSuccess(bothVanished, false);
+                return;
+            }
+
+            // 5. 約分できない組み合わせ
+            sfx.playError();
+            triggerShakeAnimation(numItem.el);
+            triggerShakeAnimation(denItem.el);
+
+            let errMsg = '約分できない！';
+            if (isRadNumPair) {
+                const radItem = numItem.kind === 'radical' ? numItem : denItem;
+                const { outer } = simplifyRadicand(radItem.radicand);
+                errMsg = outer === 1 ? '√の外に整数が出ない！' : '公約数がない！';
+            }
+            showFloatingText(numItem.el, errMsg, '#ef4444');
+
+            state.selectedNumId = null;
+            state.selectedDenId = null;
+            updateSelectionVisuals();
+        }
+
+        function onReductionSuccess(isComplete, isRadical) {
+            state.reductionCount++;
+            state.selectedNumId = null;
+            state.selectedDenId = null;
+            updateSelectionVisuals();
+            sfx.playReduce(isComplete, isRadical);
+            updateHUD();
+        }
+
+        function removeFactor(side, index) {
+            const list = side === 'numerator' ? state.numerator : state.denominator;
+            const [removed] = list.splice(index, 1);
+            if (removed && removed.el) {
+                removed.el.remove();
+            }
+        }
+
+        // ==================== 6. アニメーション＆パーティクル ====================
+        function triggerPopAnimation(el) {
+            el.classList.remove('pop');
+            void el.offsetWidth;
+            el.classList.add('pop');
+        }
+
+        function triggerShakeAnimation(el) {
+            el.classList.remove('shake');
+            void el.offsetWidth;
+            el.classList.add('shake');
+        }
+
+        function showFloatingText(targetEl, text, color = '#2563eb') {
+            if (!targetEl) return;
+            const rect = targetEl.getBoundingClientRect();
+            const stageRect = els.stage.getBoundingClientRect();
+
+            const div = document.createElement('div');
+            div.className = 'floating-feedback text-xs sm:text-sm font-math';
+            div.style.left = `${rect.left - stageRect.left + rect.width / 2}px`;
+            div.style.top = `${rect.top - stageRect.top}px`;
+            div.style.color = color;
+            div.textContent = text;
+
+            els.fxLayer.appendChild(div);
+            setTimeout(() => div.remove(), 860);
+        }
+
+        function spawnSparkles(targetEl, color) {
+            if (!targetEl) return;
+            const rect = targetEl.getBoundingClientRect();
+            const stageRect = els.stage.getBoundingClientRect();
+            const cx = rect.left - stageRect.left + rect.width / 2;
+            const cy = rect.top - stageRect.top + rect.height / 2;
+
+            for (let i = 0; i < 8; i++) {
+                const p = document.createElement('div');
+                p.className = 'spark-particle';
+                const size = 6 + Math.random() * 5;
+                const angle = (Math.PI * 2 * i) / 8 + (Math.random() * 0.4);
+                const dist = 26 + Math.random() * 26;
+
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.backgroundColor = color;
+                p.style.left = `${cx}px`;
+                p.style.top = `${cy}px`;
+                p.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+                p.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+
+                els.fxLayer.appendChild(p);
+                setTimeout(() => p.remove(), 520);
+            }
+        }
+
+        // ==================== 7. メインゲームループ ====================
+        function updateLanePhysics(list, dt, speed, metrics) {
+            const spacing = metrics.width + metrics.gap;
+
+            for (let i = 0; i < list.length; i++) {
+                const item = list[i];
+                const minX = i === 0 ? metrics.wallX : list[i - 1].x + spacing;
+
+                if (item.x > minX) {
+                    item.x = Math.max(minX, item.x - speed * dt);
+                } else {
+                    item.x = minX;
+                }
+
+                if (item.el) {
+                    item.el.style.left = `${item.x}px`;
+                }
+            }
+        }
+
+        function gameLoop(timestamp) {
+            if (state.status !== 'playing') return;
+
+            if (!state.lastFrameTime) state.lastFrameTime = timestamp;
+            const dt = Math.min(0.05, (timestamp - state.lastFrameTime) / 1000);
+            state.lastFrameTime = timestamp;
+
+            if (state.rescueCooldown > 0) {
+                state.rescueCooldown = Math.max(0, state.rescueCooldown - dt);
+            }
+
+            state.elapsedTime += dt;
+            const cfg = DIFFICULTY_CONFIG[state.difficulty];
+            const currentSpeed = cfg.baseSpeed + state.elapsedTime * cfg.speedGrowth;
+            state.speedMultiplier = currentSpeed / cfg.baseSpeed;
+
+            const currentInterval = Math.max(
+                cfg.minInterval,
+                cfg.spawnInterval - state.elapsedTime * 0.015
+            );
+            state.spawnTimer += dt;
+
+            if (state.spawnTimer >= currentInterval) {
+                state.spawnTimer = 0;
+                if (state.numerator.length <= state.denominator.length) {
+                    spawnFactor('numerator');
+                    if (Math.random() < 0.72) spawnFactor('denominator');
+                } else {
+                    spawnFactor('denominator');
+                    if (Math.random() < 0.72) spawnFactor('numerator');
+                }
+            }
+
+            checkAndPerformDeadlockRescue();
+
+            const metrics = getTileMetrics();
+            updateLanePhysics(state.numerator, dt, currentSpeed, metrics);
+            updateLanePhysics(state.denominator, dt, currentSpeed, metrics);
+
+            updateCapacityStatus();
+            updateHUD();
+
+            if (state.numerator.length >= MAX_CAPACITY || state.denominator.length >= MAX_CAPACITY) {
+                triggerGameOver();
+                return;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateCapacityStatus() {
+            const numRatio = Math.min(100, (state.numerator.length / MAX_CAPACITY) * 100);
+            const denRatio = Math.min(100, (state.denominator.length / MAX_CAPACITY) * 100);
+
+            els.gaugeNum.style.width = `${numRatio}%`;
+            els.gaugeDen.style.width = `${denRatio}%`;
+            els.countNum.textContent = `${state.numerator.length}/${MAX_CAPACITY}`;
+            els.countDen.textContent = `${state.denominator.length}/${MAX_CAPACITY}`;
+
+            if (state.numerator.length >= MAX_CAPACITY - 2) {
+                els.dangerTop.classList.add('danger-zone-active');
+                els.countNum.classList.add('text-rose-600');
+            } else {
+                els.dangerTop.classList.remove('danger-zone-active');
+                els.countNum.classList.remove('text-rose-600');
+            }
+
+            if (state.denominator.length >= MAX_CAPACITY - 2) {
+                els.dangerBottom.classList.add('danger-zone-active');
+                els.countDen.classList.add('text-rose-600');
+            } else {
+                els.dangerBottom.classList.remove('danger-zone-active');
+                els.countDen.classList.remove('text-rose-600');
+            }
+        }
+
+        function updateHUD() {
+            const timeStr = state.elapsedTime.toFixed(1);
+            const speedStr = `x${state.speedMultiplier.toFixed(1)}`;
+
+            els.hudTime.textContent = timeStr;
+            els.hudReductions.textContent = state.reductionCount;
+            els.hudReductionsMobile.textContent = state.reductionCount;
+            els.hudSpeed.textContent = speedStr;
+            els.hudSpeedMobile.textContent = speedStr;
+        }
+
+        // ==================== 8. ゲームフロー制御 ====================
+        function clearBoard() {
+            state.numerator.forEach(item => item.el && item.el.remove());
+            state.denominator.forEach(item => item.el && item.el.remove());
+            state.numerator = [];
+            state.denominator = [];
+            state.selectedNumId = null;
+            state.selectedDenId = null;
+            els.fxLayer.innerHTML = '';
+            updateSelectionVisuals();
+        }
+
+        function startGame() {
+            sfx.init();
+            clearBoard();
+
+            state.status = 'playing';
+            state.elapsedTime = 0;
+            state.reductionCount = 0;
+            state.speedMultiplier = 1.0;
+            state.spawnTimer = 0;
+            state.rescueCooldown = 0;
+            state.lastFrameTime = 0;
+
+            els.screenStart.classList.add('hidden');
+            els.screenPause.classList.add('hidden');
+            els.screenGameOver.classList.add('hidden');
+
+            // 初期盤面（√12 と 2 のクロス約分、整数、文字をバランスよく配置）
+            spawnFactor('numerator', { kind: 'radical', radicand: 12 });
+            spawnFactor('denominator', { kind: 'number', value: 2 });
+            spawnFactor('numerator', { kind: 'number', value: 6 });
+            spawnFactor('denominator', { kind: 'number', value: 4 });
+            spawnFactor('numerator', { kind: 'var', base: 'x', exp: 2 });
+            spawnFactor('denominator', { kind: 'var', base: 'x', exp: 1 });
+
+            updateCapacityStatus();
+            updateHUD();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function pauseGame() {
+            if (state.status !== 'playing') return;
+            state.status = 'paused';
+            els.screenPause.classList.remove('hidden');
+        }
+
+        function resumeGame() {
+            if (state.status !== 'paused') return;
+            state.status = 'playing';
+            state.lastFrameTime = 0;
+            els.screenPause.classList.add('hidden');
+            requestAnimationFrame(gameLoop);
+        }
+
+        function triggerGameOver() {
+            state.status = 'gameover';
+            sfx.playGameOver();
+
+            const finalTime = parseFloat(state.elapsedTime.toFixed(1));
+            const prevBest = state.bestScores[state.difficulty] || 0;
+            let isNewRecord = false;
+
+            if (finalTime > prevBest) {
+                state.bestScores[state.difficulty] = finalTime;
+                localStorage.setItem(`extra_best_${state.difficulty}`, String(finalTime));
+                isNewRecord = true;
+            }
+
+            els.resultTime.textContent = finalTime.toFixed(1);
+            els.resultReductions.textContent = state.reductionCount;
+            els.resultBest.textContent = state.bestScores[state.difficulty].toFixed(1);
+
+            if (isNewRecord) {
+                els.newRecordBadge.classList.remove('hidden');
+            } else {
+                els.newRecordBadge.classList.add('hidden');
+            }
+
+            els.screenGameOver.classList.remove('hidden');
+        }
+
+        function returnToTitle() {
+            state.status = 'start';
+            clearBoard();
+            els.screenPause.classList.add('hidden');
+            els.screenGameOver.classList.add('hidden');
+            els.screenStart.classList.remove('hidden');
+            updateStartBestScores();
+        }
+
+        function updateStartBestScores() {
+            els.bestEasy.textContent = (state.bestScores.easy || 0).toFixed(1);
+            els.bestNormal.textContent = (state.bestScores.normal || 0).toFixed(1);
+            els.bestHard.textContent = (state.bestScores.hard || 0).toFixed(1);
+        }
+
+        // ==================== 9. イベントリスナー登録 ====================
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.diff-btn').forEach(b => {
+                    b.classList.remove('active', 'border-[3px]', 'border-sky-400', 'bg-sky-50', 'text-slate-800', 'shadow-[0_4px_12px_rgba(56,189,248,0.25)]');
+                    b.classList.add('border-2', 'border-slate-200', 'bg-slate-50', 'text-slate-600');
+                });
+                btn.classList.remove('border-2', 'border-slate-200', 'bg-slate-50', 'text-slate-600');
+                btn.classList.add('active', 'border-[3px]', 'border-sky-400', 'bg-sky-50', 'text-slate-800', 'shadow-[0_4px_12px_rgba(56,189,248,0.25)]');
+
+                state.difficulty = btn.dataset.diff;
+                sfx.playSelect();
+            });
+        });
+
+        document.getElementById('btn-start').addEventListener('click', startGame);
+        document.getElementById('btn-retry').addEventListener('click', startGame);
+        document.getElementById('btn-to-title').addEventListener('click', returnToTitle);
+        document.getElementById('btn-pause').addEventListener('click', pauseGame);
+        document.getElementById('btn-resume').addEventListener('click', resumeGame);
+        document.getElementById('btn-quit').addEventListener('click', returnToTitle);
+
+        document.getElementById('btn-sound').addEventListener('click', () => {
+            sfx.enabled = !sfx.enabled;
+            document.getElementById('icon-sound-on').classList.toggle('hidden', !sfx.enabled);
+            document.getElementById('icon-sound-off').classList.toggle('hidden', sfx.enabled);
+            if (sfx.enabled) sfx.playSelect();
+        });
+
+        els.stage.addEventListener('pointerdown', () => {
+            if (state.status === 'playing' && (state.selectedNumId !== null || state.selectedDenId !== null)) {
+                state.selectedNumId = null;
+                state.selectedDenId = null;
+                updateSelectionVisuals();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            const metrics = getTileMetrics();
+            [...state.numerator, ...state.denominator].forEach(item => {
+                if (item.el) {
+                    item.el.style.width = `${metrics.width}px`;
+                    item.el.style.height = `${metrics.height}px`;
+                    item.el.style.fontSize = `${metrics.fontSize}px`;
+                }
+            });
+        });
+
+        updateStartBestScores();
+    </script>
+</body>
+</html>
