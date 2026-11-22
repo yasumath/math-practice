@@ -1,0 +1,2450 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>座標トレジャーハンター</title>
+  <style>
+    /* ==========================================================================
+       カラーテーマ変数（ライトモード：タイムアタック / ダークモード：お化けサバイバル）
+       ========================================================================== */
+    :root {
+      --bg-grad-1: #fef3c7;
+      --bg-grad-2: #dcfce7;
+      --card-bg: #ffffff;
+      --card-border: #fcd34d;
+      --surface-sub: #fffbeb;
+      --surface-muted: #f1f5f9;
+      --text-main: #1e293b;
+      --text-sub: #475569;
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --accent: #f59e0b;
+      --accent-dark: #b45309;
+      --danger: #ef4444;
+      --success: #10b981;
+      --dpad-bg-1: #ffffff;
+      --dpad-bg-2: #e2e8f0;
+      --dpad-shadow: #94a3b8;
+      --shadow-color: rgba(120, 53, 15, 0.14);
+    }
+
+    body.dark-mode {
+      --bg-grad-1: #090d16;
+      --bg-grad-2: #111827;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --surface-sub: #0f172a;
+      --surface-muted: #273549;
+      --text-main: #f1f5f9;
+      --text-sub: #94a3b8;
+      --primary: #38bdf8;
+      --primary-dark: #0284c7;
+      --accent: #fbbf24;
+      --accent-dark: #f59e0b;
+      --danger: #f87171;
+      --success: #34d399;
+      --dpad-bg-1: #334155;
+      --dpad-bg-2: #1e293b;
+      --dpad-shadow: #0f172a;
+      --shadow-color: rgba(0, 0, 0, 0.48);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Yu Gothic", "Meiryo", sans-serif;
+      background: linear-gradient(145deg, var(--bg-grad-1), var(--bg-grad-2));
+      color: var(--text-main);
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    #app {
+      width: 100%;
+      height: 100dvh;
+      max-width: 540px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8px 12px;
+      position: relative;
+    }
+
+    /* ==========================================================================
+       共通ボタンスタイル
+       ========================================================================== */
+    .btn {
+      border: none;
+      border-radius: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: inherit;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      filter: grayscale(45%);
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #38bdf8, #0284c7);
+      color: #ffffff;
+      box-shadow: 0 4px 0 #0369a1;
+    }
+
+    .btn-accent {
+      background: linear-gradient(180deg, #fbbf24, #d97706);
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 5px 0 #92400e;
+    }
+
+    .btn-secondary {
+      background: var(--card-bg);
+      color: var(--text-main);
+      border: 2px solid var(--card-border);
+      box-shadow: 0 3px 0 var(--dpad-shadow);
+    }
+
+    /* ==========================================================================
+       ヘッダー（テーマ/モード切替・サウンド・終了ボタン）
+       ========================================================================== */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 36px;
+      flex-shrink: 0;
+      gap: 6px;
+    }
+
+    .app-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 900;
+      font-size: 0.86rem;
+      color: var(--text-main);
+      background: var(--card-bg);
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 2px solid var(--card-border);
+      box-shadow: 0 2px 6px var(--shadow-color);
+      white-space: nowrap;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    .icon-btn {
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 10px;
+      height: 32px;
+      padding: 0 9px;
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      transition: transform 0.1s ease, background 0.2s ease;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* ==========================================================================
+       画面切り替え
+       ========================================================================== */
+    .screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* ==========================================================================
+       1. タイトル画面
+       ========================================================================== */
+    #title-screen {
+      justify-content: center;
+      align-items: center;
+      padding: 2px;
+    }
+
+    .title-card {
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 15px 16px;
+      width: 100%;
+      box-shadow: 0 10px 26px var(--shadow-color);
+      border: 3px solid var(--card-border);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .preview-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .game-logo {
+      font-size: 1.48rem;
+      font-weight: 900;
+      line-height: 1.22;
+      color: var(--text-main);
+    }
+
+    .game-logo span {
+      display: inline-block;
+      background: linear-gradient(90deg, #f59e0b, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .mode-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 900;
+      margin: 4px auto 0;
+    }
+
+    .mode-pill.light {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1.5px solid #f59e0b;
+    }
+
+    .mode-pill.dark {
+      background: #311042;
+      color: #e9d5ff;
+      border: 1.5px solid #a855f7;
+    }
+
+    .rule-box {
+      background: var(--surface-sub);
+      border-radius: 14px;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 0.79rem;
+      line-height: 1.48;
+      color: var(--text-sub);
+      border: 1px solid var(--card-border);
+    }
+
+    .rule-box strong {
+      color: var(--text-main);
+    }
+
+    .difficulty-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .diff-card {
+      border: 2px solid var(--card-border);
+      border-radius: 14px;
+      padding: 9px 8px;
+      background: var(--surface-sub);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .diff-card.selected {
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.14);
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+    }
+
+    .diff-title {
+      font-weight: 900;
+      font-size: 0.92rem;
+      color: var(--text-main);
+    }
+
+    .diff-desc {
+      font-size: 0.7rem;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+
+    .diff-best {
+      margin-top: 6px;
+      font-size: 0.76rem;
+      font-weight: 900;
+      color: var(--primary);
+      background: var(--surface-muted);
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .start-btn {
+      width: 100%;
+      padding: 13px;
+      font-size: 1.12rem;
+      margin-top: 2px;
+    }
+
+    /* ==========================================================================
+       2. プレイ画面
+       ========================================================================== */
+    #play-screen {
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .hud-panel {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 7px 11px;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      border: 2px solid var(--card-border);
+      display: grid;
+      grid-template-columns: 1.38fr 1fr;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .target-box {
+      background: var(--surface-sub);
+      border: 2px solid #f59e0b;
+      border-radius: 12px;
+      padding: 4px 8px;
+      text-align: center;
+    }
+
+    .target-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--accent-dark);
+    }
+
+    .target-coord {
+      font-size: 1.52rem;
+      font-weight: 900;
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
+    }
+
+    .stats-col {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface-muted);
+      padding: 3px 8px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .score-val {
+      color: var(--accent-dark);
+      font-size: 0.94rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sub-stat-val {
+      font-size: 0.92rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sub-stat-val.timer {
+      color: var(--primary);
+    }
+
+    .sub-stat-val.timer.urgent {
+      color: var(--danger);
+      animation: pulseText 0.6s infinite alternate;
+    }
+
+    .sub-stat-val.ghost {
+      color: #c084fc;
+    }
+
+    @keyframes pulseText {
+      from { opacity: 1; }
+      to { opacity: 0.5; }
+    }
+
+    .sub-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 4px 10px;
+      font-size: 0.76rem;
+      font-weight: 800;
+      min-height: 27px;
+      flex-shrink: 0;
+      border: 1px solid var(--card-border);
+    }
+
+    .current-pos-badge {
+      color: var(--primary);
+      white-space: nowrap;
+    }
+
+    .feedback-msg {
+      font-weight: 900;
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .feedback-msg.ok { color: var(--success); }
+    .feedback-msg.ng { color: var(--danger); }
+    .feedback-msg.warn { color: #c084fc; }
+
+    /* 迷路キャンバスエリア */
+    .canvas-wrapper {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      width: 100%;
+    }
+
+    canvas#maze-canvas {
+      border-radius: 16px;
+      box-shadow: 0 8px 22px var(--shadow-color);
+      border: 3px solid var(--card-border);
+      display: block;
+      touch-action: none;
+    }
+
+    .floating-banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.82);
+      padding: 9px 18px;
+      border-radius: 16px;
+      font-weight: 900;
+      font-size: 1.02rem;
+      color: #fff;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 10;
+      text-align: center;
+      white-space: nowrap;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.42);
+    }
+
+    .floating-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .floating-banner.success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: 2px solid #a7f3d0;
+    }
+
+    .floating-banner.error {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      border: 2px solid #fecaca;
+    }
+
+    .floating-banner.ghost {
+      background: linear-gradient(135deg, #9333ea, #6b21a8);
+      border: 2px solid #e9d5ff;
+    }
+
+    /* コントローラー */
+    .controls-panel {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 10px;
+      align-items: center;
+      background: var(--card-bg);
+      padding: 8px 12px;
+      border-radius: 18px;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      border: 2px solid var(--card-border);
+      flex-shrink: 0;
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 46px);
+      grid-template-rows: repeat(3, 42px);
+      gap: 4px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .dpad-btn {
+      width: 100%;
+      height: 100%;
+      border: 1px solid var(--card-border);
+      border-radius: 11px;
+      background: linear-gradient(180deg, var(--dpad-bg-1), var(--dpad-bg-2));
+      box-shadow: 0 3px 0 var(--dpad-shadow);
+      color: var(--text-main);
+      font-size: 1.1rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dpad-btn:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 var(--dpad-shadow);
+    }
+
+    .dpad-btn:disabled {
+      opacity: 0.45;
+    }
+
+    .dpad-up { grid-column: 2; grid-row: 1; }
+    .dpad-left { grid-column: 1; grid-row: 2; }
+    .dpad-center {
+      grid-column: 2;
+      grid-row: 2;
+      width: 16px;
+      height: 16px;
+      background: var(--dpad-shadow);
+      border-radius: 50%;
+      margin: auto;
+    }
+    .dpad-right { grid-column: 3; grid-row: 2; }
+    .dpad-down { grid-column: 2; grid-row: 3; }
+
+    .dig-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .dig-btn {
+      width: 100%;
+      height: 92px;
+      border-radius: 18px;
+      font-size: 1.14rem;
+      flex-direction: column;
+      gap: 2px;
+      line-height: 1.2;
+    }
+
+    .dig-btn .dig-icon { font-size: 1.6rem; }
+    .dig-btn .dig-sub { font-size: 0.68rem; opacity: 0.92; }
+
+    /* ==========================================================================
+       3. リザルト画面
+       ========================================================================== */
+    #result-screen {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .result-card {
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 22px 18px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 12px 30px var(--shadow-color);
+      border: 3px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .result-title {
+      font-size: 1.65rem;
+      font-weight: 900;
+    }
+
+    .result-title.clear { color: var(--success); }
+    .result-title.fail { color: var(--danger); }
+
+    .new-record-badge {
+      display: inline-block;
+      background: linear-gradient(90deg, #f43f5e, #f59e0b);
+      color: #fff;
+      font-weight: 900;
+      font-size: 0.85rem;
+      padding: 4px 14px;
+      border-radius: 999px;
+      animation: bounce 0.6s infinite alternate;
+      margin: 0 auto;
+    }
+
+    .result-stats {
+      background: var(--surface-sub);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      border: 1px solid var(--card-border);
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.94rem;
+      font-weight: 800;
+    }
+
+    .result-score {
+      font-size: 1.65rem;
+      color: var(--accent-dark);
+      font-weight: 900;
+    }
+
+    .result-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .result-actions .btn {
+      padding: 13px 10px;
+      font-size: 0.95rem;
+    }
+
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-4px); }
+    }
+
+    .shake {
+      animation: shakeAnim 0.35s ease;
+    }
+
+    @keyframes shakeAnim {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+
+    @media (max-height: 640px) {
+      #app { padding: 4px 10px; }
+      header { height: 32px; }
+      .hud-panel { padding: 5px 10px; }
+      .target-coord { font-size: 1.32rem; }
+      .controls-panel { padding: 6px 10px; }
+      .dpad {
+        grid-template-columns: repeat(3, 40px);
+        grid-template-rows: repeat(3, 36px);
+      }
+      .dig-btn { height: 78px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- ヘッダー -->
+    <header>
+      <div class="app-badge">🐹 座標トレジャーハンター</div>
+      <div class="header-actions">
+        <button id="theme-toggle-btn" class="icon-btn" aria-label="テーマ切替">🌙 ダーク</button>
+        <button id="sound-toggle-btn" class="icon-btn" aria-label="サウンド切替">🔊 音ON</button>
+        <button id="quit-btn" class="icon-btn" style="display: none;">タイトルへ</button>
+      </div>
+    </header>
+
+    <!-- ========================================================================
+         1. タイトル画面
+         ======================================================================== -->
+    <main id="title-screen" class="screen active">
+      <div class="title-card">
+        <div>
+          <div class="preview-row">
+            <canvas id="title-mole-canvas" width="90" height="80"></canvas>
+            <canvas id="title-ghost-canvas" width="76" height="80" style="display: none;"></canvas>
+          </div>
+          <h1 class="game-logo">座標<span>トレジャーハンター</span></h1>
+          <div id="title-mode-pill" class="mode-pill light">☀️ ライトモード：60秒タイムアタック</div>
+        </div>
+
+        <div class="rule-box" id="rule-box">
+          <!-- JSでテーマに応じたルール文を自動表示 -->
+        </div>
+
+        <div>
+          <div style="font-size: 0.78rem; font-weight: 800; color: var(--text-sub); margin-bottom: 6px;">
+            ▼ コース（難易度）をえらぼう
+          </div>
+          <div class="difficulty-group">
+            <div class="diff-card selected" data-diff="beginner" id="diff-beginner">
+              <div class="diff-title">🌱 初級コース</div>
+              <div class="diff-desc" id="desc-beginner">現在地 (x, y) 表示あり<br>座標の感覚をつかもう！</div>
+              <div class="diff-best" id="best-beginner">BEST: --</div>
+            </div>
+            <div class="diff-card" data-diff="intermediate" id="diff-intermediate">
+              <div class="diff-title">🔥 中級コース</div>
+              <div class="diff-desc" id="desc-intermediate">現在地の表示なし<br>目盛りを数えて挑戦！</div>
+              <div class="diff-best" id="best-intermediate">BEST: --</div>
+            </div>
+          </div>
+        </div>
+
+        <button id="start-btn" class="btn btn-accent start-btn">
+          ⛏️ 発掘スタート！
+        </button>
+      </div>
+    </main>
+
+    <!-- ========================================================================
+         2. プレイ画面
+         ======================================================================== -->
+    <main id="play-screen" class="screen">
+      <section class="hud-panel">
+        <div class="target-box">
+          <div class="target-label">💎 お宝の座標</div>
+          <div class="target-coord" id="target-coord-display">(0, 0)</div>
+        </div>
+        <div class="stats-col">
+          <div class="stat-row">
+            <span>見つけたお宝</span>
+            <span class="score-val" id="score-display">0 / 5 個</span>
+          </div>
+          <div class="stat-row">
+            <span id="sub-stat-label">のこり時間</span>
+            <span class="sub-stat-val timer" id="sub-stat-val">60.0 秒</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="sub-status-bar">
+        <div class="current-pos-badge" id="current-pos-display">現在地: (0, 0)</div>
+        <div class="feedback-msg" id="feedback-msg">原点 O(0, 0) からスタート！</div>
+      </section>
+
+      <section class="canvas-wrapper" id="canvas-wrapper">
+        <canvas id="maze-canvas"></canvas>
+        <div id="floating-banner" class="floating-banner">お宝発見！</div>
+      </section>
+
+      <section class="controls-panel">
+        <div class="dpad" aria-label="移動ボタン">
+          <button class="dpad-btn dpad-up" data-dir="up" aria-label="上へ">▲</button>
+          <button class="dpad-btn dpad-left" data-dir="left" aria-label="左へ">◀</button>
+          <div class="dpad-center"></div>
+          <button class="dpad-btn dpad-right" data-dir="right" aria-label="右へ">▶</button>
+          <button class="dpad-btn dpad-down" data-dir="down" aria-label="下へ">▼</button>
+        </div>
+
+        <div class="dig-area">
+          <button id="dig-btn" class="btn btn-accent dig-btn">
+            <span class="dig-icon">⛏️</span>
+            <span>穴を掘る！</span>
+            <span class="dig-sub">(Space / Enter)</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========================================================================
+         3. リザルト画面
+         ======================================================================== -->
+    <main id="result-screen" class="screen">
+      <div class="result-card">
+        <div id="result-emoji" style="font-size: 2.8rem; line-height: 1;">🏆</div>
+        <h2 id="result-title" class="result-title clear">クリアおめでとう！</h2>
+        <div id="new-record-badge" class="new-record-badge" style="display: none;">
+          🎉 NEW RECORD! 自己ベスト更新！
+        </div>
+
+        <div class="result-stats">
+          <div class="result-row">
+            <span>モード</span>
+            <span id="result-mode-label">☀️ ライトモード</span>
+          </div>
+          <div class="result-row">
+            <span>選択コース</span>
+            <span id="result-diff-label">🌱 初級コース</span>
+          </div>
+          <div class="result-row">
+            <span id="result-main-label">クリアタイム</span>
+            <span id="result-main-val" class="result-score">--</span>
+          </div>
+          <div class="result-row" style="border-top: 1px dashed var(--card-border); padding-top: 8px;">
+            <span id="result-best-label">ベストタイム</span>
+            <span id="result-best-val" style="color: var(--primary);">--</span>
+          </div>
+        </div>
+
+        <div class="result-actions">
+          <button id="to-title-btn" class="btn btn-secondary">🏠 タイトルへ</button>
+          <button id="retry-btn" class="btn btn-primary">🔄 もう一度遊ぶ</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    /**
+     * ==========================================================================
+     * 座標トレジャーハンター
+     * ・ライトモード：60秒制限・お宝5個タイムアタック（お化けなし）
+     * ・ダークモード：制限時間なし・エンドレスお宝発掘（5個ごとにお化け増加）
+     * ==========================================================================
+     */
+    (() => {
+      'use strict';
+
+      // --- 定数設定 ---
+      const AXIS_MIN = -5;
+      const AXIS_MAX = 5;
+      const GRID_SIZE = AXIS_MAX - AXIS_MIN + 1; // 11 x 11 マス（全121座標）
+      const LIGHT_GOAL_TREASURES = 5;            // ライトモードの目標お宝数
+      const LIGHT_TIME_LIMIT_SEC = 60.0;         // ライトモードの制限時間
+      const PENALTY_LOCK_MS = 1200;              // ハズレ時の硬直時間
+      const GHOST_SPAWN_INTERVAL = 5;            // ダークモードでお化けが増える間隔
+      const MAX_GHOSTS = 5;                      // ダークモードの最大お化け数
+
+      const STORAGE_KEYS = {
+        light_beginner: 'coord_mole_light_best_beginner_v3',
+        light_intermediate: 'coord_mole_light_best_intermediate_v3',
+        dark_beginner: 'coord_mole_dark_best_beginner_v3',
+        dark_intermediate: 'coord_mole_dark_best_intermediate_v3',
+        theme: 'coord_mole_theme_v3'
+      };
+
+      const GHOST_PROFILES = [
+        { name: 'アカベー', body: '#f43f5e', glow: 'rgba(244, 63, 94, 0.48)', type: 'chaser' },
+        { name: 'ピンキー', body: '#ec4899', glow: 'rgba(236, 72, 153, 0.48)', type: 'ambush' },
+        { name: 'アオスケ', body: '#06b6d4', glow: 'rgba(6, 182, 212, 0.48)', type: 'patrol' },
+        { name: 'グズタ',   body: '#f97316', glow: 'rgba(249, 115, 22, 0.48)', type: 'chaser' },
+        { name: 'ムラサキ', body: '#a855f7', glow: 'rgba(168, 85, 247, 0.48)', type: 'ambush' }
+      ];
+
+      // --- ゲーム状態 ---
+      const state = {
+        difficulty: 'beginner',
+        darkMode: false,
+        soundEnabled: true,
+        isPlaying: false,
+        isLocked: false,
+        lockEndTime: 0,
+        hWalls: [],
+        vWalls: [],
+        player: {
+          x: 0,
+          y: 0,
+          visualX: 0,
+          visualY: 0,
+          facing: 'down',
+          digAnimEnd: 0
+        },
+        ghosts: [],
+        target: { x: 0, y: 0 },
+        recentTargets: [],
+        particles: [],
+        foundMarks: [],
+        missMarks: [],
+        treasuresFound: 0,
+        startTime: 0,
+        elapsedSec: 0,
+        lastFrameTime: 0,
+        animationFrameId: null,
+        bannerTimeoutId: null
+      };
+
+      // --- DOM要素 ---
+      const els = {
+        themeToggleBtn: document.getElementById('theme-toggle-btn'),
+        soundToggleBtn: document.getElementById('sound-toggle-btn'),
+        quitBtn: document.getElementById('quit-btn'),
+        screens: {
+          title: document.getElementById('title-screen'),
+          play: document.getElementById('play-screen'),
+          result: document.getElementById('result-screen')
+        },
+        titleMoleCanvas: document.getElementById('title-mole-canvas'),
+        titleGhostCanvas: document.getElementById('title-ghost-canvas'),
+        titleModePill: document.getElementById('title-mode-pill'),
+        ruleBox: document.getElementById('rule-box'),
+        diffCards: document.querySelectorAll('.diff-card'),
+        bestBeginner: document.getElementById('best-beginner'),
+        bestIntermediate: document.getElementById('best-intermediate'),
+        startBtn: document.getElementById('start-btn'),
+        targetCoordDisplay: document.getElementById('target-coord-display'),
+        scoreDisplay: document.getElementById('score-display'),
+        subStatLabel: document.getElementById('sub-stat-label'),
+        subStatVal: document.getElementById('sub-stat-val'),
+        currentPosDisplay: document.getElementById('current-pos-display'),
+        feedbackMsg: document.getElementById('feedback-msg'),
+        canvasWrapper: document.getElementById('canvas-wrapper'),
+        canvas: document.getElementById('maze-canvas'),
+        floatingBanner: document.getElementById('floating-banner'),
+        dpadBtns: document.querySelectorAll('.dpad-btn'),
+        digBtn: document.getElementById('dig-btn'),
+        resultEmoji: document.getElementById('result-emoji'),
+        resultTitle: document.getElementById('result-title'),
+        newRecordBadge: document.getElementById('new-record-badge'),
+        resultModeLabel: document.getElementById('result-mode-label'),
+        resultDiffLabel: document.getElementById('result-diff-label'),
+        resultMainLabel: document.getElementById('result-main-label'),
+        resultMainVal: document.getElementById('result-main-val'),
+        resultBestLabel: document.getElementById('result-best-label'),
+        resultBestVal: document.getElementById('result-best-val'),
+        toTitleBtn: document.getElementById('to-title-btn'),
+        retryBtn: document.getElementById('retry-btn')
+      };
+
+      const ctx = els.canvas.getContext('2d');
+
+      // ========================================================================
+      // テーマ切替 ＆ タイトル画面UI同期
+      // ========================================================================
+      function applyTheme(isDark, restartIfPlaying = false) {
+        state.darkMode = isDark;
+        document.body.classList.toggle('dark-mode', isDark);
+        els.themeToggleBtn.textContent = isDark ? '☀️ ライト' : '🌙 ダーク';
+        try {
+          localStorage.setItem(STORAGE_KEYS.theme, isDark ? 'dark' : 'light');
+        } catch (e) {}
+
+        // タイトル画面のモード表示・ルール・ベスト記録を更新
+        if (isDark) {
+          els.titleModePill.className = 'mode-pill dark';
+          els.titleModePill.textContent = '🌙 ダークモード：お化けサバイバル';
+          els.titleGhostCanvas.style.display = 'block';
+          els.ruleBox.innerHTML = `
+            <strong>【🌙 ダークモード：お化けサバイバル】</strong><br>
+            ① <strong>制限時間なし！</strong> お化けに捕まるまで何個お宝を集められるか挑戦だ！<br>
+            ② 指定の座標 <strong>(x, y)</strong> に移動して<strong>「穴を掘る！」</strong>でお宝ゲット！<br>
+            ③ お宝を <strong>5個</strong> 取るごとに、追いかけてくる<strong>お化けが1体ずつ増える</strong>ぞ！
+          `;
+        } else {
+          els.titleModePill.className = 'mode-pill light';
+          els.titleModePill.textContent = '☀️ ライトモード：60秒タイムアタック';
+          els.titleGhostCanvas.style.display = 'none';
+          els.ruleBox.innerHTML = `
+            <strong>【☀️ ライトモード：タイムアタック】</strong><br>
+            ① <strong>原点 O(0, 0)</strong> からモグラがスタート！お化けは出ないのでじっくり進もう。<br>
+            ② 指定の座標 <strong>(x, y)</strong> に移動して<strong>「穴を掘る！」</strong>を押そう。<br>
+            ③ <strong>60秒以内</strong>にお宝を <strong>5個</strong> 見つけるまでのクリアタイムを競うぞ！
+          `;
+        }
+
+        updateBestDisplays();
+        renderTitlePreviews();
+
+        // プレイ中にモードを切り替えた場合は、新しいモードのルールで即スタート
+        if (restartIfPlaying && state.isPlaying) {
+          startGame();
+        }
+      }
+
+      function initTheme() {
+        let saved = null;
+        try {
+          saved = localStorage.getItem(STORAGE_KEYS.theme);
+        } catch (e) {}
+        applyTheme(saved === 'dark', false);
+      }
+
+      // ========================================================================
+      // Web Audio API サウンドエンジン
+      // ========================================================================
+      let audioCtx = null;
+
+      function ensureAudioContext() {
+        if (!audioCtx && (window.AudioContext || window.webkitAudioContext)) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      }
+
+      function playSound(type) {
+        if (!state.soundEnabled) return;
+        try {
+          ensureAudioContext();
+          if (!audioCtx) return;
+
+          const now = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          if (type === 'move') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(320, now);
+            osc.frequency.exponentialRampToValueAtTime(500, now + 0.045);
+            gain.gain.setValueAtTime(0.07, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            osc.start(now);
+            osc.stop(now + 0.055);
+          } else if (type === 'wall') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(140, now);
+            osc.frequency.exponentialRampToValueAtTime(85, now + 0.06);
+            gain.gain.setValueAtTime(0.09, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+            osc.start(now);
+            osc.stop(now + 0.07);
+          } else if (type === 'dig') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(90, now + 0.1);
+            gain.gain.setValueAtTime(0.11, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+            osc.start(now);
+            osc.stop(now + 0.12);
+          } else if (type === 'treasure') {
+            const notes = [523.25, 659.25, 783.99, 1046.5];
+            notes.forEach((freq, i) => {
+              const o = audioCtx.createOscillator();
+              const g = audioCtx.createGain();
+              o.type = 'triangle';
+              o.connect(g);
+              g.connect(audioCtx.destination);
+              const t = now + i * 0.06;
+              o.frequency.setValueAtTime(freq, t);
+              g.gain.setValueAtTime(0.15, t);
+              g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+              o.start(t);
+              o.stop(t + 0.24);
+            });
+          } else if (type === 'ghostSpawn') {
+            const notes = [440, 415.3, 392, 311.13];
+            notes.forEach((freq, i) => {
+              const o = audioCtx.createOscillator();
+              const g = audioCtx.createGain();
+              o.type = 'sine';
+              o.connect(g);
+              g.connect(audioCtx.destination);
+              const t = now + i * 0.09;
+              o.frequency.setValueAtTime(freq, t);
+              g.gain.setValueAtTime(0.16, t);
+              g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+              o.start(t);
+              o.stop(t + 0.27);
+            });
+          } else if (type === 'miss') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(160, now);
+            osc.frequency.linearRampToValueAtTime(105, now + 0.24);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+            osc.start(now);
+            osc.stop(now + 0.28);
+          } else if (type === 'clear') {
+            const fanfare = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+            fanfare.forEach((freq, idx) => {
+              const o = audioCtx.createOscillator();
+              const g = audioCtx.createGain();
+              o.type = 'triangle';
+              o.connect(g);
+              g.connect(audioCtx.destination);
+              const t = now + idx * 0.1;
+              o.frequency.setValueAtTime(freq, t);
+              g.gain.setValueAtTime(0.17, t);
+              g.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+              o.start(t);
+              o.stop(t + 0.35);
+            });
+          } else if (type === 'gameover') {
+            const notes = [392.0, 369.99, 349.23, 329.63, 261.63];
+            notes.forEach((freq, idx) => {
+              const o = audioCtx.createOscillator();
+              const g = audioCtx.createGain();
+              o.type = 'sawtooth';
+              o.connect(g);
+              g.connect(audioCtx.destination);
+              const t = now + idx * 0.14;
+              o.frequency.setValueAtTime(freq, t);
+              g.gain.setValueAtTime(0.11, t);
+              g.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
+              o.start(t);
+              o.stop(t + 0.28);
+            });
+          }
+        } catch (e) {}
+      }
+
+      // ========================================================================
+      // 座標変換ヘルパー
+      // ========================================================================
+      function mathToGrid(x, y) {
+        return {
+          col: x - AXIS_MIN,
+          row: AXIS_MAX - y
+        };
+      }
+
+      // ========================================================================
+      // 壁線型迷路の生成（全121座標到達可能・ループあり）
+      // ========================================================================
+      function generateWallMaze() {
+        const hWalls = Array.from({ length: GRID_SIZE - 1 }, () => Array(GRID_SIZE).fill(true));
+        const vWalls = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE - 1).fill(true));
+        const visited = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(false));
+
+        function carve(r, c) {
+          visited[r][c] = true;
+          const dirs = [
+            { dr: -1, dc: 0 },
+            { dr: 1, dc: 0 },
+            { dr: 0, dc: -1 },
+            { dr: 0, dc: 1 }
+          ];
+          for (let i = dirs.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
+          }
+
+          for (const { dr, dc } of dirs) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE && !visited[nr][nc]) {
+              if (dr === -1) hWalls[nr][c] = false;
+              else if (dr === 1) hWalls[r][c] = false;
+              else if (dc === -1) vWalls[r][nc] = false;
+              else if (dc === 1) vWalls[r][c] = false;
+              carve(nr, nc);
+            }
+          }
+        }
+
+        carve(5, 5);
+
+        // 回遊性を高める追加開口（ダークモードでお化けから逃げやすく、ライトモードでも快適）
+        for (let r = 0; r < GRID_SIZE - 1; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            if (hWalls[r][c] && Math.random() < 0.34) hWalls[r][c] = false;
+          }
+        }
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE - 1; c++) {
+            if (vWalls[r][c] && Math.random() < 0.34) vWalls[r][c] = false;
+          }
+        }
+
+        state.hWalls = hWalls;
+        state.vWalls = vWalls;
+      }
+
+      function canMoveTo(x, y, dir) {
+        const { row, col } = mathToGrid(x, y);
+        if (dir === 'up') return row > 0 && !state.hWalls[row - 1][col];
+        if (dir === 'down') return row < GRID_SIZE - 1 && !state.hWalls[row][col];
+        if (dir === 'left') return col > 0 && !state.vWalls[row][col - 1];
+        if (dir === 'right') return col < GRID_SIZE - 1 && !state.vWalls[row][col];
+        return false;
+      }
+
+      // ========================================================================
+      // 次の目標座標の抽選
+      // ========================================================================
+      function pickNextTarget() {
+        const allCoords = [];
+        for (let x = AXIS_MIN; x <= AXIS_MAX; x++) {
+          for (let y = AXIS_MIN; y <= AXIS_MAX; y++) {
+            allCoords.push({ x, y });
+          }
+        }
+
+        let candidates = allCoords.filter(pt => {
+          if (pt.x === state.player.x && pt.y === state.player.y) return false;
+          if (pt.x === 0 && pt.y === 0 && state.treasuresFound === 0) return false;
+          return !state.recentTargets.some(u => u.x === pt.x && u.y === pt.y);
+        });
+
+        const midCandidates = candidates.filter(pt => {
+          const d = Math.abs(pt.x - state.player.x) + Math.abs(pt.y - state.player.y);
+          return d >= 3 && d <= 8;
+        });
+        const pool = midCandidates.length > 0 ? midCandidates : candidates;
+        const chosen = pool[Math.floor(Math.random() * pool.length)];
+
+        state.target = { x: chosen.x, y: chosen.y };
+        state.recentTargets.push({ x: chosen.x, y: chosen.y });
+        if (state.recentTargets.length > 12) {
+          state.recentTargets.shift();
+        }
+        state.missMarks = [];
+
+        els.targetCoordDisplay.textContent = `(${state.target.x}, ${state.target.y})`;
+      }
+
+      // ========================================================================
+      // お化けの生成・迷路追跡AI（ダークモード専用）
+      // ========================================================================
+      function spawnGhost() {
+        if (!state.darkMode || state.ghosts.length >= MAX_GHOSTS) return;
+
+        const corners = [
+          { x: -5, y: 5 },
+          { x: 5, y: 5 },
+          { x: -5, y: -5 },
+          { x: 5, y: -5 },
+          { x: 0, y: 5 }
+        ];
+
+        corners.sort((a, b) => {
+          const da = Math.abs(a.x - state.player.x) + Math.abs(a.y - state.player.y);
+          const db = Math.abs(b.x - state.player.x) + Math.abs(b.y - state.player.y);
+          return db - da;
+        });
+
+        const spawnPt =
+          corners.find(c => !state.ghosts.some(g => g.gridX === c.x && g.gridY === c.y)) || corners[0];
+
+        const profile = GHOST_PROFILES[state.ghosts.length % GHOST_PROFILES.length];
+        const baseSpeed = 1.65 + state.ghosts.length * 0.08;
+
+        const ghost = {
+          gridX: spawnPt.x,
+          gridY: spawnPt.y,
+          targetX: spawnPt.x,
+          targetY: spawnPt.y,
+          visualX: spawnPt.x,
+          visualY: spawnPt.y,
+          moveProgress: 1,
+          dir: 'down',
+          speed: baseSpeed,
+          profile,
+          spawnFlashEnd: performance.now() + 1400
+        };
+
+        chooseNextGhostStep(ghost);
+        state.ghosts.push(ghost);
+        updateHUD();
+      }
+
+      function chooseNextGhostStep(ghost) {
+        const allDirs = ['up', 'down', 'left', 'right'];
+        const opposite = { up: 'down', down: 'up', left: 'right', right: 'left' };
+
+        const validDirs = allDirs.filter(d => canMoveTo(ghost.gridX, ghost.gridY, d));
+        if (validDirs.length === 0) return;
+
+        let candidateDirs = validDirs.filter(d => d !== opposite[ghost.dir]);
+        if (candidateDirs.length === 0) candidateDirs = validDirs;
+
+        let goalX = state.player.x;
+        let goalY = state.player.y;
+
+        if (ghost.profile.type === 'ambush') {
+          if (state.player.facing === 'up') goalY = Math.min(AXIS_MAX, goalY + 2);
+          else if (state.player.facing === 'down') goalY = Math.max(AXIS_MIN, goalY - 2);
+          else if (state.player.facing === 'left') goalX = Math.max(AXIS_MIN, goalX - 2);
+          else if (state.player.facing === 'right') goalX = Math.min(AXIS_MAX, goalX + 2);
+        } else if (ghost.profile.type === 'patrol' && Math.random() < 0.35) {
+          const randomDir = candidateDirs[Math.floor(Math.random() * candidateDirs.length)];
+          applyGhostDir(ghost, randomDir);
+          return;
+        }
+
+        let bestDir = candidateDirs[0];
+        let bestDist = Infinity;
+
+        for (const d of candidateDirs) {
+          const nx = ghost.gridX + (d === 'right' ? 1 : d === 'left' ? -1 : 0);
+          const ny = ghost.gridY + (d === 'up' ? 1 : d === 'down' ? -1 : 0);
+          const dist = Math.hypot(nx - goalX, ny - goalY) + (Math.random() - 0.5) * 0.6;
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestDir = d;
+          }
+        }
+
+        applyGhostDir(ghost, bestDir);
+      }
+
+      function applyGhostDir(ghost, dir) {
+        ghost.dir = dir;
+        ghost.targetX = ghost.gridX + (dir === 'right' ? 1 : dir === 'left' ? -1 : 0);
+        ghost.targetY = ghost.gridY + (dir === 'up' ? 1 : dir === 'down' ? -1 : 0);
+        ghost.moveProgress = 0;
+      }
+
+      function updateGhosts(dtSec) {
+        if (!state.darkMode) return;
+
+        for (const g of state.ghosts) {
+          g.moveProgress += g.speed * dtSec;
+
+          if (g.moveProgress >= 1) {
+            g.gridX = g.targetX;
+            g.gridY = g.targetY;
+            g.visualX = g.gridX;
+            g.visualY = g.gridY;
+            chooseNextGhostStep(g);
+          } else {
+            g.visualX = g.gridX + (g.targetX - g.gridX) * g.moveProgress;
+            g.visualY = g.gridY + (g.targetY - g.gridY) * g.moveProgress;
+          }
+
+          const distToPlayer = Math.hypot(
+            g.visualX - state.player.visualX,
+            g.visualY - state.player.visualY
+          );
+          if (distToPlayer < 0.48) {
+            finishGame(false, 'ghost');
+            return;
+          }
+        }
+      }
+
+      // ========================================================================
+      // ベスト記録管理（ライト：最短タイム / ダーク：最多お宝数）
+      // ========================================================================
+      function getLightBestTime(diff) {
+        try {
+          const val = localStorage.getItem(STORAGE_KEYS[`light_${diff}`]);
+          return val ? parseFloat(val) : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function saveLightBestTime(diff, timeSec) {
+        try {
+          const prev = getLightBestTime(diff);
+          if (prev === null || timeSec < prev) {
+            localStorage.setItem(STORAGE_KEYS[`light_${diff}`], timeSec.toFixed(1));
+            return true;
+          }
+        } catch (e) {}
+        return false;
+      }
+
+      function getDarkBestScore(diff) {
+        try {
+          const val = localStorage.getItem(STORAGE_KEYS[`dark_${diff}`]);
+          return val ? parseInt(val, 10) : 0;
+        } catch (e) {
+          return 0;
+        }
+      }
+
+      function saveDarkBestScore(diff, score) {
+        try {
+          const prev = getDarkBestScore(diff);
+          if (score > prev) {
+            localStorage.setItem(STORAGE_KEYS[`dark_${diff}`], String(score));
+            return true;
+          }
+        } catch (e) {}
+        return false;
+      }
+
+      function updateBestDisplays() {
+        if (state.darkMode) {
+          els.bestBeginner.textContent = `BEST: ${getDarkBestScore('beginner')}個`;
+          els.bestIntermediate.textContent = `BEST: ${getDarkBestScore('intermediate')}個`;
+        } else {
+          const b1 = getLightBestTime('beginner');
+          const b2 = getLightBestTime('intermediate');
+          els.bestBeginner.textContent = b1 !== null ? `BEST: ${b1.toFixed(1)}秒` : 'BEST: --';
+          els.bestIntermediate.textContent = b2 !== null ? `BEST: ${b2.toFixed(1)}秒` : 'BEST: --';
+        }
+      }
+
+      // ========================================================================
+      // 画面切り替え & HUD更新
+      // ========================================================================
+      function showScreen(screenName) {
+        Object.entries(els.screens).forEach(([key, el]) => {
+          el.classList.toggle('active', key === screenName);
+        });
+        els.quitBtn.style.display = screenName === 'play' ? 'flex' : 'none';
+      }
+
+      function updateHUD() {
+        if (state.darkMode) {
+          // ダークモード：お宝個数（エンドレス）＆ お化けの数
+          els.scoreDisplay.textContent = `${state.treasuresFound} 個`;
+          els.subStatLabel.textContent = 'お化けの数';
+          els.subStatVal.textContent = `👻 × ${state.ghosts.length}`;
+          els.subStatVal.className = 'sub-stat-val ghost';
+        } else {
+          // ライトモード：お宝 0/5個 ＆ のこり時間
+          els.scoreDisplay.textContent = `${state.treasuresFound} / ${LIGHT_GOAL_TREASURES} 個`;
+          els.subStatLabel.textContent = 'のこり時間';
+          const rem = Math.max(0, LIGHT_TIME_LIMIT_SEC - state.elapsedSec);
+          els.subStatVal.textContent = `${rem.toFixed(1)} 秒`;
+          els.subStatVal.className = rem <= 10 ? 'sub-stat-val timer urgent' : 'sub-stat-val timer';
+        }
+
+        if (state.difficulty === 'beginner') {
+          els.currentPosDisplay.textContent = `現在地: (${state.player.x}, ${state.player.y})`;
+          els.currentPosDisplay.style.color = 'var(--primary)';
+        } else {
+          els.currentPosDisplay.textContent = '現在地: ？？？ (中級)';
+          els.currentPosDisplay.style.color = 'var(--accent-dark)';
+        }
+      }
+
+      function showBanner(text, type) {
+        els.floatingBanner.textContent = text;
+        els.floatingBanner.className = `floating-banner ${type} show`;
+        if (state.bannerTimeoutId) clearTimeout(state.bannerTimeoutId);
+        state.bannerTimeoutId = setTimeout(() => {
+          els.floatingBanner.classList.remove('show');
+        }, 1250);
+      }
+
+      function setControlLock(locked) {
+        state.isLocked = locked;
+        els.dpadBtns.forEach(btn => (btn.disabled = locked));
+        els.digBtn.disabled = locked;
+      }
+
+      // ========================================================================
+      // パーティクル生成
+      // ========================================================================
+      function spawnDigParticles(x, y, isTreasure) {
+        const count = isTreasure ? 24 : 14;
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
+          const speed = 1.3 + Math.random() * 2.5;
+          state.particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - (isTreasure ? 1.2 : 0.6),
+            size: isTreasure ? 4 + Math.random() * 4 : 3.5 + Math.random() * 3.5,
+            color: isTreasure
+              ? ['#fde047', '#38bdf8', '#34d399', '#f472b6'][i % 4]
+              : ['#a16207', '#78350f', '#d97706', '#ca8a04'][i % 4],
+            life: 1.0,
+            decay: 0.026 + Math.random() * 0.015,
+            isGem: isTreasure && i % 3 === 0
+          });
+        }
+      }
+
+      // ========================================================================
+      // プレイヤー移動 & 穴を掘るアクション
+      // ========================================================================
+      function movePlayer(dir) {
+        if (!state.isPlaying || state.isLocked) return;
+
+        state.player.facing = dir;
+
+        if (canMoveTo(state.player.x, state.player.y, dir)) {
+          if (dir === 'up') state.player.y += 1;
+          else if (dir === 'down') state.player.y -= 1;
+          else if (dir === 'left') state.player.x -= 1;
+          else if (dir === 'right') state.player.x += 1;
+
+          playSound('move');
+          updateHUD();
+        } else {
+          playSound('wall');
+        }
+      }
+
+      function digAction() {
+        if (!state.isPlaying || state.isLocked) return;
+
+        const now = performance.now();
+        const isCorrect = state.player.x === state.target.x && state.player.y === state.target.y;
+
+        state.player.digAnimEnd = now + 420;
+        playSound('dig');
+
+        if (isCorrect) {
+          state.treasuresFound += 1;
+          spawnDigParticles(state.player.x, state.player.y, true);
+          state.foundMarks.push({ x: state.player.x, y: state.player.y });
+          if (state.foundMarks.length > 8) state.foundMarks.shift();
+
+          if (state.darkMode) {
+            // --- ダークモード：エンドレス＆5個ごとにお化け追加 ---
+            const shouldSpawnGhost =
+              state.treasuresFound % GHOST_SPAWN_INTERVAL === 0 &&
+              state.ghosts.length < MAX_GHOSTS;
+
+            if (shouldSpawnGhost) {
+              spawnGhost();
+              setTimeout(() => playSound('ghostSpawn'), 110);
+              els.feedbackMsg.textContent = `👻 お宝${state.treasuresFound}個達成！お化けが1体増えた！`;
+              els.feedbackMsg.className = 'feedback-msg warn';
+              showBanner(`👻 お化けが増えた！ (計${state.ghosts.length}体)`, 'ghost');
+            } else {
+              setTimeout(() => playSound('treasure'), 90);
+              const untilNext = GHOST_SPAWN_INTERVAL - (state.treasuresFound % GHOST_SPAWN_INTERVAL);
+              els.feedbackMsg.textContent =
+                state.ghosts.length < MAX_GHOSTS
+                  ? `✨ 発見！あと${untilNext}個でお化け増加`
+                  : `✨ お宝 ${state.treasuresFound}個目ゲット！`;
+              els.feedbackMsg.className = 'feedback-msg ok';
+              showBanner(`💎 お宝発見！ (${state.treasuresFound}個目)`, 'success');
+            }
+
+            updateHUD();
+            pickNextTarget();
+          } else {
+            // --- ライトモード：5個集めたらタイムアタッククリア ---
+            setTimeout(() => playSound('treasure'), 90);
+            updateHUD();
+
+            if (state.treasuresFound >= LIGHT_GOAL_TREASURES) {
+              finishGame(true, 'clear');
+            } else {
+              els.feedbackMsg.textContent = `✨ お宝発見！あと ${LIGHT_GOAL_TREASURES - state.treasuresFound} 個！`;
+              els.feedbackMsg.className = 'feedback-msg ok';
+              showBanner(`💎 お宝発見！ (${state.treasuresFound}/${LIGHT_GOAL_TREASURES})`, 'success');
+              pickNextTarget();
+            }
+          }
+        } else {
+          // ハズレ時
+          spawnDigParticles(state.player.x, state.player.y, false);
+          state.missMarks.push({ x: state.player.x, y: state.player.y });
+          setTimeout(() => playSound('miss'), 90);
+
+          els.canvas.classList.remove('shake');
+          void els.canvas.offsetWidth;
+          els.canvas.classList.add('shake');
+
+          const hintText =
+            state.difficulty === 'beginner'
+              ? `ハズレ！ここは (${state.player.x}, ${state.player.y})`
+              : state.darkMode
+              ? 'ハズレ！お化けが近づいているぞ！'
+              : 'ハズレ！軸の目盛りをよく見よう！';
+
+          els.feedbackMsg.textContent = `💦 ${hintText}`;
+          els.feedbackMsg.className = 'feedback-msg ng';
+          showBanner('❌ ハズレ！ここは別の場所だ…', 'error');
+
+          setControlLock(true);
+          state.lockEndTime = now + PENALTY_LOCK_MS;
+        }
+      }
+
+      // ========================================================================
+      // ゲーム開始・終了処理
+      // ========================================================================
+      function startGame() {
+        ensureAudioContext();
+        generateWallMaze();
+
+        state.player = {
+          x: 0,
+          y: 0,
+          visualX: 0,
+          visualY: 0,
+          facing: 'down',
+          digAnimEnd: 0
+        };
+        state.ghosts = [];
+        state.treasuresFound = 0;
+        state.recentTargets = [];
+        state.particles = [];
+        state.foundMarks = [];
+        state.missMarks = [];
+        state.elapsedSec = 0;
+        state.isPlaying = true;
+        setControlLock(false);
+
+        if (state.darkMode) {
+          spawnGhost();
+          els.feedbackMsg.textContent = 'お化けに注意して(x, y)を探そう';
+        } else {
+          els.feedbackMsg.textContent = '原点 O(0, 0) からスタート！';
+        }
+        els.feedbackMsg.className = 'feedback-msg';
+
+        pickNextTarget();
+        updateHUD();
+
+        showScreen('play');
+        resizeCanvas();
+
+        const now = performance.now();
+        state.startTime = now;
+        state.lastFrameTime = now;
+        if (state.animationFrameId) cancelAnimationFrame(state.animationFrameId);
+        gameLoop(now);
+      }
+
+      function finishGame(isWin, reason) {
+        if (!state.isPlaying) return;
+        state.isPlaying = false;
+        setControlLock(false);
+
+        if (state.animationFrameId) {
+          cancelAnimationFrame(state.animationFrameId);
+          state.animationFrameId = null;
+        }
+
+        if (reason === 'ghost') {
+          playSound('gameover');
+          els.canvas.classList.remove('shake');
+          void els.canvas.offsetWidth;
+          els.canvas.classList.add('shake');
+        } else if (isWin) {
+          playSound('clear');
+        } else {
+          playSound('gameover');
+        }
+
+        const delayMs = reason === 'ghost' ? 420 : 280;
+
+        setTimeout(() => {
+          showScreen('result');
+
+          els.resultModeLabel.textContent = state.darkMode
+            ? '🌙 ダークモード (サバイバル)'
+            : '☀️ ライトモード (タイムアタック)';
+          els.resultDiffLabel.textContent =
+            state.difficulty === 'beginner' ? '🌱 初級コース' : '🔥 中級コース';
+
+          if (state.darkMode) {
+            // ダークモードのリザルト表示
+            els.resultEmoji.textContent = '👻';
+            els.resultTitle.textContent = 'お化けに捕まった！';
+            els.resultTitle.className = 'result-title fail';
+
+            const isNew = saveDarkBestScore(state.difficulty, state.treasuresFound);
+            els.newRecordBadge.style.display = isNew ? 'inline-block' : 'none';
+            els.resultMainLabel.textContent = '集めたお宝（スコア）';
+            els.resultMainVal.textContent = `${state.treasuresFound} 個`;
+            els.resultBestLabel.textContent = 'ベストスコア';
+            els.resultBestVal.textContent = `${getDarkBestScore(state.difficulty)} 個`;
+          } else {
+            // ライトモードのリザルト表示
+            if (isWin) {
+              const clearSec = Number(state.elapsedSec.toFixed(1));
+              const isNew = saveLightBestTime(state.difficulty, clearSec);
+
+              els.resultEmoji.textContent = '🏆';
+              els.resultTitle.textContent = 'クリアおめでとう！';
+              els.resultTitle.className = 'result-title clear';
+              els.newRecordBadge.style.display = isNew ? 'inline-block' : 'none';
+              els.resultMainLabel.textContent = 'クリアタイム';
+              els.resultMainVal.textContent = `${clearSec.toFixed(1)} 秒`;
+            } else {
+              els.resultEmoji.textContent = '⏰';
+              els.resultTitle.textContent = 'タイムアップ！';
+              els.resultTitle.className = 'result-title fail';
+              els.newRecordBadge.style.display = 'none';
+              els.resultMainLabel.textContent = '見つけたお宝';
+              els.resultMainVal.textContent = `${state.treasuresFound} / ${LIGHT_GOAL_TREASURES} 個`;
+            }
+
+            const best = getLightBestTime(state.difficulty);
+            els.resultBestLabel.textContent = 'ベストタイム';
+            els.resultBestVal.textContent = best !== null ? `${best.toFixed(1)} 秒` : '記録なし';
+          }
+
+          updateBestDisplays();
+        }, delayMs);
+      }
+
+      // ========================================================================
+      // キャラクター描画（モグラ探検家 ＆ お化け）
+      // ========================================================================
+      function drawMoleExplorer(c, cx, cy, size, options = {}) {
+        const {
+          facing = 'down',
+          walkBob = 0,
+          digProgress = 0,
+          isLocked = false,
+          darkMode = false
+        } = options;
+
+        c.save();
+        c.translate(cx, cy + walkBob);
+
+        // ダークモード時はヘルメットのヘッドライト光輪を足元に描画
+        if (darkMode) {
+          const lightGrad = c.createRadialGradient(0, 0, size * 0.1, 0, 0, size * 1.45);
+          lightGrad.addColorStop(0, 'rgba(254, 240, 138, 0.34)');
+          lightGrad.addColorStop(0.6, 'rgba(250, 204, 21, 0.10)');
+          lightGrad.addColorStop(1, 'rgba(250, 204, 21, 0)');
+          c.fillStyle = lightGrad;
+          c.beginPath();
+          c.arc(0, 0, size * 1.45, 0, Math.PI * 2);
+          c.fill();
+        }
+
+        // 足元の影
+        c.fillStyle = 'rgba(0, 0, 0, 0.32)';
+        c.beginPath();
+        c.ellipse(0, size * 0.36 - walkBob, size * 0.34, size * 0.13, 0, 0, Math.PI * 2);
+        c.fill();
+
+        const bodyTilt = digProgress > 0 ? Math.sin(digProgress * Math.PI) * 0.22 : 0;
+        c.rotate(facing === 'left' ? -bodyTilt : bodyTilt);
+
+        // モグラの胴体
+        c.fillStyle = isLocked ? '#64748b' : '#5c3a21';
+        c.beginPath();
+        c.ellipse(0, size * 0.06, size * 0.32, size * 0.34, 0, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = darkMode ? '#fef08a' : '#2e1a0c';
+        c.lineWidth = Math.max(1.2, size * 0.04);
+        c.stroke();
+
+        // お腹
+        if (facing !== 'up') {
+          c.fillStyle = isLocked ? '#94a3b8' : '#d6b48c';
+          c.beginPath();
+          c.ellipse(
+            facing === 'left' ? -size * 0.06 : facing === 'right' ? size * 0.06 : 0,
+            size * 0.14,
+            size * 0.18,
+            size * 0.2,
+            0,
+            0,
+            Math.PI * 2
+          );
+          c.fill();
+        }
+
+        // ピンクの手
+        const leftHandX = facing === 'right' ? -size * 0.18 : -size * 0.31;
+        const rightHandX = facing === 'left' ? size * 0.18 : size * 0.31;
+        c.fillStyle = '#fda4af';
+        c.beginPath();
+        c.arc(leftHandX, size * 0.12, size * 0.085, 0, Math.PI * 2);
+        c.arc(rightHandX, size * 0.12, size * 0.085, 0, Math.PI * 2);
+        c.fill();
+
+        // 顔パーツ
+        if (facing !== 'up') {
+          const lookOffsetX = facing === 'left' ? -size * 0.1 : facing === 'right' ? size * 0.1 : 0;
+
+          c.fillStyle = isLocked ? '#cbd5e1' : '#e7c9a9';
+          c.beginPath();
+          c.ellipse(lookOffsetX, size * 0.03, size * 0.16, size * 0.11, 0, 0, Math.PI * 2);
+          c.fill();
+
+          c.fillStyle = '#fb7185';
+          c.beginPath();
+          c.arc(lookOffsetX, size * 0.01, size * 0.055, 0, Math.PI * 2);
+          c.fill();
+
+          // ヒゲ
+          c.strokeStyle = '#2e1a0c';
+          c.lineWidth = Math.max(1, size * 0.025);
+          c.beginPath();
+          c.moveTo(lookOffsetX - size * 0.12, size * 0.02);
+          c.lineTo(lookOffsetX - size * 0.23, 0);
+          c.moveTo(lookOffsetX - size * 0.12, size * 0.06);
+          c.lineTo(lookOffsetX - size * 0.22, size * 0.08);
+          c.moveTo(lookOffsetX + size * 0.12, size * 0.02);
+          c.lineTo(lookOffsetX + size * 0.23, 0);
+          c.moveTo(lookOffsetX + size * 0.12, size * 0.06);
+          c.lineTo(lookOffsetX + size * 0.22, size * 0.08);
+          c.stroke();
+
+          // 目
+          c.strokeStyle = '#1e293b';
+          c.fillStyle = '#1e293b';
+          if (isLocked) {
+            c.lineWidth = Math.max(1.5, size * 0.04);
+            c.beginPath();
+            c.moveTo(lookOffsetX - size * 0.15, -size * 0.11);
+            c.lineTo(lookOffsetX - size * 0.08, -size * 0.07);
+            c.lineTo(lookOffsetX - size * 0.15, -size * 0.03);
+            c.moveTo(lookOffsetX + size * 0.15, -size * 0.11);
+            c.lineTo(lookOffsetX + size * 0.08, -size * 0.07);
+            c.lineTo(lookOffsetX + size * 0.15, -size * 0.03);
+            c.stroke();
+          } else {
+            const eyeY = -size * 0.08;
+            const eyeDx = facing === 'down' ? size * 0.11 : size * 0.08;
+            c.beginPath();
+            c.arc(lookOffsetX - eyeDx, eyeY, size * 0.042, 0, Math.PI * 2);
+            c.arc(lookOffsetX + eyeDx, eyeY, size * 0.042, 0, Math.PI * 2);
+            c.fill();
+
+            c.fillStyle = '#ffffff';
+            c.beginPath();
+            c.arc(lookOffsetX - eyeDx - size * 0.012, eyeY - size * 0.015, size * 0.016, 0, Math.PI * 2);
+            c.arc(lookOffsetX + eyeDx - size * 0.012, eyeY - size * 0.015, size * 0.016, 0, Math.PI * 2);
+            c.fill();
+          }
+        }
+
+        // 黄色の探検ヘルメット
+        c.fillStyle = isLocked ? '#94a3b8' : '#facc15';
+        c.beginPath();
+        c.arc(0, -size * 0.17, size * 0.27, Math.PI, 0, false);
+        c.closePath();
+        c.fill();
+        c.strokeStyle = '#a16207';
+        c.lineWidth = Math.max(1.2, size * 0.035);
+        c.stroke();
+
+        c.fillStyle = isLocked ? '#64748b' : '#eab308';
+        c.beginPath();
+        c.ellipse(0, -size * 0.17, size * 0.31, size * 0.065, 0, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+
+        if (facing !== 'up') {
+          const lampX = facing === 'left' ? -size * 0.1 : facing === 'right' ? size * 0.1 : 0;
+          c.fillStyle = '#334155';
+          c.beginPath();
+          c.arc(lampX, -size * 0.27, size * 0.075, 0, Math.PI * 2);
+          c.fill();
+
+          c.fillStyle = isLocked ? '#cbd5e1' : '#fef08a';
+          c.beginPath();
+          c.arc(lampX, -size * 0.27, size * 0.052, 0, Math.PI * 2);
+          c.fill();
+        }
+
+        // スコップ
+        const shovelSide = facing === 'left' ? -1 : 1;
+        c.save();
+        c.translate(shovelSide * size * 0.34, size * 0.08);
+        const swingAngle =
+          digProgress > 0
+            ? shovelSide * (-0.4 + Math.sin(digProgress * Math.PI * 2) * 1.15)
+            : shovelSide * 0.25;
+        c.rotate(swingAngle);
+
+        c.strokeStyle = '#b45309';
+        c.lineWidth = Math.max(2, size * 0.055);
+        c.lineCap = 'round';
+        c.beginPath();
+        c.moveTo(0, -size * 0.24);
+        c.lineTo(0, size * 0.22);
+        c.stroke();
+
+        c.strokeStyle = '#dc2626';
+        c.lineWidth = Math.max(1.8, size * 0.05);
+        c.beginPath();
+        c.moveTo(-size * 0.06, -size * 0.25);
+        c.lineTo(size * 0.06, -size * 0.25);
+        c.stroke();
+
+        c.fillStyle = '#cbd5e1';
+        c.strokeStyle = '#475569';
+        c.lineWidth = Math.max(1, size * 0.03);
+        c.beginPath();
+        c.moveTo(-size * 0.09, size * 0.16);
+        c.lineTo(size * 0.09, size * 0.16);
+        c.lineTo(size * 0.07, size * 0.31);
+        c.lineTo(0, size * 0.36);
+        c.lineTo(-size * 0.07, size * 0.31);
+        c.closePath();
+        c.fill();
+        c.stroke();
+
+        c.restore();
+        c.restore();
+      }
+
+      // 可愛いお化けキャラクターのカスタム描画（ダークモード専用）
+      function drawGhost(c, cx, cy, size, options = {}) {
+        const {
+          dir = 'down',
+          bodyColor = '#f43f5e',
+          glowColor = 'rgba(244, 63, 94, 0.45)',
+          time = 0,
+          isSpawning = false
+        } = options;
+
+        const floatY = Math.sin(time * 0.008) * size * 0.08;
+        c.save();
+        c.translate(cx, cy + floatY);
+
+        if (isSpawning) {
+          c.strokeStyle = '#ffffff';
+          c.lineWidth = 2.5;
+          c.beginPath();
+          c.arc(0, 0, size * (0.48 + Math.sin(time * 0.025) * 0.1), 0, Math.PI * 2);
+          c.stroke();
+        }
+
+        c.shadowColor = glowColor;
+        c.shadowBlur = 10;
+
+        const r = size * 0.34;
+        const bottomY = size * 0.32;
+        c.fillStyle = bodyColor;
+        c.beginPath();
+        c.arc(0, -size * 0.04, r, Math.PI, 0, false);
+        c.lineTo(r, bottomY);
+
+        const waveShift = Math.sin(time * 0.014) * size * 0.03;
+        c.quadraticCurveTo(r * 0.66, bottomY - size * 0.1 + waveShift, r * 0.33, bottomY);
+        c.quadraticCurveTo(0, bottomY + size * 0.06 - waveShift, -r * 0.33, bottomY);
+        c.quadraticCurveTo(-r * 0.66, bottomY - size * 0.1 + waveShift, -r, bottomY);
+        c.closePath();
+        c.fill();
+
+        c.shadowBlur = 0;
+        c.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+        c.lineWidth = Math.max(1.2, size * 0.032);
+        c.stroke();
+
+        const lookX = dir === 'left' ? -size * 0.07 : dir === 'right' ? size * 0.07 : 0;
+        const lookY = dir === 'up' ? -size * 0.06 : dir === 'down' ? size * 0.03 : 0;
+
+        c.fillStyle = '#ffffff';
+        c.beginPath();
+        c.ellipse(-size * 0.12 + lookX * 0.5, -size * 0.06 + lookY * 0.5, size * 0.085, size * 0.105, 0, 0, Math.PI * 2);
+        c.ellipse(size * 0.12 + lookX * 0.5, -size * 0.06 + lookY * 0.5, size * 0.085, size * 0.105, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = '#1e1b4b';
+        c.beginPath();
+        c.arc(-size * 0.12 + lookX, -size * 0.06 + lookY, size * 0.045, 0, Math.PI * 2);
+        c.arc(size * 0.12 + lookX, -size * 0.06 + lookY, size * 0.045, 0, Math.PI * 2);
+        c.fill();
+
+        c.restore();
+      }
+
+      function renderTitlePreviews() {
+        const mCtx = els.titleMoleCanvas.getContext('2d');
+        mCtx.clearRect(0, 0, 90, 80);
+        drawMoleExplorer(mCtx, 45, 44, 74, {
+          facing: state.darkMode ? 'right' : 'down',
+          darkMode: state.darkMode
+        });
+
+        if (state.darkMode) {
+          const gCtx = els.titleGhostCanvas.getContext('2d');
+          gCtx.clearRect(0, 0, 76, 80);
+          drawGhost(gCtx, 38, 42, 68, {
+            dir: 'left',
+            bodyColor: '#f43f5e',
+            glowColor: 'rgba(244, 63, 94, 0.5)',
+            time: 0
+          });
+        }
+      }
+
+      // ========================================================================
+      // キャンバス描画（ライト／ダークモード完全対応）
+      // ========================================================================
+      function resizeCanvas() {
+        const wrapperRect = els.canvasWrapper.getBoundingClientRect();
+        const size = Math.floor(Math.min(wrapperRect.width, wrapperRect.height));
+        if (size <= 0) return;
+
+        const dpr = window.devicePixelRatio || 1;
+        els.canvas.style.width = `${size}px`;
+        els.canvas.style.height = `${size}px`;
+        els.canvas.width = Math.floor(size * dpr);
+        els.canvas.height = Math.floor(size * dpr);
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        renderCanvas(performance.now());
+      }
+
+      function renderCanvas(now) {
+        const size = parseFloat(els.canvas.style.width) || 320;
+        ctx.clearRect(0, 0, size, size);
+
+        const isDark = state.darkMode;
+        const pad = Math.max(24, size * 0.072);
+        const boardSize = size - pad * 2;
+        const cellSize = boardSize / GRID_SIZE;
+
+        const palette = isDark
+          ? {
+              frameBg: '#0b1120',
+              tileEven: '#172033',
+              tileOdd: '#1e293b',
+              gridLine: 'rgba(148, 163, 184, 0.16)',
+              axisColor: '#fbbf24',
+              wallShadow: '#020617',
+              wallMain: '#38bdf8',
+              outerWall: '#0ea5e9',
+              posTick: '#38bdf8',
+              negTick: '#fb7185',
+              labelColor: '#fde047'
+            }
+          : {
+              frameBg: '#3b2314',
+              tileEven: '#fef9c3',
+              tileOdd: '#fde68a',
+              gridLine: 'rgba(120, 53, 15, 0.16)',
+              axisColor: '#d97706',
+              wallShadow: '#29170b',
+              wallMain: '#4d7c0f',
+              outerWall: '#65a30d',
+              posTick: '#7dd3fc',
+              negTick: '#fda4af',
+              labelColor: '#fde047'
+            };
+
+        // 1. 外枠背景
+        ctx.fillStyle = palette.frameBg;
+        ctx.fillRect(0, 0, size, size);
+
+        // 2. 11x11 グリッドタイル
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            const x0 = pad + c * cellSize;
+            const y0 = pad + r * cellSize;
+            ctx.fillStyle = (r + c) % 2 === 0 ? palette.tileEven : palette.tileOdd;
+            ctx.fillRect(x0, y0, cellSize, cellSize);
+
+            ctx.strokeStyle = palette.gridLine;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x0, y0, cellSize, cellSize);
+          }
+        }
+
+        // 3. 座標軸（x軸・y軸）と矢印
+        const originCenterX = pad + 5.5 * cellSize;
+        const originCenterY = pad + 5.5 * cellSize;
+
+        ctx.save();
+        ctx.strokeStyle = palette.axisColor;
+        ctx.lineWidth = Math.max(2.5, cellSize * 0.085);
+        if (isDark) {
+          ctx.shadowColor = 'rgba(251, 191, 36, 0.55)';
+          ctx.shadowBlur = 6;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(pad - 4, originCenterY);
+        ctx.lineTo(pad + boardSize + 8, originCenterY);
+        ctx.stroke();
+
+        ctx.fillStyle = palette.axisColor;
+        ctx.beginPath();
+        ctx.moveTo(pad + boardSize + 13, originCenterY);
+        ctx.lineTo(pad + boardSize + 5, originCenterY - 4.5);
+        ctx.lineTo(pad + boardSize + 5, originCenterY + 4.5);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(originCenterX, pad + boardSize + 4);
+        ctx.lineTo(originCenterX, pad - 8);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(originCenterX, pad - 13);
+        ctx.lineTo(originCenterX - 4.5, pad - 5);
+        ctx.lineTo(originCenterX + 4.5, pad - 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // 4. 壁線型迷路の壁
+        const wallThickness = Math.max(3.5, cellSize * 0.13);
+        ctx.lineCap = 'round';
+
+        for (let r = 0; r < GRID_SIZE - 1; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            if (state.hWalls[r][c]) {
+              const x1 = pad + c * cellSize;
+              const x2 = x1 + cellSize;
+              const y = pad + (r + 1) * cellSize;
+
+              ctx.strokeStyle = palette.wallShadow;
+              ctx.lineWidth = wallThickness + 1.5;
+              ctx.beginPath();
+              ctx.moveTo(x1, y);
+              ctx.lineTo(x2, y);
+              ctx.stroke();
+
+              ctx.strokeStyle = palette.wallMain;
+              ctx.lineWidth = wallThickness - 0.5;
+              ctx.beginPath();
+              ctx.moveTo(x1, y);
+              ctx.lineTo(x2, y);
+              ctx.stroke();
+            }
+          }
+        }
+
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE - 1; c++) {
+            if (state.vWalls[r][c]) {
+              const x = pad + (c + 1) * cellSize;
+              const y1 = pad + r * cellSize;
+              const y2 = y1 + cellSize;
+
+              ctx.strokeStyle = palette.wallShadow;
+              ctx.lineWidth = wallThickness + 1.5;
+              ctx.beginPath();
+              ctx.moveTo(x, y1);
+              ctx.lineTo(x, y2);
+              ctx.stroke();
+
+              ctx.strokeStyle = palette.wallMain;
+              ctx.lineWidth = wallThickness - 0.5;
+              ctx.beginPath();
+              ctx.moveTo(x, y1);
+              ctx.lineTo(x, y2);
+              ctx.stroke();
+            }
+          }
+        }
+
+        ctx.strokeStyle = palette.outerWall;
+        ctx.lineWidth = wallThickness;
+        ctx.strokeRect(pad, pad, boardSize, boardSize);
+
+        // 5. 軸ラベル ('x', 'y', 'O') と目盛り数字 (-5〜5)
+        const fontSize = Math.max(10, Math.floor(cellSize * 0.36));
+        ctx.font = `900 ${fontSize}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        ctx.fillStyle = palette.labelColor;
+        ctx.fillText('x', pad + boardSize + pad * 0.62, originCenterY);
+        ctx.fillText('y', originCenterX, pad * 0.35);
+
+        for (let x = AXIS_MIN; x <= AXIS_MAX; x++) {
+          if (x === 0) continue;
+          const col = x - AXIS_MIN;
+          const cx = pad + (col + 0.5) * cellSize;
+          ctx.fillStyle = x > 0 ? palette.posTick : palette.negTick;
+          ctx.fillText(String(x), cx, pad + boardSize + pad * 0.54);
+        }
+
+        for (let y = AXIS_MIN; y <= AXIS_MAX; y++) {
+          if (y === 0) continue;
+          const row = AXIS_MAX - y;
+          const cy = pad + (row + 0.5) * cellSize;
+          ctx.fillStyle = y > 0 ? palette.posTick : palette.negTick;
+          ctx.fillText(String(y), pad * 0.45, cy);
+        }
+
+        // 原点 O(0, 0)
+        ctx.fillStyle = palette.axisColor;
+        ctx.beginPath();
+        ctx.arc(originCenterX, originCenterY, Math.max(3.5, cellSize * 0.12), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText('O', originCenterX - cellSize * 0.32, originCenterY + cellSize * 0.32);
+
+        // 6. 穴掘り跡（ハズレ穴・お宝跡）
+        state.missMarks.forEach(m => {
+          const { row, col } = mathToGrid(m.x, m.y);
+          const cx = pad + (col + 0.5) * cellSize;
+          const cy = pad + (row + 0.5) * cellSize;
+          ctx.fillStyle = isDark ? '#020617' : '#451a03';
+          ctx.beginPath();
+          ctx.ellipse(cx, cy + cellSize * 0.15, cellSize * 0.27, cellSize * 0.15, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+
+        state.foundMarks.forEach(f => {
+          const { row, col } = mathToGrid(f.x, f.y);
+          const cx = pad + (col + 0.5) * cellSize;
+          const cy = pad + (row + 0.5) * cellSize;
+          ctx.globalAlpha = 0.72;
+          ctx.font = `${Math.floor(cellSize * 0.48)}px sans-serif`;
+          ctx.fillText('💎', cx, cy + cellSize * 0.04);
+          ctx.globalAlpha = 1.0;
+        });
+
+        // 7. モグラ探検家のスムージング描画
+        state.player.visualX += (state.player.x - state.player.visualX) * 0.38;
+        state.player.visualY += (state.player.y - state.player.visualY) * 0.38;
+
+        const vCol = state.player.visualX - AXIS_MIN;
+        const vRow = AXIS_MAX - state.player.visualY;
+        const px = pad + (vCol + 0.5) * cellSize;
+        const py = pad + (vRow + 0.5) * cellSize;
+
+        const distMoving =
+          Math.abs(state.player.x - state.player.visualX) +
+          Math.abs(state.player.y - state.player.visualY);
+        const walkBob = distMoving > 0.03 ? -Math.abs(Math.sin(now * 0.035)) * cellSize * 0.12 : 0;
+
+        const digRemaining = Math.max(0, state.player.digAnimEnd - now);
+        const digProgress = digRemaining > 0 ? 1 - digRemaining / 420 : 0;
+
+        drawMoleExplorer(ctx, px, py, cellSize * 0.94, {
+          facing: state.player.facing,
+          walkBob,
+          digProgress,
+          isLocked: state.isLocked,
+          darkMode: isDark
+        });
+
+        // 8. お化けの描画（ダークモードのみ）
+        if (isDark) {
+          state.ghosts.forEach(g => {
+            const gCol = g.visualX - AXIS_MIN;
+            const gRow = AXIS_MAX - g.visualY;
+            const gx = pad + (gCol + 0.5) * cellSize;
+            const gy = pad + (gRow + 0.5) * cellSize;
+
+            drawGhost(ctx, gx, gy, cellSize * 0.94, {
+              dir: g.dir,
+              bodyColor: g.profile.body,
+              glowColor: g.profile.glow,
+              time: now,
+              isSpawning: now < g.spawnFlashEnd
+            });
+          });
+        }
+
+        // 9. 土煙・キラキラ宝石パーティクル
+        state.particles = state.particles.filter(p => p.life > 0);
+        state.particles.forEach(p => {
+          p.x += p.vx * 0.03;
+          p.y += p.vy * 0.03;
+          p.vy -= 0.12;
+          p.life -= p.decay;
+
+          const pCol = p.x - AXIS_MIN;
+          const pRow = AXIS_MAX - p.y;
+          const sx = pad + (pCol + 0.5) * cellSize;
+          const sy = pad + (pRow + 0.5) * cellSize;
+
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.life);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          if (p.isGem) {
+            ctx.moveTo(sx, sy - p.size);
+            ctx.lineTo(sx + p.size, sy);
+            ctx.lineTo(sx, sy + p.size);
+            ctx.lineTo(sx - p.size, sy);
+            ctx.closePath();
+          } else {
+            ctx.arc(sx, sy, p.size, 0, Math.PI * 2);
+          }
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      // ========================================================================
+      // メインゲームループ
+      // ========================================================================
+      function gameLoop(now) {
+        if (!state.isPlaying) return;
+
+        const dtSec = Math.min(0.1, (now - state.lastFrameTime) / 1000);
+        state.lastFrameTime = now;
+
+        if (state.isLocked && now >= state.lockEndTime) {
+          setControlLock(false);
+          els.feedbackMsg.textContent = state.darkMode
+            ? '硬直解除！お化けから逃げろ！'
+            : '硬直解除！探検を再開しよう！';
+          els.feedbackMsg.className = 'feedback-msg';
+        }
+
+        if (state.darkMode) {
+          // ダークモード：お化け追跡更新
+          updateGhosts(dtSec);
+          if (!state.isPlaying) return;
+        } else {
+          // ライトモード：60秒カウントダウン更新
+          state.elapsedSec = (now - state.startTime) / 1000;
+          if (state.elapsedSec >= LIGHT_TIME_LIMIT_SEC) {
+            state.elapsedSec = LIGHT_TIME_LIMIT_SEC;
+            updateHUD();
+            finishGame(false, 'timeout');
+            return;
+          }
+          updateHUD();
+        }
+
+        renderCanvas(now);
+        state.animationFrameId = requestAnimationFrame(gameLoop);
+      }
+
+      // ========================================================================
+      // イベントリスナー登録
+      // ========================================================================
+      els.themeToggleBtn.addEventListener('click', () => {
+        applyTheme(!state.darkMode, true);
+        if (state.soundEnabled) playSound('move');
+      });
+
+      els.soundToggleBtn.addEventListener('click', () => {
+        state.soundEnabled = !state.soundEnabled;
+        els.soundToggleBtn.textContent = state.soundEnabled ? '🔊 音ON' : '🔇 音OFF';
+        if (state.soundEnabled) playSound('move');
+      });
+
+      els.diffCards.forEach(card => {
+        card.addEventListener('click', () => {
+          els.diffCards.forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          state.difficulty = card.dataset.diff;
+          playSound('move');
+        });
+      });
+
+      els.startBtn.addEventListener('click', startGame);
+      els.retryBtn.addEventListener('click', startGame);
+
+      els.toTitleBtn.addEventListener('click', () => {
+        updateBestDisplays();
+        showScreen('title');
+      });
+
+      els.quitBtn.addEventListener('click', () => {
+        state.isPlaying = false;
+        if (state.animationFrameId) cancelAnimationFrame(state.animationFrameId);
+        updateBestDisplays();
+        showScreen('title');
+      });
+
+      els.dpadBtns.forEach(btn => {
+        btn.addEventListener('pointerdown', e => {
+          e.preventDefault();
+          movePlayer(btn.dataset.dir);
+        });
+      });
+
+      els.digBtn.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        digAction();
+      });
+
+      // スワイプ操作
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      els.canvas.addEventListener(
+        'touchstart',
+        e => {
+          if (e.touches.length > 0) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+          }
+        },
+        { passive: true }
+      );
+
+      els.canvas.addEventListener(
+        'touchend',
+        e => {
+          if (!state.isPlaying || e.changedTouches.length === 0) return;
+          const dx = e.changedTouches[0].clientX - touchStartX;
+          const dy = e.changedTouches[0].clientY - touchStartY;
+          const threshold = 22;
+          if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
+
+          if (Math.abs(dx) > Math.abs(dy)) {
+            movePlayer(dx > 0 ? 'right' : 'left');
+          } else {
+            movePlayer(dy > 0 ? 'down' : 'up');
+          }
+        },
+        { passive: true }
+      );
+
+      // キーボード操作
+      window.addEventListener('keydown', e => {
+        if (!state.isPlaying) return;
+        switch (e.key) {
+          case 'ArrowUp':
+          case 'w':
+          case 'W':
+            e.preventDefault();
+            movePlayer('up');
+            break;
+          case 'ArrowDown':
+          case 's':
+          case 'S':
+            e.preventDefault();
+            movePlayer('down');
+            break;
+          case 'ArrowLeft':
+          case 'a':
+          case 'A':
+            e.preventDefault();
+            movePlayer('left');
+            break;
+          case 'ArrowRight':
+          case 'd':
+          case 'D':
+            e.preventDefault();
+            movePlayer('right');
+            break;
+          case ' ':
+          case 'Enter':
+            e.preventDefault();
+            digAction();
+            break;
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        if (state.isPlaying) resizeCanvas();
+      });
+
+      // 初期化
+      initTheme();
+    })();
+  </script>
+</body>
+</html>
