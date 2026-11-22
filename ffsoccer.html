@@ -1,0 +1,3178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>スルーパス・ストライカー | 1次関数サッカー</title>
+<style>
+  :root {
+    --bg-dark: #090e1a;
+    --panel-bg: #1e293b;
+    --panel-border: #334155;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent-green: #22c55e;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-blue: #38bdf8;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  header {
+    width: 100%;
+    max-width: 720px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(15, 23, 42, 0.96);
+    border-bottom: 1px solid var(--panel-border);
+    z-index: 20;
+  }
+
+  .title-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .title-area h1 {
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    background: linear-gradient(90deg, #4ade80, #facc15);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .header-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .icon-btn {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    color: var(--text-main);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: transform 0.1s;
+  }
+
+  .icon-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Screen Containers */
+  .screen {
+    width: 100%;
+    max-width: 720px;
+    flex: 1;
+    display: none;
+    flex-direction: column;
+  }
+
+  .screen.active {
+    display: flex;
+  }
+
+  /* Title / Mode & Difficulty Selection Screen */
+  .title-screen {
+    padding: 14px 14px 24px;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .hero-banner {
+    background: linear-gradient(135deg, #14532d 0%, #0f172a 100%);
+    border: 2px solid #22c55e;
+    border-radius: 16px;
+    padding: 14px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  }
+
+  .hero-sub {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #86efac;
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+
+  .hero-banner h2 {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 5px;
+  }
+
+  .hero-formula {
+    display: inline-block;
+    font-family: "Times New Roman", Georgia, serif;
+    font-style: italic;
+    font-size: 1.12rem;
+    font-weight: 800;
+    color: #facc15;
+    background: rgba(15, 23, 42, 0.72);
+    padding: 2px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(250, 204, 21, 0.45);
+    margin-bottom: 6px;
+  }
+
+  .hero-banner p {
+    font-size: 0.78rem;
+    color: #cbd5e1;
+    line-height: 1.4;
+  }
+
+  /* Game Mode Switch Tabs (Practice vs Match) */
+  .mode-switch-wrap {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 6px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .mode-tab {
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 9px 8px;
+    background: rgba(15, 23, 42, 0.65);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    transition: all 0.15s;
+  }
+
+  .mode-tab .m-title {
+    font-size: 0.95rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .mode-tab .m-sub {
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  .mode-tab.active[data-mode="practice"] {
+    background: linear-gradient(180deg, rgba(34, 197, 94, 0.22), rgba(20, 83, 45, 0.45));
+    border-color: #22c55e;
+    color: #fff;
+  }
+
+  .mode-tab.active[data-mode="practice"] .m-sub {
+    color: #86efac;
+  }
+
+  .mode-tab.active[data-mode="match"] {
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.25), rgba(120, 53, 15, 0.48));
+    border-color: #f59e0b;
+    color: #fff;
+  }
+
+  .mode-tab.active[data-mode="match"] .m-sub {
+    color: #fde68a;
+  }
+
+  .rule-strip {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.76rem;
+    color: #e2e8f0;
+    line-height: 1.5;
+  }
+
+  .rule-strip strong {
+    color: #facc15;
+  }
+
+  .rule-strip .pen-badge {
+    display: inline-block;
+    background: rgba(239, 68, 68, 0.22);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+    font-weight: 800;
+    padding: 0 6px;
+    border-radius: 5px;
+    margin: 0 2px;
+  }
+
+  .rule-strip .bon-badge {
+    display: inline-block;
+    background: rgba(34, 197, 94, 0.22);
+    border: 1px solid rgba(34, 197, 94, 0.5);
+    color: #86efac;
+    font-weight: 800;
+    padding: 0 6px;
+    border-radius: 5px;
+    margin: 0 2px;
+  }
+
+  .diff-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .diff-card {
+    background: var(--panel-bg);
+    border: 2px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    transition: transform 0.1s, border-color 0.15s;
+  }
+
+  .diff-card:hover {
+    border-color: var(--accent-green);
+  }
+
+  .diff-card.match-theme:hover {
+    border-color: var(--accent-amber);
+  }
+
+  .diff-card:active {
+    transform: scale(0.985);
+  }
+
+  .diff-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .diff-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .diff-level-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+
+  .diff-level-badge.rookie {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.45);
+  }
+
+  .diff-level-badge.regular {
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.45);
+  }
+
+  .diff-level-badge.fantasista {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.45);
+  }
+
+  .diff-name {
+    font-size: 1.05rem;
+    font-weight: 900;
+    color: #fff;
+  }
+
+  .trophy-pill {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: rgba(250, 204, 21, 0.18);
+    color: #facc15;
+    border: 1px solid rgba(250, 204, 21, 0.45);
+  }
+
+  .diff-desc {
+    font-size: 0.77rem;
+    color: var(--text-muted);
+    line-height: 1.38;
+  }
+
+  .diff-footer {
+    margin-top: 2px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #cbd5e1;
+    font-weight: 700;
+  }
+
+  .record-highlight {
+    color: #facc15;
+    font-weight: 800;
+  }
+
+  /* Gameplay HUD */
+  .hud-bar {
+    width: 100%;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .hud-left {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .mode-tag {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #f8fafc;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    padding: 4px 7px;
+    border-radius: 8px;
+  }
+
+  .mode-tag.match {
+    background: rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.55);
+    color: #fde68a;
+  }
+
+  .mission-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.14);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    padding: 4px 7px;
+    border-radius: 8px;
+  }
+
+  .mission-label.final {
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.16);
+    border-color: rgba(74, 222, 128, 0.45);
+  }
+
+  .stats-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .stat-pill {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
+  }
+
+  .stat-pill span.val {
+    color: var(--accent-amber);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.85rem;
+  }
+
+  .stat-pill.timer-pill.danger {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.25);
+  }
+
+  .stat-pill.timer-pill.danger span.val {
+    color: #fca5a5;
+  }
+
+  .stat-pill.timer-pill.penalty-flash {
+    border-color: #ef4444;
+    background: #dc2626;
+    transform: scale(1.06);
+  }
+
+  .stat-pill.timer-pill.penalty-flash span.val {
+    color: #ffffff;
+  }
+
+  .stat-pill.timer-pill.bonus-flash {
+    border-color: #22c55e;
+    background: #16a34a;
+    transform: scale(1.08);
+  }
+
+  .stat-pill.timer-pill.bonus-flash span.val {
+    color: #ffffff;
+  }
+
+  /* Pitch Container */
+  .pitch-wrapper {
+    position: relative;
+    width: 100%;
+    padding: 0 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .canvas-box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    min-height: 260px;
+    max-height: 47dvh;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 2px solid #cbd5e1;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55);
+    background: #0f172a;
+  }
+
+  canvas#pitchCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Coordinate Info Badges */
+  .coord-banner {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    right: 6px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .badge.ball-pos { border-left: 3px solid #f8fafc; }
+  .badge.goal-pos { border-left: 3px solid #38bdf8; }
+  .badge.star-pos { border-left: 3px solid #facc15; }
+
+  /* Feedback Callout Overlay */
+  .callout-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.72);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    text-align: center;
+    padding: 16px;
+    z-index: 10;
+  }
+
+  .callout-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .callout-overlay.kickoff-banner {
+    background: rgba(15, 23, 42, 0.42);
+    pointer-events: none;
+  }
+
+  .callout-text {
+    font-size: 1.75rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.9);
+    transform: scale(0.8);
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .callout-overlay.show .callout-text {
+    transform: scale(1);
+  }
+
+  .callout-sub {
+    margin-top: 6px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    background: rgba(15, 23, 42, 0.94);
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+
+  /* Control Deck */
+  .control-deck {
+    width: 100%;
+    padding: 8px 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .equation-display {
+    background: var(--panel-bg);
+    border: 2px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 7px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .eq-math {
+    font-size: 1.35rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: "Times New Roman", Georgia, serif;
+  }
+
+  .eq-var {
+    font-style: italic;
+    color: #93c5fd;
+  }
+
+  .frac-box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    line-height: 1.05;
+    font-family: system-ui, sans-serif;
+    font-size: 0.96rem;
+    color: #facc15;
+    background: rgba(250, 204, 21, 0.12);
+    border: 1px solid rgba(250, 204, 21, 0.4);
+    border-radius: 6px;
+    padding: 2px 8px;
+    min-width: 30px;
+  }
+
+  .frac-line {
+    width: 100%;
+    height: 2px;
+    background: #facc15;
+    margin: 2px 0;
+  }
+
+  .int-box {
+    font-family: system-ui, sans-serif;
+    font-size: 1.12rem;
+    color: #facc15;
+    background: rgba(250, 204, 21, 0.12);
+    border: 1px solid rgba(250, 204, 21, 0.4);
+    border-radius: 6px;
+    padding: 2px 8px;
+  }
+
+  .b-box {
+    font-family: system-ui, sans-serif;
+    font-size: 1.12rem;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    border-radius: 6px;
+    padding: 2px 8px;
+  }
+
+  .kick-btn {
+    background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-size: 1.02rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #14532d;
+    transition: transform 0.08s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .kick-btn:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #14532d;
+  }
+
+  .kick-btn:disabled {
+    background: #475569;
+    box-shadow: 0 4px 0 #334155;
+    color: #94a3b8;
+    cursor: not-allowed;
+  }
+
+  /* Stepper Controls Grid */
+  .steppers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .param-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .param-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  .param-header strong {
+    color: #fff;
+  }
+
+  .stepper-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .stepper-row.hidden {
+    display: none;
+  }
+
+  .step-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    min-width: 48px;
+  }
+
+  .step-btns {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .step-btn {
+    min-width: 35px;
+    height: 33px;
+    padding: 0 6px;
+    border-radius: 8px;
+    border: 1px solid var(--panel-border);
+    background: var(--bg-dark);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .step-btn.sign-btn {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #93c5fd;
+    font-size: 0.84rem;
+  }
+
+  .step-btn:active {
+    background: #334155;
+    transform: scale(0.94);
+  }
+
+  .step-val {
+    min-width: 26px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 0.94rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Celebration & Game Over Modals */
+  .celebration-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.86);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 60;
+  }
+
+  .celebration-backdrop.open {
+    display: flex;
+  }
+
+  #confettiCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 61;
+  }
+
+  .celebration-card {
+    position: relative;
+    z-index: 62;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    border: 2px solid #facc15;
+    border-radius: 20px;
+    max-width: 390px;
+    width: 100%;
+    padding: 22px 20px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 30px rgba(250, 204, 21, 0.25);
+    animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .celebration-card.gameover-card {
+    border-color: #ef4444;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 25px rgba(239, 68, 68, 0.25);
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0.75); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .trophy-wrap {
+    width: 88px;
+    height: 88px;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle, rgba(250, 204, 21, 0.25) 0%, transparent 70%);
+    animation: trophyFloat 2s ease-in-out infinite;
+  }
+
+  @keyframes trophyFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .celebration-title {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #facc15;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+
+  .celebration-mode {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #4ade80;
+    margin-bottom: 12px;
+  }
+
+  .celebration-score-box {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .celebration-score-label {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+  }
+
+  .celebration-score-val {
+    font-size: 1.55rem;
+    font-weight: 900;
+    color: #fff;
+  }
+
+  .new-record-badge {
+    display: inline-block;
+    background: linear-gradient(90deg, #f59e0b, #ef4444);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 900;
+    padding: 2px 10px;
+    border-radius: 999px;
+    margin: 0 auto;
+    letter-spacing: 0.05em;
+  }
+
+  .modal-btn-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .return-title-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(180deg, #facc15 0%, #eab308 100%);
+    color: #422006;
+    font-weight: 900;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #a16207;
+  }
+
+  .return-title-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #a16207;
+  }
+
+  .retry-match-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+    color: #fff;
+    font-weight: 900;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #14532d;
+  }
+
+  /* Help Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 70;
+  }
+
+  .modal-backdrop.open {
+    display: flex;
+  }
+
+  .modal-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    max-width: 440px;
+    width: 100%;
+    padding: 18px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  }
+
+  .modal-card h2 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    color: #4ade80;
+  }
+
+  .modal-card ul {
+    padding-left: 18px;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    color: #e2e8f0;
+    margin-bottom: 14px;
+  }
+
+  .modal-card li {
+    margin-bottom: 6px;
+  }
+
+  .close-modal-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent-blue);
+    color: #0f172a;
+    font-weight: 900;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="title-area">
+      <span style="font-size:1.25rem;">⚽</span>
+      <h1>スルーパス・ストライカー</h1>
+    </div>
+    <div class="header-controls">
+      <button class="icon-btn" id="backTitleBtn" style="display:none;" title="タイトルへ戻る">🏠 タイトルへ</button>
+      <button class="icon-btn" id="soundBtn" title="効果音切替">🔊 ON</button>
+      <button class="icon-btn" id="helpBtn" title="遊び方">❓ 遊び方</button>
+    </div>
+  </header>
+
+  <!-- SCREEN 1: Title / Mode & Difficulty Selection -->
+  <main class="screen title-screen active" id="titleScreen">
+    <div class="hero-banner">
+      <div class="hero-sub">LINEAR FUNCTION SOCCER</div>
+      <h2>1次関数 y = ax + b でパス＆ゴールを決めろ！</h2>
+      <div class="hero-formula">y = ax + b</div>
+      <p>練習モードで感覚を掴んだら、制限時間付きの試合モードでベストタイム更新に挑もう！</p>
+    </div>
+
+    <!-- Mode Toggle Tabs -->
+    <div class="mode-switch-wrap" id="modeSwitchWrap">
+      <button class="mode-tab active" data-mode="practice">
+        <span class="m-title">🏃 練習モード</span>
+        <span class="m-sub">時間制限なし・最高得点記録</span>
+      </button>
+      <button class="mode-tab" data-mode="match">
+        <span class="m-title">⏱️ 試合モード</span>
+        <span class="m-sub">90秒制限・ベストタイム記録</span>
+      </button>
+    </div>
+
+    <!-- Dynamic Rule Description -->
+    <div class="rule-strip" id="ruleStrip">
+      <strong>【練習モード】</strong> 時間制限なしで全5ステージに挑戦！原点 (0,0) から切片 (0, b) までドリブルし、傾き a でスルーパス＆決勝ゴールを決めよう（⭐星通過で2点）。
+    </div>
+
+    <!-- Difficulty Cards -->
+    <div class="diff-list" id="diffList">
+      <!-- Difficulty 1: Rookie -->
+      <button class="diff-card" data-diff="rookie">
+        <div class="diff-top">
+          <div class="diff-title-group">
+            <span class="diff-level-badge rookie">初級</span>
+            <span class="diff-name">ルーキー</span>
+          </div>
+          <span class="trophy-pill" id="trophy_rookie" style="display:none;">🏆 CLEAR</span>
+        </div>
+        <div class="diff-desc">傾き a が0以外の整数（±1, ±2, ±3）になる基本コース。まずは切片と傾きの感覚をつかもう！</div>
+        <div class="diff-footer">
+          <span>全5ステージ（ランダム生成）</span>
+          <span class="record-highlight" id="record_rookie">最高: 0 / 10 点</span>
+        </div>
+      </button>
+
+      <!-- Difficulty 2: Regular -->
+      <button class="diff-card" data-diff="regular">
+        <div class="diff-top">
+          <div class="diff-title-group">
+            <span class="diff-level-badge regular">中級</span>
+            <span class="diff-name">レギュラー</span>
+          </div>
+          <span class="trophy-pill" id="trophy_regular" style="display:none;">🏆 CLEAR</span>
+        </div>
+        <div class="diff-desc">傾き a = ±1 を完全除外！分数傾き（1/2, -2/3 など）と急な整数が中心で、b=0ルートはDFがブロック！</div>
+        <div class="diff-footer">
+          <span>全5ステージ（ランダム生成）</span>
+          <span class="record-highlight" id="record_regular">最高: 0 / 10 点</span>
+        </div>
+      </button>
+
+      <!-- Difficulty 3: Fantasista -->
+      <button class="diff-card" data-diff="fantasista">
+        <div class="diff-top">
+          <div class="diff-title-group">
+            <span class="diff-level-badge fantasista">上級</span>
+            <span class="diff-name">ファンタジスタ</span>
+          </div>
+          <span class="trophy-pill" id="trophy_fantasista" style="display:none;">🏆 CLEAR</span>
+        </div>
+        <div class="diff-desc">傾き a は既約分数限定！パスコースの両脇を挟むDFの狭い間を縫う、超精密スルーパスに挑め！</div>
+        <div class="diff-footer">
+          <span>全5ステージ（ランダム生成）</span>
+          <span class="record-highlight" id="record_fantasista">最高: 0 / 10 点</span>
+        </div>
+      </button>
+    </div>
+  </main>
+
+  <!-- SCREEN 2: Active Gameplay -->
+  <div class="screen" id="gameScreen">
+    <!-- HUD -->
+    <section class="hud-bar">
+      <div class="hud-left">
+        <div class="mode-tag" id="modeBadge">練習</div>
+        <div class="mode-tag" id="diffTag">初級：ルーキー</div>
+        <div class="mission-label" id="missionLabel">PASS MISSION</div>
+      </div>
+      <div class="stats-group">
+        <div class="stat-pill timer-pill" id="timerPill" style="display:none;">
+          ⏱️ <span class="val" id="timerVal">90.0s</span>
+        </div>
+        <div class="stat-pill">
+          STAGE <span class="val" id="stageVal">1/5</span>
+        </div>
+        <div class="stat-pill" id="scorePill">
+          得点 <span class="val" id="scoreVal">0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stadium Pitch Coordinate Plane -->
+    <main class="pitch-wrapper">
+      <div class="canvas-box">
+        <canvas id="pitchCanvas" width="660" height="660"></canvas>
+        <div class="coord-banner">
+          <div class="badge ball-pos" id="ballCoordBadge">⚽ 起点: (0,0)→(0,b)</div>
+          <div class="badge star-pos" id="starCoordBadge">⭐ 星(2点): (2, 2)</div>
+          <div class="badge goal-pos" id="goalCoordBadge">🏃 味方: (4, 3)</div>
+        </div>
+
+        <!-- Feedback & Kickoff Callout Overlay -->
+        <div class="callout-overlay" id="calloutOverlay">
+          <div class="callout-text" id="calloutText">NICE PASS!!</div>
+          <div class="callout-sub" id="calloutSub">味方へナイスパス！ +1点</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Control Deck -->
+    <section class="control-deck">
+      <div class="equation-display">
+        <div class="eq-math" id="equationDisplay"></div>
+        <button class="kick-btn" id="kickBtn">KICK! 👟</button>
+      </div>
+
+      <div class="steppers-grid" id="steppersGrid">
+        <!-- Slope 'a' Card -->
+        <div class="param-card">
+          <div class="param-header">
+            <span>傾き <strong>a</strong></span>
+            <div style="display:flex;gap:4px;">
+              <button class="step-btn sign-btn" id="toggleSignBtn" title="符号反転">+/−</button>
+              <button class="step-btn" id="resetABtn" style="width:auto;padding:0 6px;font-size:0.71rem;">1に戻す</button>
+            </div>
+          </div>
+          <div class="stepper-row">
+            <span class="step-label" id="numLabel">分子 (y)</span>
+            <div class="step-btns">
+              <button class="step-btn" data-param="num" data-delta="-1">−</button>
+              <span class="step-val" id="valNum">1</span>
+              <button class="step-btn" data-param="num" data-delta="1">＋</button>
+            </div>
+          </div>
+          <div class="stepper-row" id="denRow">
+            <span class="step-label">分母 (x)</span>
+            <div class="step-btns">
+              <button class="step-btn" data-param="den" data-delta="-1">−</button>
+              <span class="step-val" id="valDen">1</span>
+              <button class="step-btn" data-param="den" data-delta="1">＋</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Intercept 'b' Card -->
+        <div class="param-card">
+          <div class="param-header">
+            <span>切片 <strong>b</strong> (y軸交点)</span>
+            <button class="step-btn" id="resetBBtn" style="width:auto;padding:0 6px;font-size:0.71rem;">0に戻す</button>
+          </div>
+          <div class="stepper-row" style="margin-top:auto; margin-bottom:auto;">
+            <span class="step-label">値 (b)</span>
+            <div class="step-btns">
+              <button class="step-btn" data-param="b" data-delta="-1">−</button>
+              <span class="step-val" id="valB">0</span>
+              <button class="step-btn" data-param="b" data-delta="1">＋</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Clear Celebration Overlay (Trophy & Confetti) -->
+  <div class="celebration-backdrop" id="celebrationModal">
+    <canvas id="confettiCanvas"></canvas>
+    <div class="celebration-card">
+      <div class="trophy-wrap">
+        <svg viewBox="0 0 120 120" width="88" height="88" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fef08a"/>
+              <stop offset="45%" stop-color="#facc15"/>
+              <stop offset="100%" stop-color="#ca8a04"/>
+            </linearGradient>
+            <linearGradient id="baseGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#475569"/>
+              <stop offset="100%" stop-color="#1e293b"/>
+            </linearGradient>
+          </defs>
+          <path d="M32 28 C12 28, 12 60, 36 62" fill="none" stroke="url(#goldGrad)" stroke-width="7" stroke-linecap="round"/>
+          <path d="M88 28 C108 28, 108 60, 84 62" fill="none" stroke="url(#goldGrad)" stroke-width="7" stroke-linecap="round"/>
+          <path d="M30 20 H90 L82 62 C79 76, 41 76, 38 62 Z" fill="url(#goldGrad)" stroke="#fef9c3" stroke-width="2"/>
+          <polygon points="60,31 64,41 75,42 66,49 69,59 60,53 51,59 54,49 45,42 56,41" fill="#fffbeb"/>
+          <rect x="53" y="72" width="14" height="18" rx="3" fill="url(#goldGrad)"/>
+          <ellipse cx="60" cy="90" rx="22" ry="5" fill="url(#goldGrad)"/>
+          <rect x="34" y="93" width="52" height="16" rx="4" fill="url(#baseGrad)" stroke="#facc15" stroke-width="1.5"/>
+          <rect x="44" y="98" width="32" height="6" rx="2" fill="url(#goldGrad)"/>
+        </svg>
+      </div>
+      <div class="celebration-title">CHAMPION!!</div>
+      <div class="celebration-mode" id="celebrationModeText">初級：ルーキー 制覇！</div>
+      <div class="celebration-score-box">
+        <div class="new-record-badge" id="newRecordBadge" style="display:none;">🎉 NEW BEST TIME!</div>
+        <div class="celebration-score-label" id="celebrationPrimaryLabel">獲得スコア</div>
+        <div class="celebration-score-val" id="celebrationPrimaryVal">10 / 10 点</div>
+        <div class="celebration-score-label" id="celebrationSubVal" style="color:#cbd5e1;font-weight:700;"></div>
+      </div>
+      <button class="return-title-btn" id="returnTitleBtn">タイトルへ戻る</button>
+    </div>
+  </div>
+
+  <!-- Time Up Modal (Match Mode) -->
+  <div class="celebration-backdrop" id="timeUpModal">
+    <div class="celebration-card gameover-card">
+      <div style="font-size:3rem;margin-bottom:8px;">⏰</div>
+      <div class="celebration-title" style="color:#ef4444;">TIME UP!!</div>
+      <div class="celebration-mode" id="timeUpModeText" style="color:#fca5a5;">試合終了！制限時間オーバー</div>
+      <div class="celebration-score-box">
+        <div class="celebration-score-label">到達ステージ</div>
+        <div class="celebration-score-val" id="timeUpScoreText">STAGE 3 / 5</div>
+      </div>
+      <div class="modal-btn-stack">
+        <button class="retry-match-btn" id="retryMatchBtn">もう一度挑戦する 🔄</button>
+        <button class="return-title-btn" id="timeUpTitleBtn">タイトルへ戻る</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div class="modal-backdrop" id="helpModal">
+    <div class="modal-card">
+      <h2>⚽ スルーパス・ストライカー 遊び方</h2>
+      <ul>
+        <li><strong>2つのゲームモード：</strong>
+          <br>・<strong>練習モード：</strong> 時間制限なしで計算練習！⭐星を通過すると2点（最大10点）。
+          <br>・<strong>試合モード：</strong> ホイッスルの合図でキックオフ！90秒のタイムアタックで全5ステージのクリアタイムを競います。
+        </li>
+        <li><strong>試合モードのタイム増減：</strong>
+          <br>・⭐星を通過してパス／ゴール成功：<strong>経過タイム −3.0秒短縮！</strong>
+          <br>・枠外・パスズレミス：<strong>+3.0秒ペナルティ！</strong>
+          <br>・敵DFに奪われる：<strong>+5.0秒ペナルティ！</strong>
+        </li>
+        <li><strong>2段階の動き：</strong> 原点 (0,0) から <em>y</em> 軸上を切片 (0, <em>b</em>) までドリブルして止まり、そこから傾き <em>a</em> でボールだけを蹴り出します。</li>
+      </ul>
+      <button class="close-modal-btn" id="closeHelpBtn">閉じる</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // --- Web Audio API Synthesizer ---
+  class SoundFX {
+    constructor() {
+      this.ctx = null;
+      this.muted = false;
+    }
+    init() {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) this.ctx = new AudioCtx();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+    }
+    // Realistic Referee Pea Whistle ("ピーッ！") for Match Kickoff
+    playKickoffWhistle() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const duration = 0.78;
+
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      osc1.type = 'sine';
+      osc2.type = 'sine';
+
+      osc1.frequency.setValueAtTime(2850, now);
+      osc1.frequency.linearRampToValueAtTime(2910, now + 0.08);
+      osc1.frequency.setValueAtTime(2880, now + duration - 0.08);
+      osc1.frequency.exponentialRampToValueAtTime(2640, now + duration);
+
+      osc2.frequency.setValueAtTime(3150, now);
+      osc2.frequency.linearRampToValueAtTime(3210, now + 0.08);
+      osc2.frequency.setValueAtTime(3180, now + duration - 0.08);
+      osc2.frequency.exponentialRampToValueAtTime(2920, now + duration);
+
+      // Pea-whistle ~28Hz trill vibrato
+      const trillOsc = this.ctx.createOscillator();
+      const trillGain = this.ctx.createGain();
+      trillOsc.type = 'sine';
+      trillOsc.frequency.setValueAtTime(28, now);
+      trillGain.gain.setValueAtTime(48, now);
+      trillOsc.connect(trillGain);
+      trillGain.connect(osc1.frequency);
+      trillGain.connect(osc2.frequency);
+
+      const masterGain = this.ctx.createGain();
+      masterGain.gain.setValueAtTime(0.001, now);
+      masterGain.gain.linearRampToValueAtTime(0.24, now + 0.035);
+      masterGain.gain.setValueAtTime(0.22, now + duration - 0.09);
+      masterGain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+
+      const osc2Gain = this.ctx.createGain();
+      osc2Gain.gain.setValueAtTime(0.65, now);
+
+      osc1.connect(masterGain);
+      osc2.connect(osc2Gain);
+      osc2Gain.connect(masterGain);
+      masterGain.connect(this.ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      trillOsc.start(now);
+
+      osc1.stop(now + duration + 0.02);
+      osc2.stop(now + duration + 0.02);
+      trillOsc.stop(now + duration + 0.02);
+    }
+    playDribble() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(195, now);
+      osc.frequency.exponentialRampToValueAtTime(115, now + 0.06);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.065);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.07);
+    }
+    playKick() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(165, now);
+      osc.frequency.exponentialRampToValueAtTime(45, now + 0.14);
+      gain.gain.setValueAtTime(0.42, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    }
+    playGoal(isSuper = false) {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const notes = isSuper ? [523.25, 659.25, 783.99, 1046.5] : [523.25, 659.25, 783.99];
+      notes.forEach((freq, i) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + i * 0.08);
+        gain.gain.setValueAtTime(0.25, now + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + i * 0.08);
+        osc.stop(now + i * 0.08 + 0.36);
+      });
+    }
+    playStar() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1318.5, now + 0.06);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.22);
+    }
+    playIntercept() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(145, now);
+      osc.frequency.linearRampToValueAtTime(85, now + 0.28);
+      gain.gain.setValueAtTime(0.28, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    }
+    playOutOfBounds() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.exponentialRampToValueAtTime(48, now + 0.22);
+      gain.gain.setValueAtTime(0.32, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.24);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    }
+    playTimeUp() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.setValueAtTime(165, now + 0.25);
+      gain.gain.setValueAtTime(0.26, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.72);
+    }
+    playChampionFanfare() {
+      if (this.muted) return;
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const melody = [
+        { f: 523.25, t: 0.0, d: 0.14 },
+        { f: 659.25, t: 0.14, d: 0.14 },
+        { f: 783.99, t: 0.28, d: 0.14 },
+        { f: 1046.5, t: 0.44, d: 0.45 },
+        { f: 783.99, t: 0.65, d: 0.15 },
+        { f: 1046.5, t: 0.82, d: 0.55 }
+      ];
+      melody.forEach(n => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(n.f, now + n.t);
+        gain.gain.setValueAtTime(0.28, now + n.t);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + n.t + n.d);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + n.t);
+        osc.stop(now + n.t + n.d + 0.02);
+      });
+    }
+  }
+
+  const sfx = new SoundFX();
+
+  // --- Difficulty Configurations ---
+  const DIFF_CONFIG = {
+    rookie: {
+      title: '初級：ルーキー',
+      allowFractions: false,
+      slopeMode: 'rookie', // integers in {-3,-2,-1,1,2,3}
+      blockProportionalPath: false,
+      threadDefenders: false,
+      dfCount: 2,
+      maxScore: 10
+    },
+    regular: {
+      title: '中級：レギュラー',
+      allowFractions: true,
+      slopeMode: 'regular', // excludes ±1; irreducible fractions (den 2..5) + steep integers (±2, ±3)
+      blockProportionalPath: true,
+      threadDefenders: false,
+      dfCount: 4,
+      maxScore: 10
+    },
+    fantasista: {
+      title: '上級：ファンタジスタ',
+      allowFractions: true,
+      slopeMode: 'fantasista', // strictly irreducible fractions ONLY (den 2..6, NO integers)
+      blockProportionalPath: true,
+      threadDefenders: true, // places a pair of gatekeeper DFs straddling both sides of solution path
+      dfCount: 5,
+      maxScore: 10
+    }
+  };
+
+  // --- Pitch Bounds (-6 <= x <= 6, -5 <= y <= 5) ---
+  const X_MIN = -6;
+  const X_MAX = 6;
+  const Y_MIN = -5;
+  const Y_MAX = 5;
+  const TOTAL_STAGES = 5;
+  const MATCH_TIME_LIMIT = 90.0;
+  const PENALTY_MISS_SEC = 3.0;
+  const PENALTY_INTERCEPT_SEC = 5.0;
+  const STAR_BONUS_SEC = 3.0;
+
+  function loadStorageJSON(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  // --- Crowd Spectators in Upper Stand ---
+  const CROWD_FANS = Array.from({ length: 44 }, (_, idx) => {
+    const row = idx % 2;
+    const col = Math.floor(idx / 2);
+    const shirtColors = ['#38bdf8', '#0284c7', '#facc15', '#ffffff', '#4ade80', '#60a5fa'];
+    return {
+      u: (col + 0.45 + row * 0.35) / 22,
+      row,
+      color: shirtColors[idx % shirtColors.length],
+      phase: Math.random() * Math.PI * 2,
+      hasFlag: idx % 5 === 0
+    };
+  });
+
+  const state = {
+    screen: 'title',
+    gameMode: 'practice', // 'practice' | 'match'
+    diffKey: 'rookie',
+    stageIndex: 0,
+    score: 0,
+
+    // Saved records
+    bestScores: loadStorageJSON('tps_linear_best_v6', { rookie: 0, regular: 0, fantasista: 0 }),
+    clearedPractice: loadStorageJSON('tps_linear_cleared_prac_v6', { rookie: false, regular: false, fantasista: false }),
+    bestTimes: loadStorageJSON('tps_linear_best_time_v6', { rookie: null, regular: null, fantasista: null }),
+
+    // Match Mode Timer State
+    matchStartTime: 0,
+    timeOffsetSeconds: 0,
+    timeRemaining: MATCH_TIME_LIMIT,
+    elapsedTotal: 0,
+    isGameOver: false,
+    isModeClear: false,
+    crowdCheerUntil: 0,
+    floatingPopups: [],
+
+    // User Inputs: a = num / den, b = int (-4..4)
+    input: {
+      num: 1,
+      den: 1,
+      b: 0
+    },
+
+    // Current Procedurally Generated Stage
+    problem: {
+      isFinalGoal: false,
+      ball: { x: 0, y: 0 },
+      target: { x: 4, y: 3 },
+      goalMouth: null,
+      star: { x: 2, y: 2 },
+      defenders: [],
+      dirX: 1,
+      solNum: 1,
+      solDen: 2,
+      solB: 1
+    },
+
+    // Animation States
+    animating: false,
+    lockedUntil: 0,
+    kickerCurrent: { x: 0, y: 0 },
+    ballCurrent: { x: 0, y: 0 },
+    dribbleTrail: [],
+    trail: [],
+    starCollected: false,
+    particles: []
+  };
+
+  // --- DOM References ---
+  const titleScreen = document.getElementById('titleScreen');
+  const gameScreen = document.getElementById('gameScreen');
+  const backTitleBtn = document.getElementById('backTitleBtn');
+  const modeSwitchWrap = document.getElementById('modeSwitchWrap');
+  const ruleStrip = document.getElementById('ruleStrip');
+  const diffList = document.getElementById('diffList');
+
+  const canvas = document.getElementById('pitchCanvas');
+  const ctx = canvas.getContext('2d');
+  const modeBadge = document.getElementById('modeBadge');
+  const diffTag = document.getElementById('diffTag');
+  const missionLabel = document.getElementById('missionLabel');
+  const timerPill = document.getElementById('timerPill');
+  const timerVal = document.getElementById('timerVal');
+  const stageVal = document.getElementById('stageVal');
+  const scorePill = document.getElementById('scorePill');
+  const scoreVal = document.getElementById('scoreVal');
+  const ballCoordBadge = document.getElementById('ballCoordBadge');
+  const starCoordBadge = document.getElementById('starCoordBadge');
+  const goalCoordBadge = document.getElementById('goalCoordBadge');
+  const equationDisplay = document.getElementById('equationDisplay');
+  const kickBtn = document.getElementById('kickBtn');
+  const steppersGrid = document.getElementById('steppersGrid');
+  const numLabel = document.getElementById('numLabel');
+  const denRow = document.getElementById('denRow');
+  const valNum = document.getElementById('valNum');
+  const valDen = document.getElementById('valDen');
+  const valB = document.getElementById('valB');
+  const calloutOverlay = document.getElementById('calloutOverlay');
+  const calloutText = document.getElementById('calloutText');
+  const calloutSub = document.getElementById('calloutSub');
+
+  const celebrationModal = document.getElementById('celebrationModal');
+  const confettiCanvas = document.getElementById('confettiCanvas');
+  const confettiCtx = confettiCanvas.getContext('2d');
+  const celebrationModeText = document.getElementById('celebrationModeText');
+  const newRecordBadge = document.getElementById('newRecordBadge');
+  const celebrationPrimaryLabel = document.getElementById('celebrationPrimaryLabel');
+  const celebrationPrimaryVal = document.getElementById('celebrationPrimaryVal');
+  const celebrationSubVal = document.getElementById('celebrationSubVal');
+  const returnTitleBtn = document.getElementById('returnTitleBtn');
+
+  const timeUpModal = document.getElementById('timeUpModal');
+  const timeUpModeText = document.getElementById('timeUpModeText');
+  const timeUpScoreText = document.getElementById('timeUpScoreText');
+  const retryMatchBtn = document.getElementById('retryMatchBtn');
+  const timeUpTitleBtn = document.getElementById('timeUpTitleBtn');
+
+  let calloutTimeoutId = null;
+
+  // --- Math Helpers ---
+  function gcd(a, b) {
+    a = Math.abs(a);
+    b = Math.abs(b);
+    while (b !== 0) {
+      const t = b;
+      b = a % b;
+      a = t;
+    }
+    return a || 1;
+  }
+
+  function evalY(x) {
+    const a = state.input.num / state.input.den;
+    return a * x + state.input.b;
+  }
+
+  function distToSegment(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+  }
+
+  // Signed perpendicular distance from point (px, py) to segment (x1,y1)->(x2,y2)
+  // Returns { dist, side, t } where side is +1 or -1 depending on which side of the line the point sits
+  function segmentRelation(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return { dist: Math.hypot(px - x1, py - y1), side: 0, t: 0 };
+    const rawT = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+    const t = Math.max(0, Math.min(1, rawT));
+    const dist = Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+    const cross = dx * (py - y1) - dy * (px - x1);
+    const side = cross > 1e-6 ? 1 : (cross < -1e-6 ? -1 : 0);
+    return { dist, side, t: rawT };
+  }
+
+  // --- Strict Random Linear Function Stage Generator ---
+  function generateRandomStage(diffKey, stageIdx) {
+    const cfg = DIFF_CONFIG[diffKey];
+    const isFinalGoal = (stageIdx === TOTAL_STAGES - 1);
+
+    // Strictly exclude b = 0, keep within -4 <= b <= 4
+    const bPool = [-4, -3, -2, -1, 1, 2, 3, 4];
+    const slopes = [];
+
+    if (cfg.slopeMode === 'rookie') {
+      [-3, -2, -1, 1, 2, 3].forEach(n => slopes.push({ num: n, den: 1, isFrac: false }));
+    } else if (cfg.slopeMode === 'regular') {
+      // Exclude easy slopes a = 1 and a = -1!
+      // Emphasize irreducible fractions (den 2..5) + steep integers (±2, ±3)
+      [-3, -2, 2, 3].forEach(n => slopes.push({ num: n, den: 1, isFrac: false }));
+      for (let den = 2; den <= 5; den++) {
+        for (let num = -6; num <= 6; num++) {
+          if (num === 0) continue;
+          if (gcd(num, den) !== 1) continue;
+          slopes.push({ num, den, isFrac: true });
+        }
+      }
+    } else {
+      // Fantasista: Strictly irreducible fractional slopes ONLY (den 2..6, NO integers!)
+      for (let den = 2; den <= 6; den++) {
+        for (let num = -6; num <= 6; num++) {
+          if (num === 0) continue;
+          if (gcd(num, den) !== 1) continue;
+          slopes.push({ num, den, isFrac: true });
+        }
+      }
+    }
+
+    const candidates = [];
+
+    for (const b of bPool) {
+      for (const s of slopes) {
+        if (s.num === 0) continue;
+        const a = s.num / s.den;
+
+        if (isFinalGoal) {
+          const ty = a * 6 + b;
+          if (Math.abs(ty - Math.round(ty)) > 1e-6) continue;
+          const rty = Math.round(ty);
+          if (rty < -3 || rty > 3) continue;
+
+          const validStars = [];
+          for (let k = 1; k * s.den < 6; k++) {
+            const sx = k * s.den;
+            const sy = b + k * s.num;
+            if (sy >= -4 && sy <= 4) {
+              validStars.push({ x: sx, y: sy });
+            }
+          }
+          if (validStars.length === 0) continue;
+
+          const star = validStars[Math.floor(Math.random() * validStars.length)];
+          candidates.push({
+            isFinalGoal: true,
+            isFrac: s.isFrac,
+            solNum: s.num,
+            solDen: s.den,
+            solB: b,
+            dirX: 1,
+            target: { x: 6, y: rty },
+            goalMouth: { x: 6, yMin: rty - 1, yMax: rty + 1 },
+            star
+          });
+        } else {
+          const dirs = stageIdx === 0 ? [1] : [-1, 1];
+          for (const dirX of dirs) {
+            const latticePts = [];
+            for (let k = 1; k <= 5; k++) {
+              const lx = dirX * k * s.den;
+              const ly = b + dirX * k * s.num;
+              if (lx >= -5 && lx <= 5 && ly >= -4 && ly <= 4) {
+                latticePts.push({ x: lx, y: ly });
+              }
+            }
+            if (latticePts.length < 2) continue;
+
+            for (let si = 0; si < latticePts.length - 1; si++) {
+              for (let ti = si + 1; ti < latticePts.length; ti++) {
+                const star = latticePts[si];
+                const target = latticePts[ti];
+                if (Math.abs(target.x) < 2) continue;
+                candidates.push({
+                  isFinalGoal: false,
+                  isFrac: s.isFrac,
+                  solNum: s.num,
+                  solDen: s.den,
+                  solB: b,
+                  dirX,
+                  target,
+                  goalMouth: null,
+                  star
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Filter candidates by difficulty-specific geometric constraints
+    // Minimum safe distance from DF center to solution line is 0.60 (DF r=0.36 + ball r=0.12 = 0.48 collision threshold)
+    const SAFE_CLEARANCE = cfg.threadDefenders ? 0.60 : 0.85;
+
+    const validCandidates = candidates.filter(cand => {
+      const safeSpots = [];
+      let hasPropBlocker = false;
+      let hasLeftGatekeeper = false;
+      let hasRightGatekeeper = false;
+
+      for (let gx = -5; gx <= 5; gx++) {
+        for (let gy = -4; gy <= 4; gy++) {
+          if (gx === 0 && gy === 0) continue;
+          if (gx === cand.target.x && gy === cand.target.y) continue;
+          if (gx === cand.star.x && gy === cand.star.y) continue;
+          if (cand.isFinalGoal && cand.goalMouth && gx === 6 && gy >= cand.goalMouth.yMin && gy <= cand.goalMouth.yMax) continue;
+
+          const dDribble = distToSegment(gx, gy, 0, 0, 0, cand.solB);
+          if (dDribble < 0.82) continue;
+
+          const rel = segmentRelation(gx, gy, 0, cand.solB, cand.target.x, cand.target.y);
+          if (rel.dist < SAFE_CLEARANCE) continue;
+
+          safeSpots.push({ x: gx, y: gy, rel });
+
+          // Check if spot blocks the proportional route (b=0) from (0,0) to target
+          const dProp = distToSegment(gx, gy, 0, 0, cand.target.x, cand.target.y);
+          if (dProp <= 0.36) {
+            hasPropBlocker = true;
+          }
+
+          // Check if spot is a narrow "gatekeeper" straddling the middle of the pass trajectory (0.60 <= dist <= 1.25)
+          if (rel.t > 0.12 && rel.t < 0.92 && rel.dist >= 0.60 && rel.dist <= 1.25) {
+            if (rel.side === 1) hasLeftGatekeeper = true;
+            if (rel.side === -1) hasRightGatekeeper = true;
+          }
+        }
+      }
+
+      if (cfg.blockProportionalPath && !hasPropBlocker) return false;
+      if (cfg.threadDefenders && (!hasLeftGatekeeper || !hasRightGatekeeper)) return false;
+
+      cand._safeSpots = safeSpots;
+      return true;
+    });
+
+    const pool = validCandidates.length > 0 ? validCandidates : candidates;
+
+    // In Regular mode, weight fractions heavily (~75%) over steep integers (±2, ±3)
+    let chosen;
+    if (cfg.slopeMode === 'regular') {
+      const fracPool = pool.filter(c => c.isFrac);
+      const intPool = pool.filter(c => !c.isFrac);
+      if (fracPool.length > 0 && (intPool.length === 0 || Math.random() < 0.78)) {
+        chosen = fracPool[Math.floor(Math.random() * fracPool.length)];
+      } else {
+        chosen = pool[Math.floor(Math.random() * pool.length)];
+      }
+    } else {
+      chosen = pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    // Build safe spots if fallback pool was used
+    const safeDFSpots = chosen._safeSpots || [];
+    if (safeDFSpots.length === 0) {
+      for (let gx = -5; gx <= 5; gx++) {
+        for (let gy = -4; gy <= 4; gy++) {
+          if (gx === 0 && gy === 0) continue;
+          if (gx === chosen.target.x && gy === chosen.target.y) continue;
+          if (gx === chosen.star.x && gy === chosen.star.y) continue;
+          if (distToSegment(gx, gy, 0, 0, 0, chosen.solB) < 0.82) continue;
+          const rel = segmentRelation(gx, gy, 0, chosen.solB, chosen.target.x, chosen.target.y);
+          if (rel.dist < 0.65) continue;
+          safeDFSpots.push({ x: gx, y: gy, rel });
+        }
+      }
+    }
+
+    const defenders = [];
+    const addDefender = (pt) => {
+      if (!pt) return;
+      if (defenders.some(d => d.x === pt.x && d.y === pt.y)) return;
+      defenders.push({ x: pt.x, y: pt.y, r: 0.36 });
+    };
+
+    // 1. Place proportional-route (b=0) blocker for Regular & Fantasista
+    if (cfg.blockProportionalPath) {
+      const propBlockers = safeDFSpots.filter(
+        pt => distToSegment(pt.x, pt.y, 0, 0, chosen.target.x, chosen.target.y) <= 0.36
+      );
+      if (propBlockers.length > 0) {
+        addDefender(propBlockers[Math.floor(Math.random() * propBlockers.length)]);
+      }
+    } else if (safeDFSpots.length > 0) {
+      const sorted = [...safeDFSpots].sort((p1, p2) => {
+        const d1 = distToSegment(p1.x, p1.y, 0, 0, chosen.target.x, chosen.target.y);
+        const d2 = distToSegment(p2.x, p2.y, 0, 0, chosen.target.x, chosen.target.y);
+        return d1 - d2;
+      });
+      const topPool = sorted.slice(0, Math.min(4, sorted.length));
+      addDefender(topPool[Math.floor(Math.random() * topPool.length)]);
+    }
+
+    // 2. For Fantasista, place a pair of gatekeeper DFs straddling BOTH sides of the true solution line!
+    if (cfg.threadDefenders) {
+      const leftGates = safeDFSpots
+        .filter(pt => pt.rel.t > 0.12 && pt.rel.t < 0.92 && pt.rel.side === 1 && pt.rel.dist >= 0.60 && pt.rel.dist <= 1.25)
+        .sort((a, b) => a.rel.dist - b.rel.dist);
+
+      const rightGates = safeDFSpots
+        .filter(pt => pt.rel.t > 0.12 && pt.rel.t < 0.92 && pt.rel.side === -1 && pt.rel.dist >= 0.60 && pt.rel.dist <= 1.25)
+        .sort((a, b) => a.rel.dist - b.rel.dist);
+
+      if (leftGates.length > 0) {
+        const pickL = leftGates[Math.floor(Math.random() * Math.min(2, leftGates.length))];
+        addDefender(pickL);
+      }
+      if (rightGates.length > 0) {
+        const pickR = rightGates[Math.floor(Math.random() * Math.min(2, rightGates.length))];
+        addDefender(pickR);
+      }
+
+      // Add a third near-line pressure DF if available to create a multi-gate corridor
+      const extraGates = safeDFSpots
+        .filter(pt =>
+          pt.rel.t > 0.15 && pt.rel.t < 0.90 &&
+          pt.rel.dist >= 0.62 && pt.rel.dist <= 1.40 &&
+          !defenders.some(d => Math.hypot(d.x - pt.x, d.y - pt.y) < 1.25)
+        )
+        .sort((a, b) => a.rel.dist - b.rel.dist);
+      if (extraGates.length > 0) {
+        addDefender(extraGates[0]);
+      }
+    }
+
+    // 3. Fill remaining defender slots with well-spaced DFs
+    const minSpacing = cfg.threadDefenders ? 1.15 : 1.35;
+    while (defenders.length < cfg.dfCount) {
+      const candidatesNext = safeDFSpots.filter(
+        pt => !defenders.some(d => Math.hypot(d.x - pt.x, d.y - pt.y) < minSpacing)
+      );
+      if (candidatesNext.length === 0) break;
+      const pick = candidatesNext[Math.floor(Math.random() * candidatesNext.length)];
+      addDefender(pick);
+    }
+
+    return {
+      isFinalGoal: chosen.isFinalGoal,
+      ball: { x: 0, y: 0 },
+      target: chosen.target,
+      goalMouth: chosen.goalMouth,
+      star: chosen.star,
+      defenders,
+      dirX: chosen.dirX,
+      solNum: chosen.solNum,
+      solDen: chosen.solDen,
+      solB: chosen.solB
+    };
+  }
+
+  // --- Title Screen UI Sync ---
+  function refreshTitleScreen() {
+    const isMatch = state.gameMode === 'match';
+
+    modeSwitchWrap.querySelectorAll('.mode-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.mode === state.gameMode);
+    });
+
+    if (isMatch) {
+      ruleStrip.innerHTML = `<strong>【試合モード】</strong> ⏱️ 制限90秒 / 枠外ミス <span class="pen-badge">-3秒</span> / DF奪取 <span class="pen-badge">-5秒</span> / ⭐星通過 <span class="bon-badge">タイム-3.0秒！</span>`;
+    } else {
+      ruleStrip.innerHTML = `<strong>【練習モード】</strong> 時間制限なしで全5ステージに挑戦！原点 (0,0) から切片 (0, b) までドリブルし、傾き a でパス＆決勝ゴールを決めよう（⭐星通過で2点）。`;
+    }
+
+    Object.keys(DIFF_CONFIG).forEach(key => {
+      const card = diffList.querySelector(`.diff-card[data-diff="${key}"]`);
+      const recEl = document.getElementById(`record_${key}`);
+      const trophyEl = document.getElementById(`trophy_${key}`);
+
+      if (card) {
+        card.classList.toggle('match-theme', isMatch);
+      }
+
+      if (isMatch) {
+        const bt = state.bestTimes[key];
+        if (recEl) {
+          recEl.textContent = bt !== null ? `BEST TIME: ${bt.toFixed(1)}秒` : 'BEST TIME: 未記録';
+        }
+        if (trophyEl) {
+          trophyEl.style.display = bt !== null ? 'inline-block' : 'none';
+        }
+      } else {
+        if (recEl) {
+          recEl.textContent = `最高: ${state.bestScores[key] || 0} / ${DIFF_CONFIG[key].maxScore} 点`;
+        }
+        if (trophyEl) {
+          trophyEl.style.display = state.clearedPractice[key] ? 'inline-block' : 'none';
+        }
+      }
+    });
+  }
+
+  function showTitleScreen() {
+    stopConfetti();
+    if (calloutTimeoutId) clearTimeout(calloutTimeoutId);
+    celebrationModal.classList.remove('open');
+    timeUpModal.classList.remove('open');
+    calloutOverlay.classList.remove('show', 'kickoff-banner');
+    state.screen = 'title';
+    state.animating = false;
+    state.isGameOver = false;
+    state.isModeClear = false;
+    titleScreen.classList.add('active');
+    gameScreen.classList.remove('active');
+    backTitleBtn.style.display = 'none';
+    refreshTitleScreen();
+  }
+
+  function startDifficulty(diffKey) {
+    state.diffKey = diffKey;
+    state.stageIndex = 0;
+    state.score = 0;
+    state.isModeClear = false;
+    state.isGameOver = false;
+    state.animating = false;
+    state.lockedUntil = 0;
+    state.crowdCheerUntil = 0;
+    state.floatingPopups = [];
+    state.screen = 'game';
+
+    const cfg = DIFF_CONFIG[diffKey];
+    if (cfg.allowFractions) {
+      denRow.classList.remove('hidden');
+      numLabel.textContent = '分子 (y)';
+    } else {
+      denRow.classList.add('hidden');
+      numLabel.textContent = '整数値 (a)';
+    }
+
+    titleScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+    backTitleBtn.style.display = 'flex';
+    calloutOverlay.classList.remove('show', 'kickoff-banner');
+    timeUpModal.classList.remove('open');
+    celebrationModal.classList.remove('open');
+
+    resizeCanvas();
+    loadNextRandomStage();
+
+    if (state.gameMode === 'match') {
+      state.matchStartTime = performance.now();
+      state.timeOffsetSeconds = 0;
+      state.timeRemaining = MATCH_TIME_LIMIT;
+      state.elapsedTotal = 0;
+      timerPill.style.display = 'flex';
+      scorePill.style.display = 'none';
+      timerPill.classList.remove('danger', 'penalty-flash', 'bonus-flash');
+      timerVal.textContent = `${MATCH_TIME_LIMIT.toFixed(1)}s`;
+      modeBadge.textContent = '⏱️ 試合';
+      modeBadge.classList.add('match');
+      state.crowdCheerUntil = Date.now() + 1400;
+
+      sfx.playKickoffWhistle();
+      showCallout('KICK OFF!', '試合開始！⭐星通過でタイム −3.0秒短縮！', '#facc15', 950, true);
+    } else {
+      timerPill.style.display = 'none';
+      scorePill.style.display = 'flex';
+      modeBadge.textContent = '🏃 練習';
+      modeBadge.classList.remove('match');
+    }
+  }
+
+  function loadNextRandomStage() {
+    const generated = generateRandomStage(state.diffKey, state.stageIndex);
+    state.problem = generated;
+
+    // Default initial input
+    state.input.num = 1;
+    state.input.den = state.diffKey === 'fantasista' ? 2 : 1;
+    state.input.b = 0;
+
+    state.kickerCurrent = { x: 0, y: 0 };
+    state.ballCurrent = { x: 0, y: 0 };
+    state.dribbleTrail = [];
+    state.trail = [];
+    state.starCollected = false;
+    state.animating = false;
+    kickBtn.disabled = false;
+
+    updateHUD();
+    renderEquation();
+  }
+
+  function updateHUD() {
+    const cfg = DIFF_CONFIG[state.diffKey];
+    const { isFinalGoal, target, goalMouth, star } = state.problem;
+    const isMatch = state.gameMode === 'match';
+
+    diffTag.textContent = cfg.title;
+    stageVal.textContent = `${state.stageIndex + 1}/${TOTAL_STAGES}`;
+    scoreVal.textContent = state.score;
+
+    if (isFinalGoal) {
+      missionLabel.textContent = 'FINAL SHOT';
+      missionLabel.classList.add('final');
+    } else {
+      missionLabel.textContent = 'PASS MISSION';
+      missionLabel.classList.remove('final');
+    }
+
+    ballCoordBadge.textContent = '⚽ 起点: (0,0)→(0,b)';
+    starCoordBadge.textContent = isMatch
+      ? `⭐ 星(-3.0s): (${star.x}, ${star.y})`
+      : `⭐ 星(2点): (${star.x}, ${star.y})`;
+
+    if (isFinalGoal && goalMouth) {
+      goalCoordBadge.textContent = `🥅 ゴール: x=6 (${goalMouth.yMin}≦y≦${goalMouth.yMax})`;
+    } else {
+      goalCoordBadge.textContent = `🏃 味方: (${target.x}, ${target.y})`;
+    }
+  }
+
+  function renderEquation() {
+    const { num, den, b } = state.input;
+    const sign = num < 0 ? -1 : 1;
+    const absNum = Math.abs(num);
+    const g = gcd(absNum, den);
+    const sNum = absNum / g;
+    const sDen = den / g;
+
+    valNum.textContent = num > 0 ? `+${num}` : `${num}`;
+    valDen.textContent = den;
+    valB.textContent = b > 0 ? `+${b}` : `${b}`;
+
+    let aTermHtml = '';
+    if (absNum === 0) {
+      aTermHtml = `<span class="int-box">0</span>`;
+    } else {
+      const signStr = sign < 0 ? '−' : '';
+      if (sDen === 1) {
+        if (sNum === 1) {
+          aTermHtml = `<span class="int-box">${signStr}1</span><span class="eq-var">x</span>`;
+        } else {
+          aTermHtml = `<span class="int-box">${signStr}${sNum}</span><span class="eq-var">x</span>`;
+        }
+      } else {
+        aTermHtml = `
+          ${signStr ? `<span style="color:#facc15;font-weight:900;">${signStr}</span>` : ''}
+          <span class="frac-box">
+            <span>${sNum}</span>
+            <span class="frac-line"></span>
+            <span>${sDen}</span>
+          </span>
+          <span class="eq-var">x</span>
+        `;
+      }
+    }
+
+    let bPartHtml = '';
+    if (b > 0) {
+      bPartHtml = `<span>＋</span> <span class="b-box">${b}</span>`;
+    } else if (b < 0) {
+      bPartHtml = `<span>−</span> <span class="b-box">${Math.abs(b)}</span>`;
+    } else {
+      bPartHtml = `<span style="color:#64748b;font-size:0.95rem;">(＋0)</span>`;
+    }
+
+    equationDisplay.innerHTML = `<span class="eq-var">y</span> <span>＝</span> ${aTermHtml} ${bPartHtml}`;
+  }
+
+  function showCallout(title, sub, color, duration = 1050, isKickoff = false) {
+    if (calloutTimeoutId) clearTimeout(calloutTimeoutId);
+    calloutText.textContent = title;
+    calloutText.style.color = color;
+    calloutSub.textContent = sub;
+    calloutOverlay.classList.toggle('kickoff-banner', isKickoff);
+    calloutOverlay.classList.add('show');
+
+    if (duration > 0) {
+      calloutTimeoutId = setTimeout(() => {
+        if (!state.isModeClear && !state.isGameOver) {
+          calloutOverlay.classList.remove('show', 'kickoff-banner');
+        }
+      }, duration);
+    }
+  }
+
+  // --- Match Mode Time Penalty & Star Time Bonus ---
+  function spawnFloatingPopup(gx, gy, text, color) {
+    state.floatingPopups.push({
+      x: Math.max(-4.2, Math.min(4.2, gx)),
+      y: Math.max(-3.8, Math.min(4.0, gy + 0.45)),
+      text,
+      color,
+      createdAt: performance.now()
+    });
+  }
+
+  function applyTimePenalty(seconds, gx, gy) {
+    if (state.gameMode !== 'match') return;
+    state.timeOffsetSeconds += seconds;
+
+    spawnFloatingPopup(gx, gy, `-${seconds.toFixed(1)}秒 PENALTY!`, '#f87171');
+
+    timerPill.classList.remove('bonus-flash');
+    timerPill.classList.add('penalty-flash');
+    setTimeout(() => {
+      timerPill.classList.remove('penalty-flash');
+    }, 550);
+
+    updateMatchTimer();
+  }
+
+  function applyStarTimeBonus(seconds, gx, gy) {
+    if (state.gameMode !== 'match') return;
+    const realElapsed = (performance.now() - state.matchStartTime) / 1000;
+    state.timeOffsetSeconds = Math.max(-realElapsed, state.timeOffsetSeconds - seconds);
+
+    spawnFloatingPopup(gx, gy, `★ BONUS -${seconds.toFixed(1)}秒!`, '#4ade80');
+
+    timerPill.classList.remove('penalty-flash');
+    timerPill.classList.add('bonus-flash');
+    setTimeout(() => {
+      timerPill.classList.remove('bonus-flash');
+    }, 650);
+
+    updateMatchTimer();
+  }
+
+  function updateMatchTimer() {
+    if (state.screen !== 'game' || state.gameMode !== 'match') return;
+    if (state.isModeClear || state.isGameOver) return;
+
+    const realElapsed = (performance.now() - state.matchStartTime) / 1000;
+    state.elapsedTotal = Math.max(0, realElapsed + state.timeOffsetSeconds);
+    state.timeRemaining = Math.max(0, Math.min(MATCH_TIME_LIMIT, MATCH_TIME_LIMIT - state.elapsedTotal));
+
+    timerVal.textContent = `${state.timeRemaining.toFixed(1)}s`;
+    if (state.timeRemaining <= 15.0) {
+      timerPill.classList.add('danger');
+    } else {
+      timerPill.classList.remove('danger');
+    }
+
+    if (state.timeRemaining <= 0) {
+      triggerTimeUp();
+    }
+  }
+
+  function triggerTimeUp() {
+    if (state.isGameOver || state.isModeClear) return;
+    state.isGameOver = true;
+    state.animating = false;
+    kickBtn.disabled = true;
+    calloutOverlay.classList.remove('show', 'kickoff-banner');
+    sfx.playTimeUp();
+
+    const cfg = DIFF_CONFIG[state.diffKey];
+    timeUpModeText.textContent = `試合モード（${cfg.title}）タイムアップ！`;
+    timeUpScoreText.textContent = `到達 STAGE ${state.stageIndex + 1} / ${TOTAL_STAGES}`;
+    timeUpModal.classList.add('open');
+  }
+
+  // --- Kick Simulation (Two-Phase Animation) ---
+  function handleKick() {
+    if (state.animating || state.isModeClear || state.isGameOver || state.screen !== 'game') return;
+    if (Date.now() < state.lockedUntil) return;
+
+    calloutOverlay.classList.remove('show', 'kickoff-banner');
+    state.animating = true;
+    kickBtn.disabled = true;
+
+    const { isFinalGoal, target, goalMouth, star, defenders, dirX } = state.problem;
+    state.kickerCurrent = { x: 0, y: 0 };
+    state.ballCurrent = { x: 0, y: 0 };
+    state.dribbleTrail = [];
+    state.trail = [];
+    state.starCollected = false;
+
+    const targetInterceptY = state.input.b;
+
+    // Phase 1: Kicker & ball dribble together along y-axis to (0, b)
+    function runDribblePhase(onComplete) {
+      if (targetInterceptY === 0) {
+        onComplete();
+        return;
+      }
+      state.dribbleTrail = [{ x: 0, y: 0 }];
+      const stepY = targetInterceptY > 0 ? 0.15 : -0.15;
+      let curY = 0;
+      let tick = 0;
+
+      function dribbleStep() {
+        if (!state.animating || state.isGameOver) return;
+        curY += stepY;
+        tick++;
+        if (tick % 4 === 0) sfx.playDribble();
+
+        if ((stepY > 0 && curY >= targetInterceptY) || (stepY < 0 && curY <= targetInterceptY)) {
+          curY = targetInterceptY;
+          state.kickerCurrent = { x: 0, y: curY };
+          state.ballCurrent = { x: 0, y: curY };
+          state.dribbleTrail.push({ x: 0, y: curY });
+          setTimeout(onComplete, 100);
+          return;
+        }
+
+        state.kickerCurrent = { x: 0, y: curY };
+        state.ballCurrent = { x: 0, y: curY };
+        state.dribbleTrail.push({ x: 0, y: curY });
+
+        for (const def of defenders) {
+          if (Math.hypot(0 - def.x, curY - def.y) < def.r + 0.14) {
+            triggerIntercept(0, curY);
+            return;
+          }
+        }
+
+        requestAnimationFrame(dribbleStep);
+      }
+
+      requestAnimationFrame(dribbleStep);
+    }
+
+    // Phase 2: Kicker stays at (0, b), ONLY the ball travels along y = ax + b
+    function runKickPhase() {
+      if (state.isGameOver) return;
+      sfx.playKick();
+      state.kickerCurrent = { x: 0, y: targetInterceptY };
+      state.ballCurrent = { x: 0, y: targetInterceptY };
+      state.trail = [{ x: 0, y: targetInterceptY }];
+
+      const stepSize = 0.088 * dirX;
+      let currentX = 0;
+
+      function kickStep() {
+        if (!state.animating || state.isGameOver) return;
+
+        currentX += stepSize;
+        const currentY = evalY(currentX);
+        state.ballCurrent = { x: currentX, y: currentY };
+        state.trail.push({ x: currentX, y: currentY });
+
+        // 1. Check Bonus Star
+        if (star && !state.starCollected) {
+          if (Math.hypot(currentX - star.x, currentY - star.y) < 0.45) {
+            state.starCollected = true;
+            state.crowdCheerUntil = Date.now() + 1400;
+            sfx.playStar();
+            spawnParticles(star.x, star.y, '#facc15', 14);
+          }
+        }
+
+        // 2. Check Target / Goal Success
+        if (isFinalGoal && goalMouth) {
+          if (currentX >= 6.0 && currentY >= goalMouth.yMin - 0.12 && currentY <= goalMouth.yMax + 0.12) {
+            handleSuccess(6.0, currentY);
+            return;
+          }
+        } else {
+          if (Math.hypot(currentX - target.x, currentY - target.y) < 0.38) {
+            handleSuccess(target.x, target.y);
+            return;
+          }
+        }
+
+        // 3. Check Defender Collision (-5.0s Penalty in Match Mode)
+        for (const def of defenders) {
+          if (Math.hypot(currentX - def.x, currentY - def.y) < def.r + 0.12) {
+            triggerIntercept(currentX, currentY);
+            return;
+          }
+        }
+
+        // 4. Out of Bounds / Off-target Miss (-3.0s Penalty in Match Mode)
+        if (Math.abs(currentX) > 6.25 || Math.abs(currentY) > 5.25) {
+          triggerMiss(currentX, currentY);
+          return;
+        }
+
+        requestAnimationFrame(kickStep);
+      }
+
+      requestAnimationFrame(kickStep);
+    }
+
+    runDribblePhase(runKickPhase);
+  }
+
+  function handleSuccess(fx, fy) {
+    state.animating = false;
+    state.crowdCheerUntil = Date.now() + 2000;
+    const isSuper = state.starCollected;
+    const isMatch = state.gameMode === 'match';
+    const pts = isSuper ? 2 : 1;
+    state.score += pts;
+    scoreVal.textContent = state.score;
+
+    if (isMatch && isSuper) {
+      applyStarTimeBonus(STAR_BONUS_SEC, fx, fy);
+    }
+
+    if (state.stageIndex + 1 >= TOTAL_STAGES) {
+      state.isModeClear = true;
+      let isNewRecord = false;
+
+      if (isMatch) {
+        updateMatchTimer();
+        const finalElapsed = Number(state.elapsedTotal.toFixed(1));
+        const prevBest = state.bestTimes[state.diffKey];
+        if (prevBest === null || finalElapsed < prevBest) {
+          state.bestTimes[state.diffKey] = finalElapsed;
+          isNewRecord = true;
+        }
+        try {
+          localStorage.setItem('tps_linear_best_time_v6', JSON.stringify(state.bestTimes));
+        } catch {}
+      } else {
+        state.clearedPractice[state.diffKey] = true;
+        if (state.score > (state.bestScores[state.diffKey] || 0)) {
+          state.bestScores[state.diffKey] = state.score;
+          isNewRecord = true;
+        }
+        try {
+          localStorage.setItem('tps_linear_best_v6', JSON.stringify(state.bestScores));
+          localStorage.setItem('tps_linear_cleared_prac_v6', JSON.stringify(state.clearedPractice));
+        } catch {}
+      }
+
+      spawnParticles(fx, fy, '#facc15', 32);
+      sfx.playChampionFanfare();
+
+      const finalHeadline = isSuper ? 'SUPER GOAL!!' : 'GOAL!!';
+      const finalSub = isMatch
+        ? (isSuper ? `⭐ 星通過決勝弾！ タイム −${STAR_BONUS_SEC.toFixed(1)}秒！` : '決勝ゴール！')
+        : (isSuper ? `⭐ 星通過決勝弾！ +${pts}点` : '決勝ゴール！ +1点');
+      showCallout(finalHeadline, finalSub, '#4ade80', 700);
+
+      setTimeout(() => {
+        calloutOverlay.classList.remove('show', 'kickoff-banner');
+        openCelebrationModal(isNewRecord);
+      }, 750);
+      return;
+    }
+
+    sfx.playGoal(isSuper);
+    spawnParticles(fx, fy, '#38bdf8', 24);
+
+    const headline = isSuper ? 'SUPER PASS!!' : 'NICE PASS!!';
+    const subText = isMatch
+      ? (isSuper ? `⭐ 星通過ボーナス！ タイム −${STAR_BONUS_SEC.toFixed(1)}秒！` : '味方へナイスパス！')
+      : (isSuper ? `⭐ 星通過ボーナス！ +${pts}点` : '味方へナイスパス！ +1点');
+    const color = isSuper ? '#facc15' : '#38bdf8';
+
+    showCallout(headline, subText, color, 950);
+
+    setTimeout(() => {
+      if (!state.isModeClear && !state.isGameOver && state.screen === 'game') {
+        state.stageIndex += 1;
+        loadNextRandomStage();
+      }
+    }, 1000);
+  }
+
+  function triggerMiss(mx, my) {
+    state.animating = false;
+    sfx.playOutOfBounds();
+
+    const isMatch = state.gameMode === 'match';
+    if (isMatch) {
+      applyTimePenalty(PENALTY_MISS_SEC, mx, my);
+    }
+
+    if (state.isGameOver) return;
+
+    const resetDelay = isMatch ? 850 : 950;
+    state.lockedUntil = Date.now() + resetDelay;
+
+    showCallout(
+      'PASS MISS!',
+      isMatch ? `枠外ミス！ タイム −${PENALTY_MISS_SEC.toFixed(1)}秒ペナルティ！` : '枠外へ外れた！式を調整しよう',
+      '#fb923c',
+      resetDelay - 50
+    );
+
+    setTimeout(() => {
+      if (!state.isModeClear && !state.isGameOver && state.screen === 'game') {
+        state.kickerCurrent = { ...state.problem.ball };
+        state.ballCurrent = { ...state.problem.ball };
+        state.dribbleTrail = [];
+        state.trail = [];
+        state.starCollected = false;
+        kickBtn.disabled = false;
+      }
+    }, resetDelay);
+  }
+
+  function triggerIntercept(ix, iy) {
+    state.animating = false;
+    sfx.playIntercept();
+    spawnParticles(ix, iy, '#ef4444', 18);
+
+    const isMatch = state.gameMode === 'match';
+    if (isMatch) {
+      applyTimePenalty(PENALTY_INTERCEPT_SEC, ix, iy);
+    }
+
+    if (state.isGameOver) return;
+
+    const resetDelay = isMatch ? 1150 : 1550;
+    state.lockedUntil = Date.now() + resetDelay;
+
+    showCallout(
+      'INTERCEPTED!',
+      isMatch ? `DFに奪われた！ タイム −${PENALTY_INTERCEPT_SEC.toFixed(1)}秒ペナルティ！` : '敵DFに奪われた！切片や傾きを変えよう',
+      '#ef4444',
+      resetDelay - 50
+    );
+
+    setTimeout(() => {
+      if (!state.isModeClear && !state.isGameOver && state.screen === 'game') {
+        state.kickerCurrent = { ...state.problem.ball };
+        state.ballCurrent = { ...state.problem.ball };
+        state.dribbleTrail = [];
+        state.trail = [];
+        state.starCollected = false;
+        kickBtn.disabled = false;
+      }
+    }, resetDelay);
+  }
+
+  // --- Celebration Modal & Confetti Animation ---
+  let confettiPieces = [];
+  let confettiAnimId = null;
+
+  function openCelebrationModal(isNewRecord) {
+    const cfg = DIFF_CONFIG[state.diffKey];
+    newRecordBadge.style.display = isNewRecord ? 'inline-block' : 'none';
+
+    if (state.gameMode === 'match') {
+      celebrationModeText.textContent = `試合モード（${cfg.title}）制覇！`;
+      newRecordBadge.textContent = '🎉 NEW BEST TIME!';
+      celebrationPrimaryLabel.textContent = 'クリアタイム（ボーナス・ペナルティ反映済）';
+      celebrationPrimaryVal.textContent = `${state.elapsedTotal.toFixed(1)} 秒`;
+      const best = state.bestTimes[state.diffKey];
+      celebrationSubVal.textContent = `自己ベスト記録: ${best !== null ? best.toFixed(1) + ' 秒' : '--'}`;
+    } else {
+      celebrationModeText.textContent = `練習モード（${cfg.title}）制覇！`;
+      newRecordBadge.textContent = '🎉 NEW HIGH SCORE!';
+      celebrationPrimaryLabel.textContent = '獲得スコア';
+      celebrationPrimaryVal.textContent = `${state.score} / ${cfg.maxScore} 点`;
+      celebrationSubVal.textContent = '次は「試合モード」でタイムアタックに挑戦しよう！';
+    }
+
+    celebrationModal.classList.add('open');
+    startConfetti();
+  }
+
+  function startConfetti() {
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+    const colors = ['#facc15', '#4ade80', '#38bdf8', '#f472b6', '#a855f7', '#fb923c'];
+    confettiPieces = Array.from({ length: 140 }, () => ({
+      x: Math.random() * confettiCanvas.width,
+      y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+      w: 7 + Math.random() * 7,
+      h: 4 + Math.random() * 5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: -1.8 + Math.random() * 3.6,
+      vy: 2.2 + Math.random() * 3.5,
+      rot: Math.random() * Math.PI * 2,
+      vRot: -0.12 + Math.random() * 0.24
+    }));
+
+    function loopConfetti() {
+      confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      confettiPieces.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vRot;
+        if (p.y > confettiCanvas.height + 20) {
+          p.y = -15;
+          p.x = Math.random() * confettiCanvas.width;
+        }
+        confettiCtx.save();
+        confettiCtx.translate(p.x, p.y);
+        confettiCtx.rotate(p.rot);
+        confettiCtx.fillStyle = p.color;
+        confettiCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        confettiCtx.restore();
+      });
+      confettiAnimId = requestAnimationFrame(loopConfetti);
+    }
+
+    if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+    confettiAnimId = requestAnimationFrame(loopConfetti);
+  }
+
+  function stopConfetti() {
+    if (confettiAnimId) {
+      cancelAnimationFrame(confettiAnimId);
+      confettiAnimId = null;
+    }
+    confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  }
+
+  // --- Pitch Particle Effects ---
+  function spawnParticles(gx, gy, color, count) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 0.03 + Math.random() * 0.09;
+      state.particles.push({
+        x: gx,
+        y: gy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1.0,
+        color
+      });
+    }
+  }
+
+  // --- Canvas Rendering (Top Spectator Stands + Coordinate Pitch x:-6..6, y:-5..5) ---
+  let logicalSize = { w: 660, h: 660 };
+
+  function resizeCanvas() {
+    const parent = canvas.parentElement;
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect();
+    const w = rect.width > 10 ? rect.width : (parent.clientWidth > 10 ? parent.clientWidth : 440);
+    const h = rect.height > 10 ? rect.height : (parent.clientHeight > 10 ? parent.clientHeight : 440);
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    logicalSize = { w, h };
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function getPlotBounds(w, h) {
+    const standH = Math.max(38, Math.round(h * 0.135));
+    const padLeft = 10;
+    const padBottom = 26;
+    const padRight = state.problem.isFinalGoal ? 26 : 10;
+    return {
+      standH,
+      left: padLeft,
+      top: standH,
+      plotW: Math.max(120, w - padLeft - padRight),
+      plotH: Math.max(120, h - standH - padBottom)
+    };
+  }
+
+  function toCanvasX(gx, w, h) {
+    const { left, plotW } = getPlotBounds(w, h);
+    return left + ((gx - X_MIN) / (X_MAX - X_MIN)) * plotW;
+  }
+
+  function toCanvasY(gy, w, h) {
+    const { top, plotH } = getPlotBounds(w, h);
+    return top + ((Y_MAX - gy) / (Y_MAX - Y_MIN)) * plotH;
+  }
+
+  function drawSpectatorStands(w, standH) {
+    const now = Date.now();
+    const isCheering = now < state.crowdCheerUntil;
+
+    const grad = ctx.createLinearGradient(0, 0, 0, standH);
+    grad.addColorStop(0, '#0f172a');
+    grad.addColorStop(0.65, '#1e293b');
+    grad.addColorStop(1, '#334155');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, standH);
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+    ctx.fillRect(0, standH * 0.44, w, 2);
+
+    const baseR = Math.max(3.5, Math.min(5.5, w * 0.0085));
+    CROWD_FANS.forEach(fan => {
+      const fx = fan.u * w;
+      const speed = isCheering ? 130 : 480;
+      const amp = isCheering ? 4.5 : 1.1;
+      const bounce = Math.abs(Math.sin(now / speed + fan.phase)) * amp;
+      const fy = (fan.row === 0 ? standH * 0.34 : standH * 0.64) - bounce;
+
+      ctx.fillStyle = fan.color;
+      ctx.beginPath();
+      ctx.arc(fx, fy + baseR * 1.1, baseR * 1.05, Math.PI, 0);
+      ctx.fill();
+
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath();
+      ctx.arc(fx, fy, baseR * 0.72, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (fan.hasFlag || isCheering) {
+        const wave = Math.sin(now / 110 + fan.phase) * 3;
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(fx + baseR * 0.7, fy);
+        ctx.lineTo(fx + baseR * 1.6 + wave, fy - baseR * 1.4);
+        ctx.stroke();
+      }
+    });
+
+    const boardH = 8;
+    const boardY = standH - boardH;
+    const segW = w / 6;
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = i % 2 === 0 ? '#0284c7' : '#15803d';
+      ctx.fillRect(i * segW, boardY, segW + 0.5, boardH);
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(i * segW, boardY, segW, boardH);
+    }
+  }
+
+  function drawPitch() {
+    if (state.screen === 'game') {
+      updateMatchTimer();
+
+      const parent = canvas.parentElement;
+      if (parent) {
+        const rect = parent.getBoundingClientRect();
+        if (rect.width > 10 && Math.abs(rect.width - logicalSize.w) > 1) {
+          resizeCanvas();
+        }
+      }
+      const w = logicalSize.w;
+      const h = logicalSize.h;
+      const { standH, left, top, plotW, plotH } = getPlotBounds(w, h);
+      const cellW = plotW / (X_MAX - X_MIN);
+      const cellH = plotH / (Y_MAX - Y_MIN);
+
+      ctx.fillStyle = '#0b1120';
+      ctx.fillRect(0, 0, w, h);
+
+      drawSpectatorStands(w, standH);
+
+      for (let i = X_MIN; i < X_MAX; i++) {
+        const x = toCanvasX(i, w, h);
+        ctx.fillStyle = i % 2 === 0 ? '#1e5631' : '#184728';
+        ctx.fillRect(x, top, cellW + 0.5, plotH);
+      }
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(left, top, plotW, plotH);
+
+      // Center circle and right penalty box markings
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(toCanvasX(0, w, h), toCanvasY(0, w, h), cellW * 2, cellH * 2, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeRect(
+        toCanvasX(3.5, w, h),
+        toCanvasY(3.0, w, h),
+        cellW * 2.5,
+        cellH * 6
+      );
+
+      // Grid Lines
+      for (let gx = X_MIN; gx <= X_MAX; gx++) {
+        const px = toCanvasX(gx, w, h);
+        ctx.strokeStyle = gx === 0 ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.16)';
+        ctx.lineWidth = gx === 0 ? 2 : 1;
+        ctx.beginPath();
+        ctx.moveTo(px, top);
+        ctx.lineTo(px, top + plotH);
+        ctx.stroke();
+      }
+
+      for (let gy = Y_MIN; gy <= Y_MAX; gy++) {
+        const py = toCanvasY(gy, w, h);
+        ctx.strokeStyle = gy === 0 ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.16)';
+        ctx.lineWidth = gy === 0 ? 2 : 1;
+        ctx.beginPath();
+        ctx.moveTo(left, py);
+        ctx.lineTo(left + plotW, py);
+        ctx.stroke();
+      }
+
+      // Lattice Dots
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+      for (let gx = X_MIN + 1; gx < X_MAX; gx++) {
+        for (let gy = Y_MIN + 1; gy < Y_MAX; gy++) {
+          ctx.beginPath();
+          ctx.arc(toCanvasX(gx, w, h), toCanvasY(gy, w, h), 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Axis Numbers & Origin Label
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      const originX = toCanvasX(0, w, h);
+      const originY = toCanvasY(0, w, h);
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      for (let gx = -5; gx <= 5; gx++) {
+        if (gx === 0) continue;
+        ctx.fillText(String(gx), toCanvasX(gx, w, h), originY + 4);
+      }
+
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      for (let gy = -4; gy <= 4; gy++) {
+        if (gy === 0) continue;
+        ctx.fillText(String(gy), originX - 5, toCanvasY(gy, w, h));
+      }
+
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText('O', originX - 4, originY + 4);
+      ctx.fillText('x', left + plotW - 4, originY + 5);
+      ctx.textAlign = 'left';
+      ctx.fillText('y', originX + 6, top + 4);
+
+      const { isFinalGoal, goalMouth, star, target, defenders } = state.problem;
+      if (isFinalGoal && goalMouth) {
+        drawRightEdgeGoal(goalMouth, w, h);
+      }
+
+      // Dribble Trail
+      if (state.dribbleTrail.length > 1) {
+        ctx.save();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        state.dribbleTrail.forEach((pt, idx) => {
+          const cx = toCanvasX(pt.x, w, h);
+          const cy = toCanvasY(pt.y, w, h);
+          if (idx === 0) ctx.moveTo(cx, cy);
+          else ctx.lineTo(cx, cy);
+        });
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Kick Trajectory Trail
+      if (state.trail.length > 1) {
+        ctx.save();
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        state.trail.forEach((pt, idx) => {
+          const cx = toCanvasX(pt.x, w, h);
+          const cy = toCanvasY(pt.y, w, h);
+          if (idx === 0) ctx.moveTo(cx, cy);
+          else ctx.lineTo(cx, cy);
+        });
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      const unitR = Math.min(cellW, cellH);
+
+      // Bonus Star
+      if (star && !state.starCollected) {
+        const sx = toCanvasX(star.x, w, h);
+        const sy = toCanvasY(star.y, w, h);
+        drawStarIcon(sx, sy, 5, unitR * 0.36, unitR * 0.16, '#facc15');
+      }
+
+      // Receiving Teammate (Stages 1 to 4)
+      if (!isFinalGoal) {
+        const tx = toCanvasX(target.x, w, h);
+        const ty = toCanvasY(target.y, w, h);
+        drawBluePlayer(tx, ty, unitR * 0.36, true);
+      }
+
+      // Red Defenders ('DF')
+      defenders.forEach(def => {
+        const dx = toCanvasX(def.x, w, h);
+        const dy = toCanvasY(def.y, w, h);
+        drawRedDefender(dx, dy, unitR * def.r);
+      });
+
+      // Kicker Player & Soccer Ball
+      const kx = toCanvasX(state.kickerCurrent.x, w, h);
+      const ky = toCanvasY(state.kickerCurrent.y, w, h);
+      drawBluePlayer(kx - unitR * 0.28, ky + unitR * 0.22, unitR * 0.35, false);
+
+      const bx = toCanvasX(state.ballCurrent.x, w, h);
+      const by = toCanvasY(state.ballCurrent.y, w, h);
+      drawSoccerBall(bx, by, unitR * 0.3);
+
+      // Pitch Particles
+      for (let i = state.particles.length - 1; i >= 0; i--) {
+        const p = state.particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.04;
+        if (p.life <= 0) {
+          state.particles.splice(i, 1);
+          continue;
+        }
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(toCanvasX(p.x, w, h), toCanvasY(p.y, w, h), 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      // Floating Penalty & Star Bonus Popups (Match Mode)
+      const nowPerf = performance.now();
+      for (let i = state.floatingPopups.length - 1; i >= 0; i--) {
+        const fp = state.floatingPopups[i];
+        const age = (nowPerf - fp.createdAt) / 1000;
+        if (age > 1.25) {
+          state.floatingPopups.splice(i, 1);
+          continue;
+        }
+        const alpha = Math.max(0, 1 - age / 1.25);
+        const px = toCanvasX(fp.x, w, h);
+        const py = toCanvasY(fp.y, w, h) - age * 38;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.font = '900 15px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#0f172a';
+        ctx.strokeText(fp.text, px, py);
+        ctx.fillStyle = fp.color;
+        ctx.fillText(fp.text, px, py);
+        ctx.restore();
+      }
+    }
+
+    requestAnimationFrame(drawPitch);
+  }
+
+  function drawRightEdgeGoal(goalMouth, w, h) {
+    const gx = toCanvasX(6, w, h);
+    const yTop = toCanvasY(goalMouth.yMax, w, h);
+    const yBot = toCanvasY(goalMouth.yMin, w, h);
+    const netDepth = 18;
+
+    ctx.save();
+    const pulse = 0.25 + Math.sin(Date.now() / 200) * 0.1;
+    ctx.fillStyle = `rgba(74, 222, 128, ${pulse})`;
+    ctx.fillRect(gx - 6, yTop, netDepth + 6, yBot - yTop);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.fillRect(gx, yTop, netDepth, yBot - yTop);
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 1;
+    for (let y = yTop; y <= yBot; y += 6) {
+      ctx.beginPath();
+      ctx.moveTo(gx, y);
+      ctx.lineTo(gx + netDepth, y);
+      ctx.stroke();
+    }
+    for (let x = gx + 6; x <= gx + netDepth; x += 6) {
+      ctx.beginPath();
+      ctx.moveTo(x, yTop);
+      ctx.lineTo(x, yBot);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(gx, yTop);
+    ctx.lineTo(gx + netDepth, yTop);
+    ctx.lineTo(gx + netDepth, yBot);
+    ctx.lineTo(gx, yBot);
+    ctx.stroke();
+
+    ctx.fillStyle = '#4ade80';
+    [yTop, yBot].forEach(py => {
+      ctx.beginPath();
+      ctx.arc(gx, py, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.save();
+    ctx.translate(gx + netDepth / 2, (yTop + yBot) / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = '#facc15';
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('GOAL', 0, 0);
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function drawBluePlayer(cx, cy, r, hasTargetRing) {
+    ctx.save();
+    if (hasTargetRing) {
+      const pulse = 1 + Math.sin(Date.now() / 220) * 0.12;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 1.35 * pulse, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#0284c7';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#e0f2fe';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.45, 0, Math.PI * 2);
+    ctx.fillStyle = '#38bdf8';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawRedDefender(cx, cy, r) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 1.25, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(248, 113, 113, 0.45)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#dc2626';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fecaca';
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.max(8, Math.round(r * 0.68))}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('DF', cx, cy + 0.5);
+    ctx.restore();
+  }
+
+  function drawStarIcon(cx, cy, spikes, outerR, innerR, color) {
+    let rot = (Math.PI / 2) * 3;
+    const step = Math.PI / spikes;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerR);
+    for (let i = 0; i < spikes; i++) {
+      ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+      rot += step;
+      ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+      rot += step;
+    }
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSoccerBall(cx, cy, r) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#0f172a';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.42, 0, Math.PI * 2);
+    ctx.fillStyle = '#0f172a';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // --- Event Listeners ---
+  modeSwitchWrap.addEventListener('click', (e) => {
+    const tab = e.target.closest('.mode-tab[data-mode]');
+    if (!tab) return;
+    state.gameMode = tab.dataset.mode;
+    refreshTitleScreen();
+  });
+
+  diffList.addEventListener('click', (e) => {
+    const card = e.target.closest('.diff-card[data-diff]');
+    if (!card) return;
+    sfx.init();
+    startDifficulty(card.dataset.diff);
+  });
+
+  backTitleBtn.addEventListener('click', showTitleScreen);
+  returnTitleBtn.addEventListener('click', showTitleScreen);
+  timeUpTitleBtn.addEventListener('click', showTitleScreen);
+  retryMatchBtn.addEventListener('click', () => {
+    sfx.init();
+    startDifficulty(state.diffKey);
+  });
+
+  document.getElementById('toggleSignBtn').addEventListener('click', () => {
+    state.input.num = state.input.num === 0 ? -1 : -state.input.num;
+    renderEquation();
+  });
+
+  document.getElementById('resetABtn').addEventListener('click', () => {
+    state.input.num = 1;
+    state.input.den = state.diffKey === 'fantasista' ? 2 : 1;
+    renderEquation();
+  });
+
+  document.getElementById('resetBBtn').addEventListener('click', () => {
+    state.input.b = 0;
+    renderEquation();
+  });
+
+  steppersGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.step-btn[data-param]');
+    if (!btn) return;
+    const param = btn.dataset.param;
+    const delta = Number(btn.dataset.delta);
+    const cfg = DIFF_CONFIG[state.diffKey];
+
+    if (param === 'num') {
+      state.input.num = Math.max(-6, Math.min(6, state.input.num + delta));
+    } else if (param === 'den') {
+      if (!cfg.allowFractions) {
+        state.input.den = 1;
+      } else {
+        state.input.den = Math.max(1, Math.min(6, state.input.den + delta));
+      }
+    } else if (param === 'b') {
+      state.input.b = Math.max(-4, Math.min(4, state.input.b + delta));
+    }
+    renderEquation();
+  });
+
+  kickBtn.addEventListener('click', handleKick);
+
+  document.getElementById('soundBtn').addEventListener('click', (e) => {
+    sfx.muted = !sfx.muted;
+    e.currentTarget.textContent = sfx.muted ? '🔇 OFF' : '🔊 ON';
+  });
+
+  const helpModal = document.getElementById('helpModal');
+  document.getElementById('helpBtn').addEventListener('click', () => {
+    helpModal.classList.add('open');
+  });
+  document.getElementById('closeHelpBtn').addEventListener('click', () => {
+    helpModal.classList.remove('open');
+  });
+
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    if (celebrationModal.classList.contains('open')) {
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+    }
+  });
+
+  if (typeof ResizeObserver !== 'undefined' && canvas.parentElement) {
+    const ro = new ResizeObserver(() => resizeCanvas());
+    ro.observe(canvas.parentElement);
+  }
+
+  // --- Initialize ---
+  function initGame() {
+    resizeCanvas();
+    showTitleScreen();
+    requestAnimationFrame(drawPitch);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGame);
+  } else {
+    initGame();
+  }
+})();
+</script>
+</body>
+</html>
