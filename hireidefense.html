@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>比例レーザー・ディフェンス | Proportional Laser Defense</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@600;700;800&family=Noto+Sans+JP:wght@500;700;900&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100dvh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #030712;
+            color: #f8fafc;
+            font-family: 'Inter', 'Noto Sans JP', system-ui, sans-serif;
+        }
+
+        .font-mono-code {
+            font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+        }
+
+        /* SF風ボタングロー＆押し心地 */
+        .sf-btn {
+            transition: transform 0.08s ease, box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+        }
+        .sf-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        .fire-btn {
+            background: linear-gradient(135deg, #e11d48 0%, #f43f5e 50%, #fb7185 100%);
+            box-shadow: 0 0 22px rgba(244, 63, 94, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+        .fire-btn:hover:not(:disabled) {
+            box-shadow: 0 0 30px rgba(244, 63, 94, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        }
+        .fire-btn:disabled {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.32s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-[100dvh] w-full overflow-hidden bg-[#030712]">
+
+    <!-- =========================================================================
+         モバイル縦画面用：上部スリムHUDバー (< 768px)
+         ========================================================================= -->
+    <header class="md:hidden flex items-center justify-between px-2.5 h-11 shrink-0 bg-slate-950/95 border-b border-sky-500/30 z-20">
+        <div class="flex items-center gap-1.5">
+            <button type="button" id="btn-home-mobile" class="sf-btn px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-slate-200 flex items-center gap-1">
+                <span>🏠</span><span>MENU</span>
+            </button>
+            <span id="hud-mode-mobile" class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                EASY
+            </span>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="text-center leading-none">
+                <div id="hud-timer-lbl-mobile" class="text-[8px] font-bold text-slate-400 tracking-wider">TIME</div>
+                <div id="hud-timer-mobile" class="font-mono-code text-sm font-extrabold text-amber-400">60.0s</div>
+            </div>
+            <div class="h-5 w-px bg-slate-800"></div>
+            <div class="text-center leading-none">
+                <div class="text-[8px] font-bold text-slate-400 tracking-wider">SCORE</div>
+                <div id="hud-score-mobile" class="font-mono-code text-sm font-extrabold text-cyan-400">0</div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-0.5 bg-slate-900 px-1.5 py-0.5 rounded-lg border border-slate-700 text-xs">
+                <span id="m-life-1">🛡️</span>
+                <span id="m-life-2">🛡️</span>
+                <span id="m-life-3">🛡️</span>
+            </div>
+            <button type="button" id="btn-mute-mobile" class="sf-btn p-1.5 rounded-lg bg-slate-800 border border-slate-600 text-xs" title="効果音 ON/OFF">🔊</button>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         左側（モバイルでは上部）：特大正方形の座標平面エリア
+         ========================================================================= -->
+    <section id="canvas-stage" class="flex-1 min-w-0 min-h-0 flex items-center justify-center p-1.5 md:p-3 relative">
+        <div id="canvas-frame" class="relative rounded-2xl overflow-hidden border-2 border-sky-500/50 shadow-[0_0_35px_rgba(0,243,255,0.18)] bg-[#040814] flex items-center justify-center">
+            <canvas id="gameCanvas" class="block w-full h-full"></canvas>
+
+            <!-- オーバーヒート警告バナー（1.0秒クールダウン） -->
+            <div id="overheat-banner" class="hidden pointer-events-none absolute top-2.5 left-1/2 -translate-x-1/2 bg-rose-950/95 border-2 border-rose-500 text-rose-100 px-3.5 py-1.5 rounded-full shadow-lg flex flex-col items-center gap-1 whitespace-nowrap z-10">
+                <div class="text-xs font-extrabold flex items-center gap-1.5">
+                    <span>⚠️ ミスショット！冷却中...</span>
+                    <span id="overheat-sec" class="font-mono-code text-amber-300">1.0</span>s
+                </div>
+                <div class="w-full h-1 bg-rose-950 rounded-full overflow-hidden">
+                    <div id="overheat-bar" class="h-full bg-rose-400 w-full"></div>
+                </div>
+            </div>
+
+            <!-- 比例定数ヒントバッジ -->
+            <div class="pointer-events-none absolute top-2 right-2 bg-slate-950/85 border border-sky-500/35 rounded-lg px-2 py-0.5 text-[11px] text-slate-300">
+                比例定数: <strong class="font-mono-code text-cyan-400">a = y / x</strong>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         右側（モバイルでは下部）：デスクトップHUD ＋ 操作コントロールパネル
+         ========================================================================= -->
+    <aside class="w-full md:w-[350px] lg:w-[390px] shrink-0 flex flex-col justify-between bg-slate-900/95 border-t md:border-t-0 md:border-l border-sky-500/35 p-2 md:p-4 gap-1.5 md:gap-3 z-10">
+
+        <!-- デスクトップ／タブレット横画面用HUD (>= 768px) -->
+        <div class="hidden md:flex flex-col gap-2.5 bg-slate-950/90 border border-slate-800 rounded-2xl p-3">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btn-home-desktop" class="sf-btn px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-slate-200 flex items-center gap-1">
+                        <span>🏠</span><span>モード選択</span>
+                    </button>
+                    <span id="hud-mode-desktop" class="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                        EASY (初級)
+                    </span>
+                </div>
+                <button type="button" id="btn-mute-desktop" class="sf-btn px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm" title="効果音 ON/OFF">🔊</button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800/80 items-center text-center">
+                <div>
+                    <div id="hud-timer-lbl-desktop" class="text-[10px] font-bold text-slate-400 tracking-wider">TIME LEFT</div>
+                    <div id="hud-timer-desktop" class="font-mono-code text-lg font-extrabold text-amber-400">60.0s</div>
+                </div>
+                <div class="border-x border-slate-800">
+                    <div class="text-[10px] font-bold text-slate-400 tracking-wider">SCORE</div>
+                    <div id="hud-score-desktop" class="font-mono-code text-lg font-extrabold text-cyan-400">0</div>
+                </div>
+                <div>
+                    <div class="text-[10px] font-bold text-slate-400 tracking-wider mb-0.5">SHIELD</div>
+                    <div class="flex items-center justify-center gap-0.5 text-base">
+                        <span id="d-life-1">🛡️</span>
+                        <span id="d-life-2">🛡️</span>
+                        <span id="d-life-3">🛡️</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数式入力＆レーザー発射コントロール -->
+        <div id="control-panel" class="flex flex-col gap-1.5 md:gap-2.5">
+            <!-- リアルタイム数式プレビュー窓 -->
+            <div class="bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-1.5 md:py-2.5 flex items-center justify-between gap-2">
+                <div>
+                    <div class="text-[9px] font-extrabold text-slate-400 tracking-widest">LASER EQUATION</div>
+                    <div id="equation-preview" class="font-mono-code text-xl md:text-2xl font-black text-cyan-400 leading-tight">y = x</div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="text-right">
+                        <div class="text-[9px] text-slate-400">設定中の比例定数</div>
+                        <span id="a-value-badge" class="inline-block font-mono-code text-xs font-extrabold text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-md">
+                            a = 1
+                        </span>
+                    </div>
+                    <button type="button" id="btn-reset-input" class="sf-btn px-2.5 py-1.5 md:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-extrabold text-slate-200" title="y = x にリセット">
+                        リセット
+                    </button>
+                </div>
+            </div>
+
+            <!-- 符号 ＋ / － トグル -->
+            <div class="grid grid-cols-2 gap-1.5 md:gap-2">
+                <button type="button" id="btn-sign-plus" class="sf-btn font-mono-code py-1.5 md:py-2.5 rounded-xl text-sm md:text-base font-extrabold border-2 bg-cyan-950/60 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.3)]">
+                    ＋ (プラス)
+                </button>
+                <button type="button" id="btn-sign-minus" class="sf-btn font-mono-code py-1.5 md:py-2.5 rounded-xl text-sm md:text-base font-extrabold border-2 bg-slate-800 border-slate-700 text-slate-400">
+                    － (マイナス)
+                </button>
+            </div>
+
+            <!-- 分子（y座標の変化量）1〜6 -->
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-1.5 md:p-2.5">
+                <div class="flex items-center justify-between text-[11px] font-bold mb-1">
+                    <span class="text-sky-300">分子 <span class="text-[10px] font-normal text-slate-400">(y座標の大きさ)</span></span>
+                    <span id="num-display" class="font-mono-code text-sky-300">1</span>
+                </div>
+                <div id="num-buttons" class="grid grid-cols-6 gap-1 md:gap-1.5"></div>
+            </div>
+
+            <!-- 分母（x座標の変化量）1〜6 -->
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-1.5 md:p-2.5">
+                <div class="flex items-center justify-between text-[11px] font-bold mb-1">
+                    <span class="text-purple-300">分母 <span class="text-[10px] font-normal text-slate-400">(x座標の大きさ / 整数は1)</span></span>
+                    <span id="den-display" class="font-mono-code text-purple-300">1</span>
+                </div>
+                <div id="den-buttons" class="grid grid-cols-6 gap-1 md:gap-1.5"></div>
+            </div>
+
+            <!-- レーザー発射ボタン -->
+            <button type="button" id="btn-fire" class="sf-btn fire-btn w-full py-2.5 md:py-3.5 rounded-xl border-2 border-rose-300 text-white font-black text-base md:text-lg tracking-wider flex items-center justify-center gap-2">
+                <span>⚡</span>
+                <span id="btn-fire-text">レーザー発射！</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- =========================================================================
+         タイトル／難易度選択モーダル
+         ========================================================================= -->
+    <div id="title-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-40 flex items-center justify-center p-3 overflow-y-auto">
+        <div class="w-full max-w-2xl bg-slate-900 border-2 border-sky-500/50 rounded-3xl p-5 md:p-7 shadow-[0_0_50px_rgba(0,243,255,0.2)] flex flex-col gap-4 my-auto">
+            <div class="text-center">
+                <span class="inline-block px-3 py-1 rounded-full bg-cyan-950 border border-cyan-500/40 text-cyan-300 text-xs font-extrabold tracking-wider mb-2">
+                    PROPORTIONAL FUNCTION : y = ax
+                </span>
+                <h1 class="text-2xl md:text-4xl font-black bg-gradient-to-r from-cyan-300 via-sky-100 to-fuchsia-400 bg-clip-text text-transparent">
+                    比例レーザー・ディフェンス
+                </h1>
+                <p class="text-xs md:text-sm text-slate-300 mt-2 leading-relaxed">
+                    原点 <strong class="font-mono-code text-cyan-300">(0, 0)</strong> のロボットから比例のグラフ <strong class="font-mono-code text-amber-300">y = ax</strong> のレーザーを発射！<br>
+                    接近するUFOの座標 <strong class="font-mono-code text-pink-300">(x, y)</strong> から比例定数 <strong class="font-mono-code text-emerald-300">a = y / x</strong> を求めて撃退せよ！
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-950/80 border border-slate-800 rounded-2xl p-3 text-xs text-slate-300">
+                <div class="flex items-start gap-2">
+                    <span class="text-base">🎯</span>
+                    <div><strong class="text-sky-300">狙い方：</strong>座標 <span class="font-mono-code">(3, 6)</span> のUFOなら <span class="font-mono-code">a = 6/3 = 2</span>（分子2・分母1）で貫通撃破！</div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="text-base">⚠️</span>
+                    <div><strong class="text-rose-300">空振り注意：</strong>外すと<strong class="text-rose-200">1.0秒間オーバーヒート</strong>！よく計算してから撃とう！</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button type="button" data-mode="easy" class="mode-btn sf-btn text-left p-3.5 rounded-2xl border-2 border-emerald-500/50 hover:border-emerald-400 bg-gradient-to-br from-emerald-950/80 to-slate-900 flex flex-col justify-between gap-1">
+                    <div class="flex items-center justify-between w-full">
+                        <span class="text-base font-black text-emerald-300">🌱 イージー (初級)</span>
+                        <span id="badge-easy" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">未クリア</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300">整数のみ (<span class="font-mono-code">a = ±1〜±6</span>) / 60秒防衛</p>
+                    <div class="font-mono-code text-xs font-bold text-emerald-400">BEST: <span id="best-easy">0</span> pts</div>
+                </button>
+
+                <button type="button" data-mode="normal" class="mode-btn sf-btn text-left p-3.5 rounded-2xl border-2 border-sky-500/50 hover:border-sky-400 bg-gradient-to-br from-sky-950/80 to-slate-900 flex flex-col justify-between gap-1">
+                    <div class="flex items-center justify-between w-full">
+                        <span class="text-base font-black text-sky-300">🚀 ノーマル (中級)</span>
+                        <span id="badge-normal" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">未クリア</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300">整数 ＋ 簡単な分数 (分母 2, 3, 4) / 60秒防衛</p>
+                    <div class="font-mono-code text-xs font-bold text-sky-400">BEST: <span id="best-normal">0</span> pts</div>
+                </button>
+
+                <button type="button" data-mode="hard" class="mode-btn sf-btn text-left p-3.5 rounded-2xl border-2 border-purple-500/50 hover:border-purple-400 bg-gradient-to-br from-purple-950/80 to-slate-900 flex flex-col justify-between gap-1">
+                    <div class="flex items-center justify-between w-full">
+                        <span class="text-base font-black text-purple-300">🔥 ハード (上級)</span>
+                        <span id="badge-hard" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">未クリア</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300">全格子点・全分数 (分母 2〜6) / 60秒防衛</p>
+                    <div class="font-mono-code text-xs font-bold text-purple-400">BEST: <span id="best-hard">0</span> pts</div>
+                </button>
+
+                <button type="button" data-mode="endless" class="mode-btn sf-btn text-left p-3.5 rounded-2xl border-2 border-rose-500/50 hover:border-rose-400 bg-gradient-to-br from-rose-950/80 to-slate-900 flex flex-col justify-between gap-1">
+                    <div class="flex items-center justify-between w-full">
+                        <span class="text-base font-black text-rose-300">♾️ エンドレス</span>
+                        <span id="badge-endless" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-900/60 text-rose-200">無限防衛</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300">経過時間と撃破数で徐々にスピード＆分数が増加！</p>
+                    <div class="font-mono-code text-xs font-bold text-rose-400">BEST: <span id="best-endless-kills">0</span>機 (<span id="best-endless">0</span> pts)</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         リザルトモーダル
+         ========================================================================= -->
+    <div id="result-modal" class="hidden pointer-events-none fixed inset-0 bg-slate-950/90 backdrop-blur-md z-40 flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-slate-900 border-2 border-sky-500/60 rounded-3xl p-6 text-center shadow-2xl flex flex-col gap-4">
+            <div id="result-icon" class="text-5xl">🏆</div>
+            <div>
+                <div id="result-subtitle" class="text-xs font-extrabold text-sky-400 tracking-widest">MISSION COMPLETE</div>
+                <h2 id="result-title" class="text-2xl font-black mt-1">防衛ミッション成功！</h2>
+            </div>
+
+            <div id="new-record-badge" class="hidden mx-auto bg-amber-500/20 border border-amber-400 text-amber-200 text-xs font-extrabold px-3 py-1 rounded-full">
+                🎉 NEW RECORD! ハイスコア更新！
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                <div>
+                    <div class="text-xs text-slate-400">最終スコア</div>
+                    <div id="res-score" class="font-mono-code text-2xl font-black text-cyan-400">0</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">撃破UFO数</div>
+                    <div id="res-kills" class="font-mono-code text-2xl font-black text-emerald-400">0機</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">最大コンボ</div>
+                    <div id="res-combo" class="font-mono-code text-lg font-extrabold text-amber-400">0連鎖</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">命中率</div>
+                    <div id="res-accuracy" class="font-mono-code text-lg font-extrabold text-purple-400">100%</div>
+                </div>
+            </div>
+
+            <div class="flex gap-2.5">
+                <button type="button" id="btn-retry" class="sf-btn flex-1 py-3 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-extrabold text-sm">
+                    🔄 もう一度遊ぶ
+                </button>
+                <button type="button" id="btn-to-title" class="sf-btn flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-bold text-sm">
+                    🏠 モード選択
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         中断確認ダイアログ
+         ========================================================================= -->
+    <div id="confirm-modal" class="hidden pointer-events-none fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-xs bg-slate-900 border border-slate-600 rounded-2xl p-5 text-center shadow-xl">
+            <p class="text-sm font-extrabold mb-4">作戦を中断してモード選択に戻りますか？</p>
+            <div class="flex gap-2.5">
+                <button type="button" id="btn-confirm-cancel" class="sf-btn flex-1 py-2.5 rounded-xl bg-slate-800 border border-slate-600 text-sm font-bold">
+                    続ける
+                </button>
+                <button type="button" id="btn-confirm-abort" class="sf-btn flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-extrabold">
+                    タイトルへ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ============================================================================
+         * 比例レーザー・ディフェンス (Proportional Laser Defense)
+         * 単一HTML完結版：特大座標平面・外周出現UFO・オーバーヒート1.0秒設定
+         * ============================================================================
+         */
+
+        // --- 1. Web Audio API 効果音エンジン ---
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+            init() {
+                try {
+                    if (!this.ctx) {
+                        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                        if (AudioCtx) this.ctx = new AudioCtx();
+                    }
+                    if (this.ctx && this.ctx.state === 'suspended') {
+                        this.ctx.resume().catch(() => {});
+                    }
+                } catch (e) {}
+            }
+            playLaser(hit = true) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = hit ? 'sawtooth' : 'triangle';
+                    osc.frequency.setValueAtTime(hit ? 980 : 480, now);
+                    osc.frequency.exponentialRampToValueAtTime(hit ? 140 : 170, now + 0.22);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } catch (e) {}
+            }
+            playExplosion(combo = 1) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(Math.min(310 + combo * 45, 700), now);
+                    osc.frequency.exponentialRampToValueAtTime(45, now + 0.28);
+                    gain.gain.setValueAtTime(0.22, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.31);
+
+                    // 命中コンボチャイム
+                    const bell = this.ctx.createOscillator();
+                    const bellGain = this.ctx.createGain();
+                    bell.type = 'sine';
+                    bell.frequency.setValueAtTime(660 + Math.min(combo, 8) * 75, now + 0.04);
+                    bell.frequency.exponentialRampToValueAtTime(1320, now + 0.22);
+                    bellGain.gain.setValueAtTime(0.14, now + 0.04);
+                    bellGain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+                    bell.connect(bellGain);
+                    bellGain.connect(this.ctx.destination);
+                    bell.start(now + 0.04);
+                    bell.stop(now + 0.25);
+                } catch (e) {}
+            }
+            playError() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(145, now);
+                    osc.frequency.linearRampToValueAtTime(100, now + 0.25);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.27);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.28);
+                } catch (e) {}
+            }
+            playDamage() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(185, now);
+                    osc.frequency.exponentialRampToValueAtTime(38, now + 0.45);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                } catch (e) {}
+            }
+            playClear() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const now = this.ctx.currentTime + idx * 0.11;
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now);
+                        gain.gain.setValueAtTime(0.2, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.36);
+                    });
+                } catch (e) {}
+            }
+        }
+
+        const sfx = new SoundEngine();
+
+        // --- 2. 数学ヘルパー ---
+        function gcd(a, b) {
+            a = Math.abs(a);
+            b = Math.abs(b);
+            while (b !== 0) {
+                const t = b;
+                b = a % b;
+                a = t;
+            }
+            return a;
+        }
+
+        // --- 3. ゲーム状態と難易度設定 ---
+        const GRID_MAX = 6; // -6 〜 +6 の座標平面
+        const STORAGE_KEY = 'proportional_laser_defense_v5';
+
+        const state = {
+            mode: 'easy',
+            status: 'title', // 'title' | 'playing' | 'paused' | 'gameover' | 'clear'
+            sign: 1,
+            numerator: 1,
+            denominator: 1,
+            score: 0,
+            kills: 0,
+            combo: 0,
+            maxCombo: 0,
+            shotsFired: 0,
+            shotsHit: 0,
+            lives: 3,
+            timeLeft: 60.0,
+            elapsedTime: 0,
+            overheatTimer: 0,
+            overheatMax: 1.0, // 空振り時のオーバーヒート時間：1.0秒
+            spawnTimer: 0,
+            ufos: [],
+            lasers: [],
+            particles: [],
+            floatingTexts: [],
+            stars: [],
+            screenShake: 0,
+            lastFrameTime: 0
+        };
+
+        const MODE_CONFIG = {
+            easy: {
+                label: 'EASY (初級)',
+                shortLabel: 'EASY',
+                badgeClass: 'bg-emerald-950 text-emerald-300 border-emerald-500/40',
+                duration: 60,
+                spawnInterval: 3.6,
+                reachTime: 13.0,
+                maxConcurrent: 3
+            },
+            normal: {
+                label: 'NORMAL (中級)',
+                shortLabel: 'NORMAL',
+                badgeClass: 'bg-sky-950 text-sky-300 border-sky-500/40',
+                duration: 60,
+                spawnInterval: 3.2,
+                reachTime: 10.5,
+                maxConcurrent: 4
+            },
+            hard: {
+                label: 'HARD (上級)',
+                shortLabel: 'HARD',
+                badgeClass: 'bg-purple-950 text-purple-300 border-purple-500/40',
+                duration: 60,
+                spawnInterval: 2.8,
+                reachTime: 8.5,
+                maxConcurrent: 5
+            },
+            endless: {
+                label: 'ENDLESS (無限)',
+                shortLabel: 'ENDLESS',
+                badgeClass: 'bg-rose-950 text-rose-300 border-rose-500/40',
+                duration: Infinity,
+                spawnInterval: 3.4,
+                reachTime: 12.0,
+                maxConcurrent: 5
+            }
+        };
+
+        // --- 4. ハイスコア永続化 ---
+        const fallbackRecords = {
+            easy: { cleared: false, bestScore: 0 },
+            normal: { cleared: false, bestScore: 0 },
+            hard: { cleared: false, bestScore: 0 },
+            endless: { bestScore: 0, bestKills: 0 }
+        };
+
+        function loadRecords() {
+            try {
+                const raw = window.localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const p = JSON.parse(raw);
+                    return {
+                        easy: { ...fallbackRecords.easy, ...(p.easy || {}) },
+                        normal: { ...fallbackRecords.normal, ...(p.normal || {}) },
+                        hard: { ...fallbackRecords.hard, ...(p.hard || {}) },
+                        endless: { ...fallbackRecords.endless, ...(p.endless || {}) }
+                    };
+                }
+            } catch (e) {}
+            return JSON.parse(JSON.stringify(fallbackRecords));
+        }
+
+        function saveRecords(rec) {
+            Object.assign(fallbackRecords, rec);
+            try {
+                window.localStorage.setItem(STORAGE_KEY, JSON.stringify(rec));
+            } catch (e) {}
+        }
+
+        function updateTitleRecordsUI() {
+            const rec = loadRecords();
+            ['easy', 'normal', 'hard'].forEach(m => {
+                const badge = document.getElementById(`badge-${m}`);
+                const best = document.getElementById(`best-${m}`);
+                if (badge) {
+                    if (rec[m] && rec[m].cleared) {
+                        badge.textContent = '★ CLEAR!';
+                        badge.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/50';
+                    } else {
+                        badge.textContent = '未クリア';
+                        badge.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400';
+                    }
+                }
+                if (best) best.textContent = ((rec[m] && rec[m].bestScore) || 0).toLocaleString();
+            });
+            const be = document.getElementById('best-endless');
+            const bek = document.getElementById('best-endless-kills');
+            if (be) be.textContent = ((rec.endless && rec.endless.bestScore) || 0).toLocaleString();
+            if (bek) bek.textContent = (rec.endless && rec.endless.bestKills) || 0;
+        }
+
+        // --- 5. 数式キーパッド＆リアルタイムプレビュー ---
+        function initKeypad() {
+            const numBox = document.getElementById('num-buttons');
+            const denBox = document.getElementById('den-buttons');
+            numBox.innerHTML = '';
+            denBox.innerHTML = '';
+
+            for (let i = 1; i <= 6; i++) {
+                const bn = document.createElement('button');
+                bn.type = 'button';
+                bn.id = `btn-num-${i}`;
+                bn.textContent = i;
+                bn.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold';
+                bn.addEventListener('click', () => {
+                    state.numerator = i;
+                    updateEquationUI();
+                });
+                numBox.appendChild(bn);
+
+                const bd = document.createElement('button');
+                bd.type = 'button';
+                bd.id = `btn-den-${i}`;
+                bd.textContent = i;
+                bd.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold';
+                bd.addEventListener('click', () => {
+                    state.denominator = i;
+                    updateEquationUI();
+                });
+                denBox.appendChild(bd);
+            }
+            updateEquationUI();
+        }
+
+        function updateEquationUI() {
+            const btnPlus = document.getElementById('btn-sign-plus');
+            const btnMinus = document.getElementById('btn-sign-minus');
+
+            if (state.sign === 1) {
+                btnPlus.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-xl text-sm md:text-base font-extrabold border-2 bg-cyan-950/60 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.35)]';
+                btnMinus.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-xl text-sm md:text-base font-extrabold border-2 bg-slate-800 border-slate-700 text-slate-400';
+            } else {
+                btnPlus.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-xl text-sm md:text-base font-extrabold border-2 bg-slate-800 border-slate-700 text-slate-400';
+                btnMinus.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-xl text-sm md:text-base font-extrabold border-2 bg-pink-950/60 border-pink-400 text-pink-200 shadow-[0_0_12px_rgba(244,114,182,0.35)]';
+            }
+
+            for (let i = 1; i <= 6; i++) {
+                const bn = document.getElementById(`btn-num-${i}`);
+                const bd = document.getElementById(`btn-den-${i}`);
+
+                if (i === state.numerator) {
+                    bn.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-black bg-sky-500 border-sky-200 text-white shadow-[0_0_12px_rgba(14,165,233,0.7)]';
+                } else {
+                    bn.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold bg-slate-800 hover:bg-slate-700 border-sky-500/30 text-slate-200';
+                }
+
+                if (i === state.denominator) {
+                    bd.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-black bg-purple-600 border-purple-200 text-white shadow-[0_0_12px_rgba(168,85,247,0.7)]';
+                } else {
+                    bd.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold bg-slate-800 hover:bg-slate-700 border-purple-500/30 text-slate-200';
+                }
+            }
+
+            document.getElementById('num-display').textContent = state.numerator;
+            document.getElementById('den-display').textContent = state.denominator;
+
+            // 自動約分処理
+            const g = gcd(state.numerator, state.denominator);
+            const rNum = state.numerator / g;
+            const rDen = state.denominator / g;
+            const sStr = state.sign === -1 ? '-' : '';
+
+            let eqStr = '';
+            let aStr = '';
+            if (rDen === 1) {
+                eqStr = rNum === 1 ? `y = ${sStr}x` : `y = ${sStr}${rNum}x`;
+                aStr = `a = ${sStr}${rNum}`;
+            } else {
+                eqStr = `y = ${sStr}${rNum}/${rDen} x`;
+                aStr = `a = ${sStr}${rNum}/${rDen}`;
+            }
+            if (g > 1) {
+                aStr += ` (${sStr}${state.numerator}/${state.denominator})`;
+            }
+
+            document.getElementById('equation-preview').textContent = eqStr;
+            document.getElementById('a-value-badge').textContent = aStr;
+        }
+
+        // --- 6. 外周境界（|x| = 6 または |y| = 6）の格子点候補生成 ---
+        function getBoundarySpawnPoints(mode, elapsed = 0) {
+            const points = [];
+            for (let x = -GRID_MAX; x <= GRID_MAX; x++) {
+                if (x === 0) continue;
+                for (let y = -GRID_MAX; y <= GRID_MAX; y++) {
+                    if (y === 0) continue;
+
+                    const isOuterEdge = (Math.abs(x) === GRID_MAX || Math.abs(y) === GRID_MAX);
+                    if (!isOuterEdge) continue;
+
+                    const g = gcd(x, y);
+                    const den = Math.abs(x) / g;
+
+                    if (mode === 'easy') {
+                        if (den === 1) points.push({ x, y });
+                    } else if (mode === 'normal') {
+                        if (den <= 4) points.push({ x, y });
+                    } else if (mode === 'hard') {
+                        points.push({ x, y });
+                    } else if (mode === 'endless') {
+                        if (elapsed < 22) {
+                            if (den === 1) points.push({ x, y });
+                        } else if (elapsed < 50) {
+                            if (den <= 3) points.push({ x, y });
+                        } else {
+                            points.push({ x, y });
+                        }
+                    }
+                }
+            }
+            return points;
+        }
+
+        // --- 7. UFOスポーン＆レーザー発射・当たり判定 ---
+        function spawnUFO() {
+            const cfg = MODE_CONFIG[state.mode];
+            const candidates = getBoundarySpawnPoints(state.mode, state.elapsedTime);
+            if (candidates.length === 0) return;
+
+            const activeSlopes = new Set(state.ufos.map(u => `${u.slopeNum}/${u.slopeDen}`));
+            let pool = candidates.filter(p => {
+                const g = gcd(p.x, p.y);
+                const sNum = (p.y / g) * Math.sign(p.x);
+                const sDen = Math.abs(p.x) / g;
+                return !activeSlopes.has(`${sNum}/${sDen}`);
+            });
+            if (pool.length === 0) pool = candidates;
+
+            const chosen = pool[Math.floor(Math.random() * pool.length)];
+            const g = gcd(chosen.x, chosen.y);
+            const slopeNum = (chosen.y / g) * Math.sign(chosen.x);
+            const slopeDen = Math.abs(chosen.x) / g;
+
+            let reachTime = cfg.reachTime;
+            if (state.mode === 'endless') {
+                reachTime = Math.max(6.5, 12.0 - state.elapsedTime * 0.055 - state.kills * 0.12);
+            }
+
+            state.ufos.push({
+                spawnX: chosen.x,
+                spawnY: chosen.y,
+                x: chosen.x,
+                y: chosen.y,
+                slopeNum: slopeNum,
+                slopeDen: slopeDen,
+                reachTime: reachTime,
+                progress: 0,
+                spawnAge: 0,
+                pulse: Math.random() * Math.PI * 2,
+                isFraction: slopeDen > 1
+            });
+        }
+
+        function fireLaser() {
+            if (state.status !== 'playing' || state.overheatTimer > 0) return;
+
+            sfx.init();
+            state.shotsFired++;
+
+            const g = gcd(state.numerator, state.denominator);
+            const playerNum = state.sign * (state.numerator / g);
+            const playerDen = state.denominator / g;
+            const playerSlope = playerNum / playerDen;
+
+            const hitUfos = [];
+            const survivedUfos = [];
+
+            state.ufos.forEach(ufo => {
+                const ufoSlope = ufo.slopeNum / ufo.slopeDen;
+                const exactMatch = (ufo.slopeNum === playerNum && ufo.slopeDen === playerDen);
+                const numericMatch = Math.abs(ufoSlope - playerSlope) < 1e-4;
+                if (exactMatch || numericMatch) {
+                    hitUfos.push(ufo);
+                } else {
+                    survivedUfos.push(ufo);
+                }
+            });
+
+            const isHit = hitUfos.length > 0;
+
+            state.lasers.push({
+                slope: playerSlope,
+                isHit: isHit,
+                life: 0.36,
+                maxLife: 0.36
+            });
+
+            if (isHit) {
+                state.shotsHit++;
+                state.ufos = survivedUfos;
+                state.combo += hitUfos.length;
+                if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+
+                sfx.playLaser(true);
+                sfx.playExplosion(state.combo);
+                state.screenShake = Math.min(4 + hitUfos.length * 3, 12);
+
+                hitUfos.forEach((ufo, idx) => {
+                    const basePts = ufo.isFraction ? 150 : 100;
+                    const comboBonus = (state.combo - 1) * 25;
+                    const multiBonus = idx * 100;
+                    const earned = basePts + comboBonus + multiBonus;
+                    state.score += earned;
+                    state.kills++;
+
+                    createExplosion(ufo.x, ufo.y, ufo.isFraction ? '#c084fc' : '#38bdf8');
+                    addFloatingText(ufo.x, ufo.y, `+${earned}`, '#34d399');
+                });
+
+                if (hitUfos.length >= 2) {
+                    addFloatingText(0, 1.3, `${hitUfos.length}体同時貫通ボーナス！`, '#fbbf24');
+                }
+
+                if (state.ufos.length === 0) {
+                    state.spawnTimer = Math.min(state.spawnTimer, 0.55);
+                }
+            } else {
+                // 空振りミス：1.0秒オーバーヒート
+                state.combo = 0;
+                state.overheatTimer = state.overheatMax;
+                sfx.playLaser(false);
+                sfx.playError();
+
+                const panel = document.getElementById('control-panel');
+                panel.classList.remove('animate-shake');
+                void panel.offsetWidth;
+                panel.classList.add('animate-shake');
+
+                addFloatingText(0, 0.9, 'MISS! オーバーヒート', '#fb7185');
+            }
+
+            updateHUD();
+        }
+
+        function createExplosion(gx, gy, color) {
+            for (let i = 0; i < 24; i++) {
+                const angle = (Math.PI * 2 * i) / 24 + (Math.random() - 0.5) * 0.25;
+                const speed = 1.6 + Math.random() * 4.2;
+                state.particles.push({
+                    x: gx,
+                    y: gy,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 0.45 + Math.random() * 0.25,
+                    maxLife: 0.7,
+                    color: i % 3 === 0 ? '#ffffff' : color,
+                    size: 2.5 + Math.random() * 2.8
+                });
+            }
+        }
+
+        function addFloatingText(gx, gy, text, color) {
+            state.floatingTexts.push({
+                x: gx,
+                y: gy,
+                text: text,
+                color: color,
+                life: 0.95,
+                maxLife: 0.95
+            });
+        }
+
+        // --- 8. キャンバス描画システム（特大正方形座標平面） ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let canvasSize = 420;
+
+        function initStars() {
+            state.stars = [];
+            for (let i = 0; i < 70; i++) {
+                state.stars.push({
+                    x: Math.random(),
+                    y: Math.random(),
+                    r: 0.6 + Math.random() * 1.3,
+                    alpha: 0.2 + Math.random() * 0.55,
+                    speed: 1 + Math.random() * 2.5,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function resizeCanvas() {
+            const stage = document.getElementById('canvas-stage');
+            const frame = document.getElementById('canvas-frame');
+            if (!stage || !frame) return;
+
+            const rect = stage.getBoundingClientRect();
+            const availW = rect.width > 20 ? rect.width : window.innerWidth - 16;
+            const availH = rect.height > 20 ? rect.height : Math.max(260, window.innerHeight * 0.55);
+            const size = Math.max(240, Math.floor(Math.min(availW, availH) - 4));
+
+            canvasSize = size;
+            frame.style.width = `${size}px`;
+            frame.style.height = `${size}px`;
+
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function toPixel(gx, gy) {
+            const pad = Math.max(24, canvasSize * 0.055);
+            const plot = canvasSize - pad * 2;
+            const half = plot / 2;
+            const cx = canvasSize / 2;
+            const cy = canvasSize / 2;
+            return {
+                x: cx + (gx / GRID_MAX) * half,
+                y: cy - (gy / GRID_MAX) * half
+            };
+        }
+
+        function drawScene(dt) {
+            if (!ctx || canvasSize <= 0) return;
+
+            ctx.save();
+
+            if (state.screenShake > 0) {
+                ctx.translate((Math.random() - 0.5) * state.screenShake, (Math.random() - 0.5) * state.screenShake);
+                state.screenShake = Math.max(0, state.screenShake - dt * 45);
+            }
+
+            // 1. 濃紺〜宇宙黒グラデーション背景＆星空
+            const bgGrad = ctx.createRadialGradient(
+                canvasSize / 2, canvasSize / 2, 12,
+                canvasSize / 2, canvasSize / 2, canvasSize * 0.72
+            );
+            bgGrad.addColorStop(0, '#0b1630');
+            bgGrad.addColorStop(1, '#040814');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+            state.stars.forEach(s => {
+                s.phase += dt * s.speed;
+                const a = s.alpha * (0.65 + 0.35 * Math.sin(s.phase));
+                ctx.fillStyle = `rgba(186, 230, 253, ${a})`;
+                ctx.beginPath();
+                ctx.arc(s.x * canvasSize, s.y * canvasSize, s.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            const origin = toPixel(0, 0);
+            const topLeft = toPixel(-GRID_MAX, GRID_MAX);
+            const bottomRight = toPixel(GRID_MAX, -GRID_MAX);
+
+            // 2. 高コントラスト・グリッド線 (-6 〜 +6)
+            for (let i = -GRID_MAX; i <= GRID_MAX; i++) {
+                if (i === 0) continue;
+                const pX = toPixel(i, 0);
+                const pY = toPixel(0, i);
+
+                const isMajor = (Math.abs(i) % 2 === 0 || Math.abs(i) === GRID_MAX);
+                ctx.strokeStyle = isMajor
+                    ? 'rgba(56, 189, 248, 0.36)'
+                    : 'rgba(56, 189, 248, 0.20)';
+                ctx.lineWidth = isMajor ? 1.25 : 1;
+
+                ctx.beginPath();
+                ctx.moveTo(pX.x, topLeft.y);
+                ctx.lineTo(pX.x, bottomRight.y);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(topLeft.x, pY.y);
+                ctx.lineTo(bottomRight.x, pY.y);
+                ctx.stroke();
+            }
+
+            // 整数格子点の光点マーカー
+            ctx.fillStyle = 'rgba(125, 211, 252, 0.42)';
+            for (let gx = -GRID_MAX; gx <= GRID_MAX; gx++) {
+                if (gx === 0) continue;
+                for (let gy = -GRID_MAX; gy <= GRID_MAX; gy++) {
+                    if (gy === 0) continue;
+                    const gp = toPixel(gx, gy);
+                    ctx.beginPath();
+                    ctx.arc(gp.x, gp.y, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // 3. 座標軸（x軸・y軸・矢印・目盛り数字・原点O）
+            ctx.strokeStyle = '#7dd3fc';
+            ctx.lineWidth = 2.4;
+
+            ctx.beginPath();
+            ctx.moveTo(topLeft.x - 6, origin.y);
+            ctx.lineTo(bottomRight.x + 12, origin.y);
+            ctx.stroke();
+
+            ctx.fillStyle = '#7dd3fc';
+            ctx.beginPath();
+            ctx.moveTo(bottomRight.x + 15, origin.y);
+            ctx.lineTo(bottomRight.x + 7, origin.y - 4.5);
+            ctx.lineTo(bottomRight.x + 7, origin.y + 4.5);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(origin.x, bottomRight.y + 6);
+            ctx.lineTo(origin.x, topLeft.y - 12);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(origin.x, topLeft.y - 15);
+            ctx.lineTo(origin.x - 4.5, topLeft.y - 7);
+            ctx.lineTo(origin.x + 4.5, topLeft.y - 7);
+            ctx.closePath();
+            ctx.fill();
+
+            const tickFont = Math.max(11, Math.floor(canvasSize * 0.027));
+            ctx.font = `800 ${tickFont}px 'JetBrains Mono', monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            for (let i = -GRID_MAX; i <= GRID_MAX; i++) {
+                if (i === 0) continue;
+                const px = toPixel(i, 0);
+                ctx.strokeStyle = '#7dd3fc';
+                ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                ctx.moveTo(px.x, origin.y - 3.5);
+                ctx.lineTo(px.x, origin.y + 3.5);
+                ctx.stroke();
+
+                ctx.fillStyle = '#f1f5f9';
+                ctx.fillText(i.toString(), px.x, origin.y + 5);
+            }
+
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = -GRID_MAX; i <= GRID_MAX; i++) {
+                if (i === 0) continue;
+                const py = toPixel(0, i);
+                ctx.strokeStyle = '#7dd3fc';
+                ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                ctx.moveTo(origin.x - 3.5, py.y);
+                ctx.lineTo(origin.x + 3.5, py.y);
+                ctx.stroke();
+
+                ctx.fillStyle = '#f1f5f9';
+                ctx.fillText(i.toString(), origin.x - 6, py.y);
+            }
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = `900 ${tickFont + 2}px 'JetBrains Mono', monospace`;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillText('O', origin.x - 5, origin.y + 5);
+            ctx.fillText('x', bottomRight.x + 15, origin.y + 6);
+            ctx.fillText('y', origin.x - 7, topLeft.y - 15);
+
+            // 4. 照準プレビュー線
+            if (state.status === 'playing') {
+                const g = gcd(state.numerator, state.denominator);
+                const slope = state.sign * (state.numerator / g) / (state.denominator / g);
+                drawProportionalLine(slope, 'rgba(0, 243, 255, 0.28)', 1.8, [6, 5]);
+            }
+
+            // 5. UFOの描画
+            state.ufos.forEach(ufo => {
+                const spawnPt = toPixel(ufo.spawnX, ufo.spawnY);
+                const currPt = toPixel(ufo.x, ufo.y);
+                const accent = ufo.isFraction ? '#d8b4fe' : '#38bdf8';
+                const glow = ufo.isFraction ? '#c084fc' : '#00f3ff';
+
+                const dist = Math.hypot(ufo.x, ufo.y);
+                const danger = dist <= 2.2;
+
+                ctx.save();
+
+                // (A) x軸・y軸への座標投影破線ガイド
+                ctx.strokeStyle = danger
+                    ? 'rgba(251, 113, 133, 0.5)'
+                    : (ufo.isFraction ? 'rgba(216, 180, 254, 0.34)' : 'rgba(56, 189, 248, 0.34)');
+                ctx.lineWidth = 1.2;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(currPt.x, currPt.y);
+                ctx.lineTo(currPt.x, origin.y);
+                ctx.moveTo(currPt.x, currPt.y);
+                ctx.lineTo(origin.x, currPt.y);
+                ctx.stroke();
+
+                // (B) 出現格子点と現在位置を結ぶ軌道線
+                ctx.strokeStyle = danger
+                    ? 'rgba(244, 63, 94, 0.65)'
+                    : (ufo.isFraction ? 'rgba(192, 132, 252, 0.5)' : 'rgba(56, 189, 248, 0.5)');
+                ctx.lineWidth = 1.3;
+                ctx.beginPath();
+                ctx.moveTo(spawnPt.x, spawnPt.y);
+                ctx.lineTo(currPt.x, currPt.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // (C) 出現格子点のロックオン十字＆光の波紋リング
+                ctx.strokeStyle = accent;
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(spawnPt.x - 5, spawnPt.y);
+                ctx.lineTo(spawnPt.x + 5, spawnPt.y);
+                ctx.moveTo(spawnPt.x, spawnPt.y - 5);
+                ctx.lineTo(spawnPt.x, spawnPt.y + 5);
+                ctx.stroke();
+
+                if (ufo.spawnAge < 1.8) {
+                    const ratio = ufo.spawnAge / 1.8;
+                    const ringR = 6 + ratio * 22;
+                    ctx.strokeStyle = ufo.isFraction
+                        ? `rgba(216, 180, 254, ${1 - ratio})`
+                        : `rgba(0, 243, 255, ${1 - ratio})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(spawnPt.x, spawnPt.y, ringR, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+
+                // (D) コンパクトなUFO本体
+                const ufoR = Math.min(14, Math.max(9.5, canvasSize * 0.02));
+                const hoverOffset = Math.sin(ufo.pulse) * 1.4;
+
+                ctx.save();
+                ctx.translate(currPt.x, currPt.y);
+
+                const warnPulse = 0.65 + 0.35 * Math.sin(ufo.pulse * 2.5);
+                ctx.strokeStyle = danger
+                    ? `rgba(251, 113, 133, ${warnPulse})`
+                    : (ufo.isFraction ? 'rgba(216, 180, 254, 0.65)' : 'rgba(56, 189, 248, 0.65)');
+                ctx.lineWidth = danger ? 2.0 : 1.3;
+                ctx.beginPath();
+                ctx.arc(0, 0, ufoR * (danger ? 1.38 : 1.25), 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(0, hoverOffset);
+                ctx.shadowBlur = danger ? 15 : 8;
+                ctx.shadowColor = danger ? '#f43f5e' : glow;
+
+                ctx.fillStyle = danger ? '#fecdd3' : (ufo.isFraction ? '#f0abfc' : '#bae6fd');
+                ctx.beginPath();
+                ctx.arc(0, -ufoR * 0.18, ufoR * 0.46, Math.PI, 0);
+                ctx.fill();
+
+                const bodyGrad = ctx.createLinearGradient(-ufoR, 0, ufoR, 0);
+                if (danger) {
+                    bodyGrad.addColorStop(0, '#be123c');
+                    bodyGrad.addColorStop(0.5, '#fb7185');
+                    bodyGrad.addColorStop(1, '#be123c');
+                } else if (ufo.isFraction) {
+                    bodyGrad.addColorStop(0, '#7e22ce');
+                    bodyGrad.addColorStop(0.5, '#e879f9');
+                    bodyGrad.addColorStop(1, '#7e22ce');
+                } else {
+                    bodyGrad.addColorStop(0, '#0284c7');
+                    bodyGrad.addColorStop(0.5, '#00f3ff');
+                    bodyGrad.addColorStop(1, '#0284c7');
+                }
+                ctx.fillStyle = bodyGrad;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, ufoR, ufoR * 0.38, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // 中心ターゲット十字＆発光コア
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.3;
+                ctx.beginPath();
+                ctx.moveTo(-4, 0);
+                ctx.lineTo(4, 0);
+                ctx.moveTo(0, -4);
+                ctx.lineTo(0, 4);
+                ctx.stroke();
+
+                ctx.fillStyle = danger ? '#fbbf24' : '#ffffff';
+                ctx.beginPath();
+                ctx.arc(0, 0, 1.8, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+
+                // (E) 出現座標ラベル (x0, y0)
+                const lblSize = Math.max(10, Math.floor(canvasSize * 0.023));
+                ctx.font = `800 ${lblSize}px 'JetBrains Mono', monospace`;
+                const coordStr = `(${ufo.spawnX},${ufo.spawnY})`;
+                const tw = ctx.measureText(coordStr).width;
+                const bw = tw + 8;
+                const bh = lblSize + 5;
+
+                let lx = spawnPt.x;
+                let ly = spawnPt.y - ufoR - 12;
+                if (ufo.spawnY >= 5) ly = spawnPt.y + ufoR + 14;
+                if (ufo.spawnX <= -5) lx = Math.max(lx, bw / 2 + 4);
+                if (ufo.spawnX >= 5) lx = Math.min(lx, canvasSize - bw / 2 - 4);
+
+                ctx.fillStyle = 'rgba(8, 15, 34, 0.88)';
+                ctx.strokeStyle = danger
+                    ? 'rgba(251, 113, 133, 0.85)'
+                    : (ufo.isFraction ? 'rgba(216, 180, 254, 0.7)' : 'rgba(125, 211, 252, 0.7)');
+                ctx.lineWidth = 1;
+                roundRect(ctx, lx - bw / 2, ly - bh / 2, bw, bh, 5);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#f8fafc';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(coordStr, lx, ly);
+            });
+
+            // 6. レーザービーム描画
+            state.lasers.forEach(l => {
+                const alpha = l.life / l.maxLife;
+                const outer = l.isHit ? `rgba(0, 243, 255, ${alpha})` : `rgba(251, 113, 133, ${alpha * 0.78})`;
+                const inner = l.isHit ? `rgba(255, 255, 255, ${alpha})` : `rgba(254, 205, 211, ${alpha * 0.85})`;
+
+                ctx.save();
+                ctx.shadowBlur = l.isHit ? 22 : 10;
+                ctx.shadowColor = l.isHit ? '#00f3ff' : '#f43f5e';
+                drawProportionalLine(l.slope, outer, l.isHit ? 7.5 * alpha + 2 : 3.5);
+                drawProportionalLine(l.slope, inner, l.isHit ? 2.8 * alpha + 1 : 1.3);
+                ctx.restore();
+            });
+
+            // 7. 原点ロボット＆シールドバリアリング描画
+            drawPlayerRobot(origin.x, origin.y);
+
+            // 8. 爆発パーティクル
+            state.particles.forEach(p => {
+                const pt = toPixel(p.x, p.y);
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // 9. フローティングスコア表示
+            state.floatingTexts.forEach(ft => {
+                const pt = toPixel(ft.x, ft.y);
+                const alpha = Math.max(0, ft.life / ft.maxLife);
+                const lift = (1 - alpha) * 26;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.font = `900 ${Math.max(13, Math.floor(canvasSize * 0.03))}px 'JetBrains Mono', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#040814';
+                ctx.fillText(ft.text, pt.x + 1.5, pt.y - lift + 1.5);
+                ctx.fillStyle = ft.color;
+                ctx.fillText(ft.text, pt.x, pt.y - lift);
+                ctx.restore();
+            });
+
+            ctx.restore();
+        }
+
+        function drawProportionalLine(slope, strokeStyle, width, dash = []) {
+            let x1 = -GRID_MAX;
+            let y1 = slope * x1;
+            let x2 = GRID_MAX;
+            let y2 = slope * x2;
+
+            if (Math.abs(y1) > GRID_MAX) {
+                y1 = Math.sign(y1) * GRID_MAX;
+                x1 = y1 / slope;
+            }
+            if (Math.abs(y2) > GRID_MAX) {
+                y2 = Math.sign(y2) * GRID_MAX;
+                x2 = y2 / slope;
+            }
+
+            const p1 = toPixel(x1, y1);
+            const p2 = toPixel(x2, y2);
+
+            ctx.save();
+            ctx.strokeStyle = strokeStyle;
+            ctx.lineWidth = width;
+            if (dash.length) ctx.setLineDash(dash);
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawPlayerRobot(cx, cy) {
+            const r = Math.min(18, Math.max(12, canvasSize * 0.027));
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            const shieldColors = ['rgba(244,63,94,0.7)', 'rgba(251,191,36,0.65)', 'rgba(56,189,248,0.55)', 'rgba(0,243,255,0.55)'];
+            ctx.strokeStyle = state.overheatTimer > 0
+                ? 'rgba(244, 63, 94, 0.85)'
+                : (shieldColors[state.lives] || shieldColors[3]);
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.4, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 0.85);
+            ctx.lineTo(0, -r * 1.25);
+            ctx.stroke();
+            ctx.fillStyle = state.overheatTimer > 0 ? '#f43f5e' : '#00f3ff';
+            ctx.beginPath();
+            ctx.arc(0, -r * 1.3, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#0f172a';
+            ctx.strokeStyle = state.overheatTimer > 0 ? '#fb7185' : '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.88, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = state.overheatTimer > 0 ? '#f43f5e' : '#00f3ff';
+            ctx.shadowBlur = 9;
+            ctx.shadowColor = state.overheatTimer > 0 ? '#f43f5e' : '#00f3ff';
+            roundRect(ctx, -r * 0.52, -r * 0.22, r * 1.04, r * 0.36, 3);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        // --- 9. ゲーム更新＆メインループ ---
+        function update(dt) {
+            if (state.status !== 'playing') return;
+
+            state.elapsedTime += dt;
+            const cfg = MODE_CONFIG[state.mode];
+
+            if (cfg.duration !== Infinity) {
+                state.timeLeft -= dt;
+                if (state.timeLeft <= 0) {
+                    state.timeLeft = 0;
+                    finishGame(true);
+                    return;
+                }
+            }
+
+            if (state.overheatTimer > 0) {
+                state.overheatTimer = Math.max(0, state.overheatTimer - dt);
+            }
+
+            state.spawnTimer -= dt;
+            let interval = cfg.spawnInterval;
+            let maxOnScreen = cfg.maxConcurrent;
+            if (state.mode === 'endless') {
+                interval = Math.max(1.6, 3.4 - state.elapsedTime * 0.02);
+                maxOnScreen = state.elapsedTime > 40 ? 6 : 5;
+            }
+
+            if (state.spawnTimer <= 0) {
+                if (state.ufos.length < maxOnScreen) {
+                    spawnUFO();
+                }
+                state.spawnTimer = interval;
+            }
+
+            const surviving = [];
+            for (const ufo of state.ufos) {
+                ufo.pulse += dt * 4.8;
+                ufo.spawnAge += dt;
+                ufo.progress += dt / ufo.reachTime;
+
+                if (ufo.progress >= 0.95) {
+                    state.lives--;
+                    state.combo = 0;
+                    state.screenShake = 16;
+                    sfx.playDamage();
+                    createExplosion(0, 0, '#f43f5e');
+                    addFloatingText(0, 1.0, 'SHIELD DAMAGE!', '#f43f5e');
+
+                    if (state.lives <= 0) {
+                        state.lives = 0;
+                        updateHUD();
+                        finishGame(false);
+                        return;
+                    }
+                } else {
+                    const remain = 1 - ufo.progress;
+                    ufo.x = ufo.spawnX * remain;
+                    ufo.y = ufo.spawnY * remain;
+                    surviving.push(ufo);
+                }
+            }
+            state.ufos = surviving;
+
+            state.lasers = state.lasers.filter(l => (l.life -= dt) > 0);
+            state.particles = state.particles.filter(p => {
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                return (p.life -= dt) > 0;
+            });
+            state.floatingTexts = state.floatingTexts.filter(ft => (ft.life -= dt) > 0);
+
+            updateHUD();
+        }
+
+        function updateHUD() {
+            const tMobile = document.getElementById('hud-timer-mobile');
+            const tDesktop = document.getElementById('hud-timer-desktop');
+            const lblMobile = document.getElementById('hud-timer-lbl-mobile');
+            const lblDesktop = document.getElementById('hud-timer-lbl-desktop');
+
+            if (state.mode === 'endless') {
+                lblMobile.textContent = 'KILLS';
+                lblDesktop.textContent = 'DESTROYED';
+                tMobile.textContent = `${state.kills}機`;
+                tDesktop.textContent = `${state.kills}機`;
+                tMobile.className = 'font-mono-code text-sm font-extrabold text-rose-400';
+                tDesktop.className = 'font-mono-code text-lg font-extrabold text-rose-400';
+            } else {
+                lblMobile.textContent = 'TIME';
+                lblDesktop.textContent = 'TIME LEFT';
+                const txt = `${state.timeLeft.toFixed(1)}s`;
+                tMobile.textContent = txt;
+                tDesktop.textContent = txt;
+                const urgent = state.timeLeft <= 10;
+                tMobile.className = `font-mono-code text-sm font-extrabold ${urgent ? 'text-rose-400 animate-pulse' : 'text-amber-400'}`;
+                tDesktop.className = `font-mono-code text-lg font-extrabold ${urgent ? 'text-rose-400 animate-pulse' : 'text-amber-400'}`;
+            }
+
+            const scoreStr = state.score.toLocaleString();
+            document.getElementById('hud-score-mobile').textContent = scoreStr;
+            document.getElementById('hud-score-desktop').textContent = scoreStr;
+
+            for (let i = 1; i <= 3; i++) {
+                const active = i <= state.lives;
+                ['m', 'd'].forEach(prefix => {
+                    const el = document.getElementById(`${prefix}-life-${i}`);
+                    if (el) {
+                        el.style.opacity = active ? '1' : '0.2';
+                        el.style.filter = active ? 'none' : 'grayscale(100%)';
+                    }
+                });
+            }
+
+            const fireBtn = document.getElementById('btn-fire');
+            const fireTxt = document.getElementById('btn-fire-text');
+            const banner = document.getElementById('overheat-banner');
+            const secSpan = document.getElementById('overheat-sec');
+            const barEl = document.getElementById('overheat-bar');
+
+            if (state.overheatTimer > 0) {
+                fireBtn.disabled = true;
+                fireTxt.textContent = `OVERHEAT (${state.overheatTimer.toFixed(1)}s)`;
+                banner.classList.remove('hidden');
+                secSpan.textContent = state.overheatTimer.toFixed(1);
+                barEl.style.width = `${(state.overheatTimer / state.overheatMax) * 100}%`;
+            } else {
+                fireBtn.disabled = false;
+                fireTxt.textContent = 'レーザー発射！';
+                banner.classList.add('hidden');
+            }
+        }
+
+        function gameLoop(ts) {
+            if (!state.lastFrameTime) state.lastFrameTime = ts;
+            const dt = Math.min((ts - state.lastFrameTime) / 1000, 0.1);
+            state.lastFrameTime = ts;
+
+            update(dt);
+            drawScene(dt);
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- 10. モーダル開閉＆ゲーム開始・終了 ---
+        function setModalVisible(id, visible) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (visible) {
+                el.classList.remove('hidden', 'pointer-events-none');
+            } else {
+                el.classList.add('hidden', 'pointer-events-none');
+            }
+        }
+
+        function startGame(mode) {
+            sfx.init();
+            state.mode = MODE_CONFIG[mode] ? mode : 'easy';
+            state.status = 'playing';
+            state.score = 0;
+            state.kills = 0;
+            state.combo = 0;
+            state.maxCombo = 0;
+            state.shotsFired = 0;
+            state.shotsHit = 0;
+            state.lives = 3;
+            state.elapsedTime = 0;
+            state.overheatTimer = 0;
+            state.ufos = [];
+            state.lasers = [];
+            state.particles = [];
+            state.floatingTexts = [];
+            state.screenShake = 0;
+            state.lastFrameTime = performance.now();
+
+            const cfg = MODE_CONFIG[state.mode];
+            state.timeLeft = cfg.duration;
+            state.spawnTimer = 0.2;
+
+            const badgeM = document.getElementById('hud-mode-mobile');
+            const badgeD = document.getElementById('hud-mode-desktop');
+            badgeM.textContent = cfg.shortLabel;
+            badgeM.className = `px-2 py-0.5 rounded-md text-[10px] font-extrabold border ${cfg.badgeClass}`;
+            badgeD.textContent = cfg.label;
+            badgeD.className = `px-2.5 py-1 rounded-lg text-xs font-extrabold border ${cfg.badgeClass}`;
+
+            setModalVisible('title-modal', false);
+            setModalVisible('result-modal', false);
+            setModalVisible('confirm-modal', false);
+
+            resizeCanvas();
+            updateHUD();
+            drawScene(0);
+        }
+
+        function finishGame(isClear) {
+            state.status = isClear ? 'clear' : 'gameover';
+            const rec = loadRecords();
+            let isNewRecord = false;
+
+            if (state.mode === 'endless') {
+                if (state.score > rec.endless.bestScore) {
+                    rec.endless.bestScore = state.score;
+                    isNewRecord = true;
+                }
+                if (state.kills > rec.endless.bestKills) {
+                    rec.endless.bestKills = state.kills;
+                    isNewRecord = true;
+                }
+            } else {
+                if (isClear) rec[state.mode].cleared = true;
+                if (state.score > rec[state.mode].bestScore) {
+                    rec[state.mode].bestScore = state.score;
+                    isNewRecord = true;
+                }
+            }
+            saveRecords(rec);
+
+            if (isClear) sfx.playClear();
+
+            document.getElementById('result-icon').textContent = isClear ? '🏆' : '💥';
+            document.getElementById('result-subtitle').textContent = isClear
+                ? 'MISSION COMPLETE!'
+                : (state.mode === 'endless' ? 'ENDLESS RESULT' : 'DEFENSE FAILED...');
+            document.getElementById('result-title').textContent = isClear
+                ? '防衛ミッション成功！'
+                : (state.mode === 'endless' ? '防衛記録達成！' : 'シールド突破...');
+
+            document.getElementById('new-record-badge').classList.toggle('hidden', !isNewRecord);
+            document.getElementById('res-score').textContent = state.score.toLocaleString();
+            document.getElementById('res-kills').textContent = `${state.kills}機`;
+            document.getElementById('res-combo').textContent = `${state.maxCombo}連鎖`;
+
+            const acc = state.shotsFired > 0 ? Math.round((state.shotsHit / state.shotsFired) * 100) : 100;
+            document.getElementById('res-accuracy').textContent = `${acc}%`;
+
+            setModalVisible('result-modal', true);
+        }
+
+        function showTitle() {
+            state.status = 'title';
+            updateTitleRecordsUI();
+            setModalVisible('result-modal', false);
+            setModalVisible('confirm-modal', false);
+            setModalVisible('title-modal', true);
+        }
+
+        function toggleMute() {
+            sfx.muted = !sfx.muted;
+            const icon = sfx.muted ? '🔇' : '🔊';
+            document.getElementById('btn-mute-mobile').textContent = icon;
+            document.getElementById('btn-mute-desktop').textContent = icon;
+        }
+
+        function requestAbort() {
+            if (state.status !== 'playing') {
+                showTitle();
+            } else {
+                state.status = 'paused';
+                setModalVisible('confirm-modal', true);
+            }
+        }
+
+        // --- 11. イベントバインド＆起動 ---
+        function bootstrap() {
+            initStars();
+            initKeypad();
+            updateTitleRecordsUI();
+
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => startGame(btn.getAttribute('data-mode')));
+            });
+
+            document.getElementById('btn-sign-plus').addEventListener('click', () => {
+                state.sign = 1;
+                updateEquationUI();
+            });
+            document.getElementById('btn-sign-minus').addEventListener('click', () => {
+                state.sign = -1;
+                updateEquationUI();
+            });
+            document.getElementById('btn-reset-input').addEventListener('click', () => {
+                state.sign = 1;
+                state.numerator = 1;
+                state.denominator = 1;
+                updateEquationUI();
+            });
+            document.getElementById('btn-fire').addEventListener('click', fireLaser);
+
+            document.getElementById('btn-home-mobile').addEventListener('click', requestAbort);
+            document.getElementById('btn-home-desktop').addEventListener('click', requestAbort);
+            document.getElementById('btn-mute-mobile').addEventListener('click', toggleMute);
+            document.getElementById('btn-mute-desktop').addEventListener('click', toggleMute);
+
+            document.getElementById('btn-confirm-cancel').addEventListener('click', () => {
+                setModalVisible('confirm-modal', false);
+                if (state.status === 'paused') {
+                    state.status = 'playing';
+                    state.lastFrameTime = performance.now();
+                }
+            });
+            document.getElementById('btn-confirm-abort').addEventListener('click', showTitle);
+
+            document.getElementById('btn-retry').addEventListener('click', () => startGame(state.mode));
+            document.getElementById('btn-to-title').addEventListener('click', showTitle);
+
+            // PCキーボード操作サポート
+            window.addEventListener('keydown', (e) => {
+                if (state.status !== 'playing') return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    fireLaser();
+                } else if (e.key === '+' || e.key === '=') {
+                    state.sign = 1;
+                    updateEquationUI();
+                } else if (e.key === '-') {
+                    state.sign = -1;
+                    updateEquationUI();
+                } else if (e.key >= '1' && e.key <= '6') {
+                    state.numerator = parseInt(e.key, 10);
+                    updateEquationUI();
+                }
+            });
+
+            // ResizeObserver ＋ window resize で座標平面サイズを常時最適化
+            const stageEl = document.getElementById('canvas-stage');
+            if (window.ResizeObserver && stageEl) {
+                const ro = new ResizeObserver(() => resizeCanvas());
+                ro.observe(stageEl);
+            }
+            window.addEventListener('resize', resizeCanvas);
+
+            resizeCanvas();
+            requestAnimationFrame(gameLoop);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootstrap);
+        } else {
+            bootstrap();
+        }
+    </script>
+</body>
+</html>
