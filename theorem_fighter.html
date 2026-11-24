@@ -116,7 +116,7 @@
     width: 100%;
     background: rgba(255, 255, 255, 0.97);
     border-radius: 20px;
-    padding: 14px;
+    padding: 13px 14px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     border: 2px solid #cbd5e1;
     flex: 1;
@@ -126,11 +126,11 @@
   }
 
   .title-lead {
-    font-size: 0.84rem;
+    font-size: 0.82rem;
     font-weight: 900;
     color: #334155;
     text-align: center;
-    line-height: 1.45;
+    line-height: 1.4;
     padding-bottom: 4px;
   }
 
@@ -139,14 +139,14 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
-    gap: 11px;
+    gap: 10px;
     margin-top: 6px;
   }
 
   .mode-btn {
     border: none;
     border-radius: 16px;
-    padding: 14px 12px;
+    padding: 12px 12px;
     color: #fff;
     font-family: inherit;
     font-weight: 900;
@@ -171,9 +171,57 @@
   .mode-hard { background: linear-gradient(135deg, #f97316, #ea580c); }
   .mode-endless { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
 
-  .mode-title { font-size: 1.18rem; display: block; letter-spacing: 0.5px; }
-  .mode-desc { font-size: 0.78rem; opacity: 0.95; display: block; margin-top: 4px; font-weight: 700; line-height: 1.3; }
-  .mode-best { font-size: 0.74rem; background: rgba(0,0,0,0.26); padding: 4px 8px; border-radius: 8px; display: inline-block; align-self: flex-start; margin-top: 6px; }
+  .mode-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .mode-title {
+    font-size: 1.15rem;
+    letter-spacing: 0.5px;
+  }
+
+  .mode-tag {
+    font-size: 0.65rem;
+    background: rgba(255, 255, 255, 0.24);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    padding: 2px 6px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  .mode-desc {
+    font-size: 0.74rem;
+    opacity: 0.96;
+    display: block;
+    margin-top: 6px;
+    font-weight: 700;
+    line-height: 1.38;
+  }
+
+  .mode-footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    width: 100%;
+  }
+
+  .mode-best {
+    font-size: 0.72rem;
+    background: rgba(0,0,0,0.28);
+    padding: 3px 8px;
+    border-radius: 8px;
+    display: inline-block;
+  }
+
+  .mode-stage-info {
+    font-size: 0.68rem;
+    opacity: 0.9;
+  }
 
   /* ==================== BATTLE ARENA (TOP HALF) ==================== */
   #arena {
@@ -781,31 +829,58 @@
       <div class="mode-grid">
         <button class="mode-btn mode-easy" onclick="startGame('easy')">
           <div>
-            <span class="mode-title">初級（全5面）</span>
-            <span class="mode-desc">角・三角形の合同条件</span>
+            <div class="mode-header-row">
+              <span class="mode-title">初級</span>
+              <span class="mode-tag">1・2年基礎</span>
+            </div>
+            <span class="mode-desc">・対頂角／同位角／錯角<br>・三角形＆直角三角形の合同条件</span>
           </div>
-          <span class="mode-best" id="best-easy">BEST: 0</span>
+          <div class="mode-footer-row">
+            <span class="mode-best" id="best-easy">BEST: 0</span>
+            <span class="mode-stage-info">全5面</span>
+          </div>
         </button>
+
         <button class="mode-btn mode-normal" onclick="startGame('normal')">
           <div>
-            <span class="mode-title">中級（全5面）</span>
-            <span class="mode-desc">二等辺・平行四辺形</span>
+            <div class="mode-header-row">
+              <span class="mode-title">中級</span>
+              <span class="mode-tag">2年図形</span>
+            </div>
+            <span class="mode-desc">・二等辺三角形／正三角形<br>・平行四辺形の性質と5条件</span>
           </div>
-          <span class="mode-best" id="best-normal">BEST: 0</span>
+          <div class="mode-footer-row">
+            <span class="mode-best" id="best-normal">BEST: 0</span>
+            <span class="mode-stage-info">全5面</span>
+          </div>
         </button>
+
         <button class="mode-btn mode-hard" onclick="startGame('hard')">
           <div>
-            <span class="mode-title">上級（全5面）</span>
-            <span class="mode-desc">相似・円周角・中点連結</span>
+            <div class="mode-header-row">
+              <span class="mode-title">上級</span>
+              <span class="mode-tag">3年図形</span>
+            </div>
+            <span class="mode-desc">・三角形の相似条件（3つ）<br>・円周角の定理／中点連結定理</span>
           </div>
-          <span class="mode-best" id="best-hard">BEST: 0</span>
+          <div class="mode-footer-row">
+            <span class="mode-best" id="best-hard">BEST: 0</span>
+            <span class="mode-stage-info">全5面</span>
+          </div>
         </button>
+
         <button class="mode-btn mode-endless" onclick="startGame('endless')">
           <div>
-            <span class="mode-title">♾️ エンドレス</span>
-            <span class="mode-desc">全単元・5面ごとボス周回</span>
+            <div class="mode-header-row">
+              <span class="mode-title">♾️ エンドレス</span>
+              <span class="mode-tag">全単元MIX</span>
+            </div>
+            <span class="mode-desc">・全26種の定理が総登場！<br>・5面ごとにボス撃破で強敵周回</span>
           </div>
-          <span class="mode-best" id="best-endless">BEST: Stage 1</span>
+          <div class="mode-footer-row">
+            <span class="mode-best" id="best-endless">BEST: Stage 1</span>
+            <span class="mode-stage-info">無限周回</span>
+          </div>
         </button>
       </div>
     </div>
@@ -1315,13 +1390,13 @@ function setupStage(stageNum) {
   gameState.isBoss = (stageInLoop === 5);
 
   const modeScale = gameState.mode === 'easy' ? 1.0 : (gameState.mode === 'normal' ? 1.2 : 1.35);
-  const loopScale = 1 + (gameState.loop - 1) * 0.35;
+  const loopScale = 1 + (gameState.loop - 1) * 0.4;
 
   if (gameState.isBoss) {
     gameState.enemyName = gameState.loop > 1
       ? `ダーク定理デーモン Lv.${gameState.loop}`
       : "ダーク定理デーモン";
-    gameState.enemyMaxHp = Math.round(420 * modeScale * loopScale);
+    gameState.enemyMaxHp = Math.round(520 * modeScale * loopScale);
     gameState.enemyHp = gameState.enemyMaxHp;
     gameState.enemyAtkDamage = Math.round(24 * loopScale);
     gameState.enemyAtkInterval = Math.max(5.5, 8.5 - (gameState.loop - 1) * 0.6);
@@ -1329,7 +1404,7 @@ function setupStage(stageNum) {
   } else {
     const mon = STAGE_MONSTERS[stageInLoop - 1];
     gameState.enemyName = gameState.loop > 1 ? `${mon.name} Lv.${gameState.loop}` : mon.name;
-    gameState.enemyMaxHp = Math.round((160 + stageInLoop * 45) * modeScale * loopScale);
+    gameState.enemyMaxHp = Math.round((190 + stageInLoop * 55) * modeScale * loopScale);
     gameState.enemyHp = gameState.enemyMaxHp;
     gameState.enemyAtkDamage = Math.round((12 + stageInLoop * 2) * loopScale);
     gameState.enemyAtkInterval = Math.max(6.0, 10.0 - stageInLoop * 0.4 - (gameState.loop - 1) * 0.5);
@@ -1371,7 +1446,6 @@ function getMissingWordsForBestMatch(remainingWords, maxSlots) {
   const remCounts = {};
   remainingWords.forEach(w => { remCounts[w] = (remCounts[w] || 0) + 1; });
 
-  // Find theorems that can be completed within maxSlots, preferring ones that reuse remaining cards
   const candidates = [];
   pool.forEach(th => {
     const req = {};
@@ -1390,7 +1464,6 @@ function getMissingWordsForBestMatch(remainingWords, maxSlots) {
   });
 
   if (candidates.length === 0) return [];
-  // Sort by highest overlap with existing hand so leftover cards connect into combos!
   candidates.sort((a, b) => b.overlap - a.overlap || Math.random() - 0.5);
   const topPool = candidates.slice(0, Math.min(3, candidates.length));
   return topPool[Math.floor(Math.random() * topPool.length)].missing;
@@ -1401,7 +1474,6 @@ function generateValidHand() {
   const allWords = Array.from(new Set(pool.flat()));
   const hand = [];
 
-  // Seed 2 theorems so player has immediate combo choices without deadlocks
   const first = pool[Math.floor(Math.random() * pool.length)];
   first.forEach(w => hand.push(w));
 
@@ -1439,16 +1511,13 @@ function replenishUsedCards(usedIndices) {
   const pool = getPoolTheorems();
   const allWords = Array.from(new Set(pool.flat()));
 
-  // Collect cards that stay in hand
   const remainingWords = gameState.hand.filter((_, i) => !usedIndices.includes(i));
   const currentHeals = remainingWords.filter(w => w === HEAL_TOKEN).length;
 
-  // Determine smart missing words that connect with remaining hand cards to form next theorems
   const smartQueue = [];
   const neededForNext = getMissingWordsForBestMatch(remainingWords, usedIndices.length);
   neededForNext.forEach(w => smartQueue.push(w));
 
-  // If still plenty of empty slots, seed a second follow-up theorem for multi-chain potential
   const combinedAfterFirst = [...remainingWords, ...smartQueue];
   const remainingSlotCount = usedIndices.length - smartQueue.length;
   if (remainingSlotCount >= 2) {
@@ -1456,7 +1525,6 @@ function replenishUsedCards(usedIndices) {
     secondChain.forEach(w => smartQueue.push(w));
   }
 
-  // Shuffle usedIndices so smart words don't always land in top-left slots
   const shuffledTargets = [...usedIndices];
   for (let i = shuffledTargets.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -1475,7 +1543,6 @@ function replenishUsedCards(usedIndices) {
     }
   });
 
-  // Fallback safety only if somehow impossible
   if (!canFormAnyTheorem(gameState.hand)) {
     gameState.hand = generateValidHand();
   }
@@ -1598,23 +1665,24 @@ function submitTheorem() {
     gameState.clearedCount++;
 
     const len = theoremWords.length;
-    let baseDmg = 90;
+    let baseDmg = 65;
     let rankTitle = "小技発動！";
     let tier = 1;
 
     if (len >= 5) {
-      baseDmg = 240;
+      baseDmg = 160;
       rankTitle = "🔥 必殺奥義発動！！ 🔥";
       tier = 3;
     } else if (len >= 3) {
-      baseDmg = 150;
+      baseDmg = 105;
       rankTitle = "⚡ 中技発動！ ⚡";
       tier = 2;
     }
 
-    const comboMult = 1 + Math.min(gameState.combo - 1, 10) * 0.1;
-    const totalDmg = Math.round(baseDmg * comboMult);
-    gameState.score += totalDmg * 10;
+    const comboDmgMult = 1 + Math.min(gameState.combo - 1, 10) * 0.04;
+    const comboScoreMult = 1 + Math.min(gameState.combo - 1, 15) * 0.1;
+    const totalDmg = Math.round(baseDmg * comboDmgMult);
+    gameState.score += Math.round(totalDmg * 12 * comboScoreMult);
 
     if (healCount > 0) {
       const healAmount = healCount * 30;
