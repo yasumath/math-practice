@@ -1551,11 +1551,13 @@ function replenishUsedCards(usedIndices) {
 function refreshHandManual() {
   if (!gameState.running || gameState.stunned) return;
   sfxTap();
+  gameState.combo = 0;
   gameState.hand = generateValidHand();
   gameState.selectedIndices = [];
   renderHand();
   renderSlot();
-  setFeedback("手札を入れ替えました", "");
+  updateHUD();
+  setFeedback("手札を入れ替えました（コンボリセット）", "");
 }
 
 // ==================== 7. UI INTERACTION & RENDERING ====================
@@ -1641,16 +1643,18 @@ function submitTheorem() {
 
   if (theoremWords.length === 0 && healCount > 0) {
     sfxHeal();
+    gameState.combo = 0;
     const healAmount = healCount * 20;
     healHero(healAmount);
     spawnPopup(`+${healAmount} HP`, '#10b981', true);
-    setFeedback(`回復ブロックでHPが ${healAmount} 回復した！`, 'success');
+    setFeedback(`回復ブロックでHPが ${healAmount} 回復した！（コンボリセット）`, 'success');
 
     const used = [...gameState.selectedIndices];
     gameState.selectedIndices = [];
     replenishUsedCards(used);
     renderHand();
     renderSlot();
+    updateHUD();
     return;
   }
 
@@ -1660,8 +1664,12 @@ function submitTheorem() {
   );
 
   if (matched) {
-    gameState.combo++;
-    if (gameState.combo > gameState.maxCombo) gameState.maxCombo = gameState.combo;
+    if (healCount > 0) {
+      gameState.combo = 0;
+    } else {
+      gameState.combo++;
+      if (gameState.combo > gameState.maxCombo) gameState.maxCombo = gameState.combo;
+    }
     gameState.clearedCount++;
 
     const len = theoremWords.length;
@@ -1679,8 +1687,9 @@ function submitTheorem() {
       tier = 2;
     }
 
-    const comboDmgMult = 1 + Math.min(gameState.combo - 1, 10) * 0.04;
-    const comboScoreMult = 1 + Math.min(gameState.combo - 1, 15) * 0.1;
+    const effectiveCombo = Math.max(1, gameState.combo);
+    const comboDmgMult = 1 + Math.min(effectiveCombo - 1, 10) * 0.04;
+    const comboScoreMult = 1 + Math.min(effectiveCombo - 1, 15) * 0.1;
     const totalDmg = Math.round(baseDmg * comboDmgMult);
     gameState.score += Math.round(totalDmg * 12 * comboScoreMult);
 
@@ -1695,7 +1704,12 @@ function submitTheorem() {
 
     gameState.enemyAtkTimer = Math.max(0, gameState.enemyAtkTimer - (1.8 + tier * 0.6));
     gameState.enemyHp = Math.max(0, gameState.enemyHp - totalDmg);
-    setFeedback(`${theoremWords.join('')}（${totalDmg}ダメージ！）`, 'success');
+    setFeedback(
+      healCount > 0
+        ? `${theoremWords.join('')}（${totalDmg}ダメージ＆回復！コンボリセット）`
+        : `${theoremWords.join('')}（${totalDmg}ダメージ！）`,
+      'success'
+    );
 
     const used = [...gameState.selectedIndices];
     gameState.selectedIndices = [];
@@ -1800,7 +1814,9 @@ function executeEnemyAttack() {
 
     const dmg = gameState.enemyAtkDamage;
     gameState.heroHp = Math.max(0, gameState.heroHp - dmg);
+    gameState.combo = 0;
     spawnPopup(`-${dmg}`, '#ef4444', true);
+    setFeedback(`敵の攻撃を受けた！（${dmg}ダメージ・コンボリセット）`, 'error');
     updateHUD();
 
     if (gameState.heroHp <= 0) {
