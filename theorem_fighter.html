@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>定理ファイター - THEOREM FIGHTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sky-top: #0284c7;
+      --sky-mid: #38bdf8;
+      --sky-pale: #e0f2fe;
+      --royal-blue: #1d4ed8;
+      --navy-ink: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: "M PLUS Rounded 1c", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100dvh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: linear-gradient(170deg, #bae6fd 0%, #e0f2fe 45%, #ffffff 100%);
+      color: var(--navy-ink);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(2, 132, 199, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(2, 132, 199, 0.08) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .font-orbitron {
+      font-family: "Orbitron", sans-serif;
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100dvh;
+      max-width: 980px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .screen.active {
+      display: flex;
+    }
+
+    /* タイトルロゴ立体グラデーション */
+    .title-logo-text {
+      background: linear-gradient(180deg, #ffffff 0%, #fef08a 46%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 3px 0 #1e3a8a) drop-shadow(0 6px 14px rgba(15, 23, 42, 0.45));
+    }
+
+    /* 白背景AIイラスト自然合成 */
+    .sprite-multiply {
+      mix-blend-mode: multiply;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    /* アニメーション群 */
+    @keyframes floatHero {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+    }
+    @keyframes floatEnemy {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-7px) scale(1.02); }
+    }
+    @keyframes spinSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes spinReverse {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+
+    .animate-hero-idle {
+      animation: floatHero 2.5s ease-in-out infinite;
+    }
+    .animate-enemy-idle {
+      animation: floatEnemy 3s ease-in-out infinite;
+    }
+    .animate-ring-cw {
+      transform-origin: center;
+      animation: spinSlow 14s linear infinite;
+    }
+    .animate-ring-ccw {
+      transform-origin: center;
+      animation: spinReverse 10s linear infinite;
+    }
+
+    /* ヒーロー攻撃ダッシュ */
+    @keyframes heroLunge {
+      0% { transform: translateX(0) scale(1); }
+      35% { transform: translateX(65px) scale(1.13); }
+      100% { transform: translateX(0) scale(1); }
+    }
+    .hero-attacking {
+      animation: heroLunge 0.46s cubic-bezier(0.18, 0.89, 0.32, 1.28) !important;
+      z-index: 20;
+    }
+
+    /* 敵攻撃突進 */
+    @keyframes enemyLunge {
+      0% { transform: translateX(0) scale(1); }
+      35% { transform: translateX(-65px) scale(1.15); }
+      100% { transform: translateX(0) scale(1); }
+    }
+    .enemy-attacking {
+      animation: enemyLunge 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.28) !important;
+      z-index: 20;
+    }
+
+    /* 被弾フラッシュ */
+    @keyframes hitFlash {
+      0% { transform: translateX(0) scale(1); filter: brightness(2.6) drop-shadow(0 0 18px #38bdf8); }
+      28% { transform: translateX(20px) rotate(6deg) scale(0.92); filter: brightness(2); }
+      64% { transform: translateX(-8px) rotate(-3deg); }
+      100% { transform: translateX(0) scale(1); filter: brightness(1); }
+    }
+    .actor-damaged {
+      animation: hitFlash 0.4s ease !important;
+    }
+
+    @keyframes playerHitFlash {
+      0% { transform: translateX(0); filter: brightness(2.5) drop-shadow(0 0 18px #f43f5e); }
+      30% { transform: translateX(-18px) rotate(-6deg); }
+      65% { transform: translateX(8px) rotate(3deg); }
+      100% { transform: translateX(0); filter: brightness(1); }
+    }
+    .player-damaged {
+      animation: playerHitFlash 0.4s ease !important;
+    }
+
+    /* アリーナシェイク */
+    @keyframes arenaShake {
+      15%, 85% { transform: translate3d(-4px, 0, 0); }
+      30%, 70% { transform: translate3d(6px, 0, 0); }
+      50% { transform: translate3d(-6px, 2px, 0); }
+    }
+    .arena-shake {
+      animation: arenaShake 0.34s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    /* 斬撃ビーム */
+    @keyframes slashSweep {
+      0% { opacity: 1; transform: translateX(-35%) scaleX(0.25); }
+      45% { opacity: 1; transform: translateX(8%) scaleX(1.06); }
+      100% { opacity: 0; transform: translateX(28%) scaleX(1.12); }
+    }
+    .slash-beam-active {
+      animation: slashSweep 0.44s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* 数値ポップアップ */
+    @keyframes dmgFloatUp {
+      0% { opacity: 0; transform: translateY(14px) scale(0.6); }
+      22% { opacity: 1; transform: translateY(-6px) scale(1.22); }
+      100% { opacity: 0; transform: translateY(-44px) scale(1); }
+    }
+    .dmg-popup {
+      animation: dmgFloatUp 0.85s ease-out forwards;
+      -webkit-text-stroke: 1.5px #7c2d12;
+      text-shadow: 0 4px 10px rgba(15, 23, 42, 0.5);
+    }
+    .heal-popup {
+      animation: dmgFloatUp 0.85s ease-out forwards;
+      -webkit-text-stroke: 1.5px #065f46;
+      text-shadow: 0 4px 10px rgba(15, 23, 42, 0.45);
+    }
+
+    /* タイル・チップアニメーション */
+    @keyframes tileDeal {
+      0% { transform: scale(0.7) translateY(8px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .tile-fresh {
+      animation: tileDeal 0.24s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    @keyframes chipPop {
+      0% { transform: scale(0.75); opacity: 0.4; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .chip-pop {
+      animation: chipPop 0.14s ease-out;
+    }
+
+    /* ボス警告点滅 */
+    @keyframes warningPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.82; transform: scale(1.03); }
+    }
+    .boss-warning-anim {
+      animation: warningPulse 0.45s ease-in-out infinite;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #7dd3fc;
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== 1. タイトル画面 ==================== -->
+  <section id="title-screen" class="screen active flex-col justify-between p-2.5 sm:p-4 gap-2">
+    <!-- メインヒーローバナー -->
+    <div class="relative flex-1 min-h-[165px] max-h-[300px] rounded-2xl overflow-hidden border-[3px] border-white shadow-xl bg-gradient-to-b from-sky-600 via-sky-400 to-sky-100 flex items-center justify-between px-3 sm:px-6">
+      <!-- 背景画像 (title_bg.jpg or bg_arena.jpg or フォールバックSVG) -->
+      <img
+        id="title-main-bg-img"
+        src="title_bg.jpg"
+        alt="定理ファイター メインビジュアル"
+        class="absolute inset-0 w-full h-full object-cover z-0"
+        onerror="this.dataset.broken='1'; this.style.display='none'; document.getElementById('title-fallback-bg').style.display='block'; document.getElementById('title-overlay-chars').style.display='flex';"
+      />
+      <svg id="title-fallback-bg" class="hidden absolute inset-0 w-full h-full z-0" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="tSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0284c7" />
+            <stop offset="55%" stop-color="#38bdf8" />
+            <stop offset="100%" stop-color="#e0f2fe" />
+          </linearGradient>
+        </defs>
+        <rect width="900" height="320" fill="url(#tSky)" />
+        <polygon points="120,70 148,105 120,140 92,105" fill="#bae6fd" stroke="#ffffff" stroke-width="2" opacity="0.85" />
+        <ellipse cx="120" cy="105" rx="46" ry="11" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.8" />
+        <polygon points="780,60 812,98 780,136 748,98" fill="#bae6fd" stroke="#ffffff" stroke-width="2" opacity="0.85" />
+        <ellipse cx="780" cy="98" rx="50" ry="12" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.8" />
+        <path d="M0 210 Q140 175 280 205 Q450 170 620 208 Q760 180 900 206 L900 320 L0 320 Z" fill="#ffffff" opacity="0.88" />
+        <rect x="0" y="242" width="900" height="78" fill="#f8fafc" />
+        <line x1="0" y1="242" x2="900" y2="242" stroke="#f59e0b" stroke-width="3" />
+        <polygon points="450,248 610,282 450,316 290,282" fill="#e0f2fe" stroke="#0284c7" stroke-width="2" />
+      </svg>
+
+      <!-- 右上コントロール -->
+      <div class="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5">
+        <button
+          id="asset-info-btn"
+          class="bg-white/95 hover:bg-white text-sky-800 border-2 border-sky-300 px-2.5 py-1 rounded-full text-xs font-extrabold shadow-sm active:scale-95"
+        >
+          🖼️ 画像ガイド
+        </button>
+        <button
+          id="sound-toggle-btn"
+          class="bg-white/95 hover:bg-white text-blue-700 border-2 border-sky-300 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm active:scale-95"
+        >
+          🔊 ON
+        </button>
+      </div>
+
+      <!-- フォールバック時のキャラクター＆タイトル表示 -->
+      <div id="title-overlay-chars" class="hidden relative z-10 w-full h-full items-center justify-between">
+        <!-- 左：味方クリスタルガーディアン -->
+        <div class="h-[86%] aspect-[3/4] flex items-end justify-center animate-hero-idle">
+          <svg class="h-full w-auto drop-shadow-lg" viewBox="0 0 220 260">
+            <defs>
+              <linearGradient id="crystalBlue" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="45%" stop-color="#38bdf8" />
+                <stop offset="100%" stop-color="#1d4ed8" />
+              </linearGradient>
+              <linearGradient id="goldEdge" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#fef08a" />
+                <stop offset="100%" stop-color="#f59e0b" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="110" cy="242" rx="64" ry="12" fill="rgba(2,132,199,0.22)" stroke="#38bdf8" stroke-width="2" />
+            <g class="animate-ring-cw">
+              <circle cx="110" cy="118" r="76" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-dasharray="10 6" opacity="0.9" />
+              <polygon points="110,42 176,156 44,156" fill="none" stroke="#fef08a" stroke-width="1.8" opacity="0.85" />
+            </g>
+            <g class="animate-ring-ccw">
+              <polygon points="110,194 176,80 44,80" fill="none" stroke="#38bdf8" stroke-width="1.8" opacity="0.85" />
+            </g>
+            <polygon points="82,102 18,64 46,118 78,124" fill="url(#crystalBlue)" stroke="#ffffff" stroke-width="1.5" />
+            <polygon points="138,102 202,64 174,118 142,124" fill="url(#crystalBlue)" stroke="#ffffff" stroke-width="1.5" />
+            <polygon points="110,54 152,118 110,182 68,118" fill="url(#crystalBlue)" stroke="url(#goldEdge)" stroke-width="3" />
+            <polygon points="110,54 130,118 110,182 90,118" fill="#ffffff" opacity="0.45" />
+            <circle cx="110" cy="118" r="14" fill="#ffffff" stroke="#f59e0b" stroke-width="2.5" />
+            <polygon points="104,174 116,174 110,228" fill="url(#goldEdge)" stroke="#ffffff" stroke-width="1.5" />
+          </svg>
+        </div>
+
+        <!-- 中央：タイトルロゴ -->
+        <div class="flex flex-col items-center text-center px-1">
+          <span class="bg-blue-900/90 text-yellow-300 border border-yellow-300 text-[10px] sm:text-xs font-black px-3 py-0.5 rounded-full tracking-wider shadow">
+            中学数学・証明ワードバトル
+          </span>
+          <h1 class="title-logo-text text-3xl sm:text-5xl font-black tracking-tight leading-tight mt-1 whitespace-nowrap">
+            定理ファイター
+          </h1>
+          <span class="font-orbitron text-[10px] sm:text-xs font-black tracking-[0.25em] text-white drop-shadow">
+            THEOREM FIGHTER
+          </span>
+        </div>
+
+        <!-- 右：ボスシルエット -->
+        <div class="h-[84%] aspect-[3/4] flex items-end justify-center animate-enemy-idle">
+          <svg class="h-full w-auto drop-shadow-lg" viewBox="0 0 220 260">
+            <defs>
+              <linearGradient id="darkCore" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#4c1d95" />
+                <stop offset="55%" stop-color="#1e1b4b" />
+                <stop offset="100%" stop-color="#090d16" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="110" cy="242" rx="66" ry="12" fill="rgba(225,29,72,0.28)" stroke="#f43f5e" stroke-width="2" />
+            <g class="animate-ring-ccw">
+              <polygon points="110,36 184,118 110,200 36,118" fill="none" stroke="#f43f5e" stroke-width="2" stroke-dasharray="8 5" />
+            </g>
+            <polygon points="84,96 22,48 44,114 78,124" fill="url(#darkCore)" stroke="#a855f7" stroke-width="1.8" />
+            <polygon points="136,96 198,48 176,114 142,124" fill="url(#darkCore)" stroke="#a855f7" stroke-width="1.8" />
+            <polygon points="110,50 156,96 144,174 110,196 76,174 64,96" fill="url(#darkCore)" stroke="#f43f5e" stroke-width="2.5" />
+            <polygon points="86,108 104,116 88,120" fill="#fde047" />
+            <polygon points="134,108 116,116 132,120" fill="#fde047" />
+            <polygon points="110,132 122,148 110,164 98,148" fill="#e11d48" stroke="#fda4af" stroke-width="1.5" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ルール説明ストリップ -->
+    <div class="bg-white/95 border-2 border-sky-200 rounded-xl px-3 py-1.5 text-center text-[11px] sm:text-xs font-bold text-slate-700 shadow-sm shrink-0">
+      言葉をつないで<span class="text-orange-600 font-black">定理・合同条件・相似条件</span>を発動！敵の攻撃ゲージが溜まる前に倒そう！<br class="hidden sm:inline" />
+      全5面構成（<span class="text-rose-600 font-black">5面はボス戦！</span>）＋緑の<span class="text-emerald-600 font-black">「💖 回復」</span>カードでHPを回復できるぞ！
+    </div>
+
+    <!-- 難易度選択グリッド（4コース：初級・中級・上級・エンドレス） -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 shrink-0">
+      <!-- 初級 -->
+      <button
+        data-mode="easy"
+        class="mode-card bg-white hover:bg-emerald-50/70 border-2 border-slate-200 hover:border-emerald-500 border-t-[5px] border-t-emerald-500 rounded-2xl p-2.5 text-left flex flex-col justify-between gap-1 shadow-md transition-transform active:scale-98"
+      >
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded">初級・1〜2年基本</span>
+            <span class="text-[10px] font-black text-slate-400">全5面</span>
+          </div>
+          <div class="text-sm sm:text-base font-black text-slate-900 mt-1">基本の角と合同条件</div>
+          <p class="text-[11px] text-slate-600 leading-snug mt-0.5">
+            対頂角・平行線の同位角/錯角・三角形＆直角三角形の合同条件
+          </p>
+        </div>
+        <div id="best-easy" class="flex justify-between items-center text-[11px] font-black text-blue-700 border-t border-slate-100 pt-1 mt-1">
+          <span>BEST: 0 pt</span>
+          <span>到達: 未クリア</span>
+        </div>
+      </button>
+
+      <!-- 中級 -->
+      <button
+        data-mode="normal"
+        class="mode-card bg-white hover:bg-orange-50/70 border-2 border-slate-200 hover:border-orange-500 border-t-[5px] border-t-orange-500 rounded-2xl p-2.5 text-left flex flex-col justify-between gap-1 shadow-md transition-transform active:scale-98"
+      >
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="bg-orange-100 text-orange-800 text-[10px] font-black px-2 py-0.5 rounded">中級・2年図形</span>
+            <span class="text-[10px] font-black text-slate-400">全5面</span>
+          </div>
+          <div class="text-sm sm:text-base font-black text-slate-900 mt-1">二等辺と平行四辺形</div>
+          <p class="text-[11px] text-slate-600 leading-snug mt-0.5">
+            合同条件 ＋ 二等辺三角形の性質・平行四辺形の性質＆5条件
+          </p>
+        </div>
+        <div id="best-normal" class="flex justify-between items-center text-[11px] font-black text-blue-700 border-t border-slate-100 pt-1 mt-1">
+          <span>BEST: 0 pt</span>
+          <span>到達: 未クリア</span>
+        </div>
+      </button>
+
+      <!-- 上級 -->
+      <button
+        data-mode="hard"
+        class="mode-card bg-white hover:bg-rose-50/70 border-2 border-slate-200 hover:border-rose-500 border-t-[5px] border-t-rose-600 rounded-2xl p-2.5 text-left flex flex-col justify-between gap-1 shadow-md transition-transform active:scale-98"
+      >
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="bg-rose-100 text-rose-800 text-[10px] font-black px-2 py-0.5 rounded">上級・3年総仕上げ</span>
+            <span class="text-[10px] font-black text-slate-400">全5面</span>
+          </div>
+          <div class="text-sm sm:text-base font-black text-slate-900 mt-1">相似・円周角・中点連結</div>
+          <p class="text-[11px] text-slate-600 leading-snug mt-0.5">
+            相似条件(3種)・円周角の定理・中点連結定理 ＋ 合同/平行四辺形
+          </p>
+        </div>
+        <div id="best-hard" class="flex justify-between items-center text-[11px] font-black text-blue-700 border-t border-slate-100 pt-1 mt-1">
+          <span>BEST: 0 pt</span>
+          <span>到達: 未クリア</span>
+        </div>
+      </button>
+
+      <!-- エンドレス -->
+      <button
+        data-mode="endless"
+        class="mode-card bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-900 hover:from-indigo-900 hover:to-purple-900 text-white border-2 border-purple-400 border-t-[5px] border-t-amber-400 rounded-2xl p-2.5 text-left flex flex-col justify-between gap-1 shadow-lg transition-transform active:scale-98"
+      >
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded">♾️ エンドレス</span>
+            <span class="text-[10px] font-black text-amber-300">無限周回</span>
+          </div>
+          <div class="text-sm sm:text-base font-black text-yellow-200 mt-1">全単元ミックス無限戦</div>
+          <p class="text-[11px] text-purple-200 leading-snug mt-0.5">
+            5面ごとにボス登場！倒すたびに敵のHP・攻撃力が上昇して次周へ！
+          </p>
+        </div>
+        <div id="best-endless" class="flex justify-between items-center text-[11px] font-black text-amber-300 border-t border-purple-800 pt-1 mt-1">
+          <span>BEST: 0 pt</span>
+          <span>最高: STAGE 1</span>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <!-- ==================== 2. バトル画面 ==================== -->
+  <section id="battle-screen" class="screen flex-col justify-between p-2 sm:p-3 gap-1.5 sm:gap-2">
+    <!-- 上部ステータスHUD -->
+    <header class="bg-white border-2 border-sky-300 rounded-2xl px-3 py-1.5 flex items-center justify-between shadow-sm shrink-0">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div class="flex flex-col">
+          <span id="stage-badge" class="bg-blue-700 text-white text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-md">
+            STAGE 1 / 5
+          </span>
+          <span id="loop-badge" class="hidden text-[10px] font-black text-purple-700 mt-0.5">LOOP 1</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-orbitron text-[9px] font-bold text-slate-400">SCORE</span>
+          <span id="score-val" class="font-orbitron text-base sm:text-lg font-black text-amber-600 tabular-nums leading-tight">0</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-orbitron text-[9px] font-bold text-slate-400">COMBO</span>
+          <span id="combo-val" class="font-orbitron text-base sm:text-lg font-black text-emerald-600 tabular-nums leading-tight">0</span>
+        </div>
+      </div>
+
+      <!-- プレイヤーHPバー -->
+      <div class="flex-1 max-w-[190px] sm:max-w-[240px] mx-2">
+        <div class="flex justify-between items-center text-[10px] sm:text-xs font-black mb-0.5">
+          <span class="text-sky-800">HERO HP</span>
+          <span id="player-hp-text" class="text-emerald-700 tabular-nums">100 / 100</span>
+        </div>
+        <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+          <div id="player-hp-fill" class="h-full w-full bg-gradient-to-r from-emerald-500 to-sky-400 transition-all duration-300"></div>
+        </div>
+      </div>
+
+      <button
+        id="quit-btn"
+        class="bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300 px-2.5 py-1 rounded-xl text-xs font-extrabold active:scale-95 shrink-0"
+      >
+        中断
+      </button>
+    </header>
+
+    <!-- バトルステージ（天空の幾何学闘技場） -->
+    <div id="stage-arena" class="relative flex-1 min-h-[155px] max-h-[260px] rounded-2xl overflow-hidden border-[2.5px] border-white shadow-lg bg-gradient-to-b from-sky-600 via-sky-400 to-sky-100 flex items-end justify-between px-3 sm:px-6 pb-2">
+      <!-- 背景画像 (bg_arena.jpg or フォールバックSVG) -->
+      <img
+        src="bg_arena.jpg"
+        alt="天空闘技場"
+        class="absolute inset-0 w-full h-full object-cover z-0"
+        onerror="this.style.display='none'; document.getElementById('arena-fallback-bg').style.display='block';"
+      />
+      <svg id="arena-fallback-bg" class="hidden absolute inset-0 w-full h-full z-0" viewBox="0 0 900 280" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="aSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0284c7" />
+            <stop offset="55%" stop-color="#38bdf8" />
+            <stop offset="100%" stop-color="#e0f2fe" />
+          </linearGradient>
+        </defs>
+        <rect width="900" height="280" fill="url(#aSky)" />
+        <path d="M0 175 Q160 145 320 172 Q480 142 640 174 Q780 150 900 170 L900 280 L0 280 Z" fill="#ffffff" opacity="0.88" />
+        <rect x="0" y="205" width="900" height="75" fill="#f8fafc" />
+        <line x1="0" y1="205" x2="900" y2="205" stroke="#f59e0b" stroke-width="3" />
+        <polygon points="450,212 620,244 450,276 280,244" fill="#e0f2fe" stroke="#0284c7" stroke-width="2" />
+      </svg>
+
+      <!-- 敵ステータス＆攻撃カウントダウンHUD（右上） -->
+      <div class="absolute top-2 right-2.5 z-10 bg-slate-900/88 backdrop-blur-sm border border-purple-400/75 rounded-xl px-2.5 py-1.5 min-w-[180px] max-w-[62%] text-white shadow-md">
+        <div class="flex items-center justify-between gap-2 text-xs font-black mb-1">
+          <span id="enemy-name" class="truncate">数式スライム</span>
+          <span id="enemy-tag" class="bg-sky-600 px-1.5 py-0.5 rounded text-[10px] shrink-0">STAGE 1</span>
+        </div>
+        <!-- 敵HPバー -->
+        <div class="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+          <div id="enemy-hp-fill" class="h-full w-full bg-gradient-to-r from-rose-500 via-orange-500 to-yellow-400 transition-all duration-300"></div>
+        </div>
+        <div class="flex justify-between items-center text-[10px] text-slate-200 mt-0.5 font-bold tabular-nums">
+          <span id="enemy-atk-label" class="text-rose-300">ATK: 15</span>
+          <span id="enemy-hp-text">260 / 260</span>
+        </div>
+        <!-- 敵攻撃ゲージ -->
+        <div class="mt-1">
+          <div class="flex justify-between items-center text-[9px] font-black text-amber-300">
+            <span>⚔️ 敵の攻撃まで</span>
+            <span id="enemy-gauge-sec">9.0s</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden mt-0.5">
+            <div id="enemy-atk-gauge" class="h-full w-0 bg-gradient-to-r from-amber-400 to-rose-600 transition-all duration-75"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 左：味方ヒーロー -->
+      <div id="hero-actor" class="relative z-10 h-[85%] aspect-[3/4] flex items-end justify-center animate-hero-idle">
+        <img
+          id="hero-img-idle"
+          src="hero_idle.jpg"
+          alt="ヒーロー待機"
+          class="h-full w-auto sprite-multiply"
+          onerror="this.dataset.broken='1'; this.style.display='none'; updateHeroSpriteState(false);"
+        />
+        <img
+          id="hero-img-attack"
+          src="hero_attack.jpg"
+          alt="ヒーロー攻撃"
+          class="hidden h-full w-auto sprite-multiply"
+          onerror="this.dataset.broken='1'; this.style.display='none';"
+        />
+        <!-- フォールバックSVG（画像未配置時） -->
+        <svg id="battle-hero-fallback" class="hidden h-full w-auto drop-shadow-lg" viewBox="0 0 220 260">
+          <ellipse cx="110" cy="242" rx="64" ry="12" fill="rgba(2,132,199,0.25)" stroke="#38bdf8" stroke-width="2" />
+          <g class="animate-ring-cw">
+            <circle cx="110" cy="118" r="76" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="10 6" />
+            <polygon points="110,42 176,156 44,156" fill="none" stroke="#fef08a" stroke-width="2" />
+          </g>
+          <polygon points="82,102 18,64 46,118 78,124" fill="#38bdf8" stroke="#ffffff" stroke-width="1.5" />
+          <polygon points="138,102 202,64 174,118 142,124" fill="#38bdf8" stroke="#ffffff" stroke-width="1.5" />
+          <polygon points="110,54 152,118 110,182 68,118" fill="#1d4ed8" stroke="#f59e0b" stroke-width="3" />
+          <polygon points="110,54 130,118 110,182 90,118" fill="#7dd3fc" opacity="0.7" />
+          <circle cx="110" cy="118" r="14" fill="#ffffff" stroke="#f59e0b" stroke-width="2.5" />
+          <polygon points="104,174 116,174 110,228" fill="#f59e0b" stroke="#ffffff" stroke-width="1.5" />
+        </svg>
+      </div>
+
+      <!-- 斬撃ジオメトリックビーム -->
+      <svg id="slash-wave" class="absolute left-[20%] right-[14%] bottom-[26%] h-10 z-20 pointer-events-none opacity-0" viewBox="0 0 400 60" preserveAspectRatio="none">
+        <polygon points="0,26 340,6 400,30 340,54 0,34" fill="#38bdf8" opacity="0.88" />
+        <polygon points="20,28 355,14 395,30 355,46 20,32" fill="#ffffff" />
+        <line x1="40" y1="10" x2="365" y2="50" stroke="#fde047" stroke-width="3.5" />
+        <line x1="40" y1="50" x2="365" y2="10" stroke="#fde047" stroke-width="3.5" />
+      </svg>
+
+      <!-- 右：敵キャラクター（ステージ1〜4モンスター / 5面ボス切替） -->
+      <div id="enemy-actor" class="relative z-10 h-[82%] aspect-[3/4] flex items-end justify-center animate-enemy-idle">
+        <!-- 5面ボス用画像 (enemy_boss.jpg) -->
+        <img
+          id="boss-img"
+          src="enemy_boss.jpg"
+          alt="ダーク定理デーモン"
+          class="hidden h-full w-auto sprite-multiply"
+          onerror="this.dataset.broken='1'; this.style.display='none'; renderEnemyVisual();"
+        />
+        <!-- SVGモンスター／ボスフォールバックコンテナ -->
+        <div id="enemy-svg-container" class="h-full w-full flex items-end justify-center"></div>
+      </div>
+
+      <!-- 技発動カットインバナー -->
+      <div
+        id="cutin-strip"
+        class="absolute inset-x-0 top-1/2 -translate-y-1/2 scale-y-0 transition-transform duration-150 bg-gradient-to-r from-slate-900/95 via-blue-700/95 to-slate-900/95 border-y-2 border-yellow-300 py-1.5 px-3 text-center z-30 pointer-events-none shadow-xl"
+      >
+        <div id="cutin-cat" class="text-[11px] font-black text-yellow-300 tracking-wider">★ 定理発動！ ★</div>
+        <div id="cutin-sentence" class="text-sm sm:text-lg font-black text-white">2組の辺とその間の角がそれぞれ等しい</div>
+      </div>
+
+      <!-- 5面ボス出現WARNING演出オーバーレイ -->
+      <div
+        id="boss-warning-overlay"
+        class="hidden absolute inset-0 bg-rose-950/85 backdrop-blur-xs z-40 flex-col items-center justify-center text-center p-3 border-y-4 border-amber-400"
+      >
+        <div class="boss-warning-anim">
+          <div class="font-orbitron text-xl sm:text-3xl font-black text-amber-400 tracking-widest drop-shadow">
+            ⚠️ WARNING!! BOSS BATTLE ⚠️
+          </div>
+          <div id="boss-warning-sub" class="text-sm sm:text-lg font-black text-white mt-1">
+            STAGE 5 強敵「ダーク定理デーモン」出現！
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中央：文章組み立てスロット＆操作バー -->
+    <div class="bg-white border-2 border-sky-300 rounded-2xl p-2 flex flex-col gap-1.5 shadow-sm shrink-0">
+      <div
+        id="slot-tray"
+        class="min-h-[46px] max-h-[72px] overflow-y-auto bg-sky-50/90 border-2 border-dashed border-sky-500 rounded-xl px-2 py-1.5 flex flex-wrap items-center gap-1.5"
+      >
+        <span class="w-full text-center text-xs sm:text-sm font-bold text-slate-500">
+          下の言葉ブロックをタップして定理（または「💖 回復」）をセット！
+        </span>
+      </div>
+
+      <div id="status-line" class="min-h-[18px] text-xs font-black text-center text-rose-600"></div>
+
+      <div class="grid grid-cols-12 gap-1.5">
+        <button
+          id="undo-btn"
+          disabled
+          class="col-span-3 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 border border-slate-300 py-2 rounded-xl text-xs font-black active:scale-95"
+        >
+          1つ戻す
+        </button>
+        <button
+          id="clear-btn"
+          disabled
+          class="col-span-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 border border-slate-300 py-2 rounded-xl text-xs font-black active:scale-95"
+        >
+          クリア
+        </button>
+        <button
+          id="shuffle-btn"
+          class="col-span-3 bg-blue-50 hover:bg-blue-100 disabled:opacity-40 text-blue-700 border border-blue-300 py-2 rounded-xl text-xs font-black active:scale-95"
+        >
+          手札入替
+        </button>
+        <button
+          id="attack-btn"
+          disabled
+          class="col-span-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:from-slate-300 disabled:to-slate-300 text-white py-2 rounded-xl text-sm sm:text-base font-black shadow-md active:scale-95"
+        >
+          発動！
+        </button>
+      </div>
+    </div>
+
+    <!-- 下部：12枚手札グリッド -->
+    <div id="hand-grid" class="relative flex-1 min-h-[164px] bg-white/95 border-2 border-sky-300 rounded-2xl p-2 grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2 shadow-sm">
+      <!-- 誤答ペナルティ（硬直オーバーレイ） -->
+      <div
+        id="lockout-cover"
+        class="hidden absolute inset-0 bg-rose-50/95 backdrop-blur-xs border-2 border-rose-500 rounded-2xl z-20 flex-col items-center justify-center gap-1.5 p-3 text-center"
+      >
+        <div class="text-base sm:text-lg font-black text-rose-600">⚡ 定理不成立！硬直中 ⚡</div>
+        <div id="lockout-hint" class="text-xs sm:text-sm font-extrabold text-rose-900">
+          言葉の順序や組み合わせを確認しよう！
+        </div>
+        <div class="w-4/5 max-w-[260px] h-2.5 bg-rose-200 rounded-full overflow-hidden border border-rose-400">
+          <div id="lockout-bar-fill" class="h-full w-full bg-gradient-to-r from-rose-600 to-orange-500 transition-all duration-75"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 3. リザルト画面 ==================== -->
+  <section id="result-screen" class="screen flex-col justify-between p-3 sm:p-5 gap-2.5">
+    <div class="text-center">
+      <h2 id="res-title" class="text-2xl sm:text-3xl font-black text-blue-800">STAGE CLEAR! 制覇おめでとう！</h2>
+      <div
+        id="record-pill"
+        class="hidden mt-1 bg-gradient-to-r from-orange-500 to-amber-400 text-white text-xs font-black px-4 py-1 rounded-full shadow"
+      >
+        🎉 NEW RECORD! ハイスコア更新！
+      </div>
+    </div>
+
+    <div class="bg-white border-2 border-sky-300 rounded-2xl p-3.5 flex items-center gap-3 shadow-md">
+      <div
+        id="res-rank"
+        class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-yellow-200 via-amber-400 to-orange-500 border-4 border-white text-amber-950 text-3xl sm:text-4xl font-black flex items-center justify-center shadow-lg shrink-0"
+      >
+        S
+      </div>
+      <div class="grid grid-cols-3 gap-2 flex-1 text-center">
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-2">
+          <div class="text-[11px] font-bold text-slate-500">SCORE</div>
+          <div id="res-score" class="text-base sm:text-xl font-black text-slate-900 tabular-nums">0</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-2">
+          <div class="text-[11px] font-bold text-slate-500">到達ステージ</div>
+          <div id="res-stage" class="text-base sm:text-xl font-black text-purple-700 tabular-nums">STAGE 5</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-2">
+          <div class="text-[11px] font-bold text-slate-500">最大コンボ</div>
+          <div id="res-combo" class="text-base sm:text-xl font-black text-emerald-600 tabular-nums">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="res-honor" class="bg-amber-100 border border-amber-300 text-amber-900 text-center text-xs sm:text-sm font-black py-2 px-3 rounded-xl">
+      称号：天空の幾何学マスター
+    </div>
+
+    <div class="flex-1 min-h-0 bg-white border-2 border-sky-300 rounded-2xl p-3 flex flex-col shadow-sm">
+      <div id="log-header" class="text-xs font-black text-slate-600 mb-2">発動した定理リスト（復習用：0回）</div>
+      <div id="log-scroll" class="flex-1 overflow-y-auto flex flex-col gap-1.5 pr-1"></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2.5 shrink-0">
+      <button
+        id="retry-btn"
+        class="bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white py-3 rounded-2xl text-sm sm:text-base font-black shadow-md active:scale-95"
+      >
+        もういちど挑む
+      </button>
+      <button
+        id="home-btn"
+        class="bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-300 py-3 rounded-2xl text-sm sm:text-base font-black active:scale-95"
+      >
+        モード選択へ
+      </button>
+    </div>
+  </section>
+
+  <!-- ==================== 4. 画像設定ガイドモーダル ==================== -->
+  <div id="asset-modal" class="hidden fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 items-center justify-center p-4">
+    <div class="bg-white border-2 border-sky-300 rounded-2xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-2.5 mb-3">
+        <h3 class="text-base sm:text-lg font-black text-blue-800">🖼️ 高精細イラストの設定ガイド</h3>
+        <button id="close-modal-btn" class="text-slate-400 hover:text-slate-700 text-xl font-black px-2">✕</button>
+      </div>
+      <p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-3">
+        <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-blue-700">index.html</code> と同じフォルダに以下の <code class="font-mono font-bold">.jpg</code> 画像を配置すると、自動で高精細イラストに切り替わります！
+      </p>
+      <ul class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs font-bold text-slate-800 space-y-1.5 mb-3">
+        <li><code class="text-blue-700 font-mono">title_bg.jpg</code> ：タイトル画面メインビジュアル</li>
+        <li><code class="text-blue-700 font-mono">hero_idle.jpg</code> ：味方ヒーロー（待機ポーズ）</li>
+        <li><code class="text-blue-700 font-mono">hero_attack.jpg</code> ：味方ヒーロー（斬撃ポーズ）</li>
+        <li><code class="text-rose-700 font-mono">enemy_boss.jpg</code> ：5面ボス「ダーク定理デーモン」</li>
+        <li><code class="text-emerald-700 font-mono">bg_arena.jpg</code> ：天空の幾何学闘技場背景</li>
+      </ul>
+      <p class="text-[11px] text-slate-500 mb-3">
+        ※ステージ1〜4は幾何学モンスターが登場し、5面ボス戦になると <code class="font-mono">enemy_boss.jpg</code> が登場します。画像がない環境でも built-in SVG で美しく表示されます。
+      </p>
+      <button id="modal-ok-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-black">
+        閉じる
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ==================== ステージ1〜4 モンスター＆ボスSVGデザイン ====================
+     */
+    const ENEMY_SVGS = {
+      // Stage 1: 数式スライム（愛嬌ある幾何学クリスタルゼリー）
+      stage1: `
+        <svg class="h-[78%] w-auto drop-shadow-md" viewBox="0 0 220 240">
+          <ellipse cx="110" cy="222" rx="68" ry="12" fill="rgba(14,165,233,0.28)" />
+          <path d="M44 195 Q40 105 110 86 Q180 105 176 195 Q110 215 44 195 Z" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="3" />
+          <path d="M62 175 Q64 115 110 102 Q140 112 146 150 Q105 135 62 175 Z" fill="#7dd3fc" opacity="0.55" />
+          <!-- 幾何学角飾り -->
+          <polygon points="110,60 122,88 98,88" fill="#fde047" stroke="#f59e0b" stroke-width="2" />
+          <!-- 鋭い目と口 -->
+          <polygon points="78,144 96,152 80,158" fill="#fef08a" />
+          <polygon points="142,144 124,152 140,158" fill="#fef08a" />
+          <polyline points="94,174 104,168 110,175 116,168 126,174" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+        </svg>
+      `,
+      // Stage 2: 三角ゴーレム（正多面体の岩巨人）
+      stage2: `
+        <svg class="h-[85%] w-auto drop-shadow-lg" viewBox="0 0 220 250">
+          <ellipse cx="110" cy="232" rx="72" ry="12" fill="rgba(71,85,105,0.3)" />
+          <!-- 左右の浮遊岩腕 -->
+          <polygon points="48,118 22,154 46,184 68,146" fill="#475569" stroke="#38bdf8" stroke-width="2" />
+          <polygon points="172,118 198,154 174,184 152,146" fill="#475569" stroke="#38bdf8" stroke-width="2" />
+          <!-- 胴体ピラミッド -->
+          <polygon points="110,48 176,196 44,196" fill="#334155" stroke="#94a3b8" stroke-width="3" />
+          <polygon points="110,48 142,196 78,196" fill="#1e293b" />
+          <!-- コア発光 -->
+          <polygon points="110,112 128,136 110,160 92,136" fill="#38bdf8" stroke="#ffffff" stroke-width="2" />
+          <line x1="82" y1="98" x2="102" y2="104" stroke="#fde047" stroke-width="4" stroke-linecap="round" />
+          <line x1="138" y1="98" x2="118" y2="104" stroke="#fde047" stroke-width="4" stroke-linecap="round" />
+        </svg>
+      `,
+      // Stage 3: 平行四辺形ナイト（黄金と蒼の幾何学重装騎士）
+      stage3: `
+        <svg class="h-[88%] w-auto drop-shadow-lg" viewBox="0 0 220 260">
+          <ellipse cx="110" cy="242" rx="68" ry="12" fill="rgba(234,88,12,0.28)" />
+          <!-- 平行四辺形シールド -->
+          <polygon points="34,96 74,82 64,174 24,188" fill="#1d4ed8" stroke="#f59e0b" stroke-width="3" />
+          <!-- 鎧ボディ -->
+          <polygon points="82,82 146,82 156,184 74,184" fill="#1e293b" stroke="#f59e0b" stroke-width="2.5" />
+          <polygon points="114,96 132,124 114,152 96,124" fill="#f97316" stroke="#fde047" stroke-width="2" />
+          <!-- 兜 -->
+          <polygon points="90,42 138,42 144,78 84,78" fill="#334155" stroke="#f59e0b" stroke-width="2.5" />
+          <rect x="94" y="56" width="40" height="7" fill="#fde047" />
+          <!-- 幾何学ランス -->
+          <polygon points="168,26 180,196 160,196" fill="#e2e8f0" stroke="#f97316" stroke-width="2" />
+        </svg>
+      `,
+      // Stage 4: 証明ガーディアン（回転リングを纏う天球魔導機）
+      stage4: `
+        <svg class="h-[90%] w-auto drop-shadow-lg" viewBox="0 0 220 260">
+          <ellipse cx="110" cy="242" rx="68" ry="12" fill="rgba(147,51,234,0.3)" />
+          <g class="animate-ring-cw">
+            <circle cx="110" cy="122" r="78" fill="none" stroke="#c084fc" stroke-width="2.5" stroke-dasharray="12 6" />
+            <polygon points="110,44 178,160 42,160" fill="none" stroke="#fde047" stroke-width="2" />
+          </g>
+          <polygon points="110,56 162,122 110,188 58,122" fill="#4c1d95" stroke="#e879f9" stroke-width="3" />
+          <circle cx="110" cy="122" r="24" fill="#f43f5e" stroke="#ffffff" stroke-width="2.5" />
+          <circle cx="110" cy="122" r="9" fill="#fef08a" />
+        </svg>
+      `,
+      // Stage 5: ボスフォールバック（enemy_boss.jpg未配置時のダーク定理デーモン）
+      bossFallback: `
+        <svg class="h-[94%] w-auto drop-shadow-xl" viewBox="0 0 220 260">
+          <ellipse cx="110" cy="242" rx="72" ry="13" fill="rgba(225,29,72,0.34)" stroke="#f43f5e" stroke-width="2" />
+          <g class="animate-ring-ccw">
+            <polygon points="110,32 188,118 110,204 32,118" fill="none" stroke="#f43f5e" stroke-width="2.2" stroke-dasharray="8 5" />
+          </g>
+          <polygon points="84,96 18,44 42,114 78,124" fill="#1e1b4b" stroke="#a855f7" stroke-width="2" />
+          <polygon points="136,96 202,44 178,114 142,124" fill="#1e1b4b" stroke="#a855f7" stroke-width="2" />
+          <polygon points="110,48 158,96 146,176 110,198 74,176 62,96" fill="#090d16" stroke="#f43f5e" stroke-width="3" />
+          <path d="M90 54 Q74 32 82 16 Q94 34 98 52 Z" fill="#e11d48" />
+          <path d="M130 54 Q146 32 138 16 Q126 34 122 52 Z" fill="#e11d48" />
+          <polygon points="84,106 104,115 86,120" fill="#fde047" />
+          <polygon points="136,106 116,115 134,120" fill="#fde047" />
+          <polygon points="110,130 124,148 110,166 96,148" fill="#e11d48" stroke="#fda4af" stroke-width="1.8" />
+        </svg>
+      `
+    };
+
+    const STAGE_ENEMIES = [
+      { name: '数式スライム', svgKey: 'stage1', baseHp: 240, baseAtk: 14, interval: 9.5 },
+      { name: '三角ゴーレム', svgKey: 'stage2', baseHp: 320, baseAtk: 18, interval: 9.0 },
+      { name: '平行四辺形ナイト', svgKey: 'stage3', baseHp: 400, baseAtk: 22, interval: 8.5 },
+      { name: '証明ガーディアン', svgKey: 'stage4', baseHp: 480, baseAtk: 26, interval: 8.0 },
+      { name: 'ダーク定理デーモン', svgKey: 'bossFallback', baseHp: 720, baseAtk: 34, interval: 7.5, isBoss: true }
+    ];
+
+    /**
+     * ==================== ヒーロー画像ステート制御 ====================
+     */
+    function updateHeroSpriteState(isAttacking) {
+      const idleImg = document.getElementById('hero-img-idle');
+      const atkImg = document.getElementById('hero-img-attack');
+      const fallbackSvg = document.getElementById('battle-hero-fallback');
+
+      const hasIdle = idleImg && idleImg.dataset.broken !== '1';
+      const hasAtk = atkImg && atkImg.dataset.broken !== '1';
+
+      if (!hasIdle) {
+        if (idleImg) idleImg.style.display = 'none';
+        if (atkImg) atkImg.style.display = 'none';
+        if (fallbackSvg) fallbackSvg.style.display = 'block';
+        return;
+      }
+
+      if (fallbackSvg) fallbackSvg.style.display = 'none';
+
+      if (isAttacking && hasAtk) {
+        idleImg.style.display = 'none';
+        atkImg.style.display = 'block';
+      } else {
+        if (atkImg) atkImg.style.display = 'none';
+        idleImg.style.display = 'block';
+      }
+    }
+
+    /**
+     * ==================== サウンドエンジン (Web Audio API) ====================
+     */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type, duration, vol = 0.14, delay = 0) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime + delay;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+      }
+
+      tap() { this.playTone(660, 'sine', 0.06, 0.12); }
+      undo() { this.playTone(380, 'triangle', 0.08, 0.1); }
+      shuffle() {
+        this.playTone(440, 'sine', 0.07, 0.1, 0);
+        this.playTone(659.25, 'sine', 0.09, 0.1, 0.05);
+      }
+
+      heal() {
+        [523.25, 659.25, 783.99, 1046.5].forEach((n, i) => {
+          this.playTone(n, 'sine', 0.18, 0.13, i * 0.05);
+        });
+      }
+
+      slash(tier) {
+        this.playTone(330, 'sawtooth', 0.12, 0.13, 0);
+        this.playTone(523.25, 'square', 0.15, 0.13, 0.05);
+        this.playTone(783.99, 'square', 0.22, 0.15, 0.1);
+        if (tier >= 2) this.playTone(1046.5, 'sine', 0.3, 0.16, 0.16);
+        if (tier >= 3) this.playTone(1318.5, 'triangle', 0.38, 0.18, 0.22);
+      }
+
+      enemyHit() {
+        this.playTone(150, 'sawtooth', 0.18, 0.2, 0);
+        this.playTone(95, 'square', 0.26, 0.22, 0.07);
+      }
+
+      bossWarning() {
+        [440, 554.37, 440, 554.37].forEach((n, i) => {
+          this.playTone(n, 'sawtooth', 0.18, 0.16, i * 0.2);
+        });
+      }
+
+      defeat() {
+        [523.25, 659.25, 783.99, 1046.5].forEach((n, i) => {
+          this.playTone(n, 'triangle', 0.22, 0.16, i * 0.07);
+        });
+      }
+
+      error() {
+        this.playTone(170, 'sawtooth', 0.2, 0.17, 0);
+        this.playTone(130, 'sawtooth', 0.28, 0.17, 0.11);
+      }
+
+      victory() {
+        [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((n, i) => {
+          this.playTone(n, 'square', 0.25, 0.15, i * 0.09);
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /**
+     * ==================== 中学数学・定理データベース ====================
+     */
+    const THEOREMS = [
+      // 初級（1〜2年基本）
+      { id: 'vert_angle', modes: ['easy', 'endless'], category: '角の性質', blocks: ['対頂角', 'は', '等しい'] },
+      { id: 'parallel_corr', modes: ['easy', 'endless'], category: '平行線の性質', blocks: ['平行線の', '同位角は', '等しい'] },
+      { id: 'parallel_alt', modes: ['easy', 'endless'], category: '平行線の性質', blocks: ['平行線の', '錯角は', '等しい'] },
+      { id: 'parallel_cond_corr', modes: ['easy', 'endless'], category: '平行線になる条件', blocks: ['同位角が', '等しければ', '2直線は', '平行である'] },
+      { id: 'parallel_cond_alt', modes: ['easy', 'endless'], category: '平行線になる条件', blocks: ['錯角が', '等しければ', '2直線は', '平行である'] },
+      { id: 'cong_sss', modes: ['easy', 'normal', 'endless'], category: '三角形の合同条件', blocks: ['3組の', '辺が', 'それぞれ', '等しい'] },
+      { id: 'cong_sas', modes: ['easy', 'normal', 'endless'], category: '三角形の合同条件', blocks: ['2組の', '辺と', 'その間の角が', 'それぞれ', '等しい'] },
+      { id: 'cong_asa', modes: ['easy', 'normal', 'endless'], category: '三角形の合同条件', blocks: ['1組の', '辺と', 'その両端の角が', 'それぞれ', '等しい'] },
+      { id: 'rcong_ha', modes: ['easy', 'hard', 'endless'], category: '直角三角形の合同条件', blocks: ['直角三角形の', '斜辺と', '1つの鋭角が', 'それぞれ', '等しい'] },
+      { id: 'rcong_hs', modes: ['easy', 'hard', 'endless'], category: '直角三角形の合同条件', blocks: ['直角三角形の', '斜辺と', '他の一辺が', 'それぞれ', '等しい'] },
+
+      // 中級（2年図形・平行四辺形）
+      { id: 'iso_base', modes: ['normal', 'endless'], category: '二等辺三角形の性質', blocks: ['二等辺三角形の', '2つの底角は', '等しい'] },
+      { id: 'iso_bisect', modes: ['normal', 'endless'], category: '二等辺三角形の性質', blocks: ['二等辺三角形の', '頂角の二等分線は', '底辺を', '垂直に2等分する'] },
+      { id: 'iso_conv', modes: ['normal', 'endless'], category: '二等辺三角形になる条件', blocks: ['2つの角が', '等しい三角形は', '二等辺三角形である'] },
+      { id: 'para_prop_sides', modes: ['normal', 'endless'], category: '平行四辺形の性質', blocks: ['平行四辺形の', '2組の対辺は', 'それぞれ', '等しい'] },
+      { id: 'para_prop_angles', modes: ['normal', 'endless'], category: '平行四辺形の性質', blocks: ['平行四辺形の', '2組の対角は', 'それぞれ', '等しい'] },
+      { id: 'para_prop_diag', modes: ['normal', 'endless'], category: '平行四辺形の性質', blocks: ['平行四辺形の', '対角線は', 'それぞれの中点で', '交わる'] },
+      { id: 'para_cond_def', modes: ['normal', 'endless'], category: '平行四辺形になる条件', blocks: ['2組の対辺が', 'それぞれ', '平行である'] },
+      { id: 'para_cond_sides', modes: ['normal', 'endless'], category: '平行四辺形になる条件', blocks: ['2組の対辺が', 'それぞれ', '等しい'] },
+      { id: 'para_cond_angles', modes: ['normal', 'endless'], category: '平行四辺形になる条件', blocks: ['2組の対角が', 'それぞれ', '等しい'] },
+      { id: 'para_cond_diag', modes: ['normal', 'endless'], category: '平行四辺形になる条件', blocks: ['対角線が', 'それぞれの中点で', '交わる'] },
+      { id: 'para_cond_one', modes: ['normal', 'hard', 'endless'], category: '平行四辺形になる条件', blocks: ['1組の対辺が', '平行で', 'その長さが', '等しい'] },
+
+      // 上級（3年相似・円周角・中点連結）
+      { id: 'sim_sss', modes: ['hard', 'endless'], category: '三角形の相似条件', blocks: ['3組の', '辺の比が', 'すべて', '等しい'] },
+      { id: 'sim_sas', modes: ['hard', 'endless'], category: '三角形の相似条件', blocks: ['2組の', '辺の比と', 'その間の角が', 'それぞれ', '等しい'] },
+      { id: 'sim_aa', modes: ['hard', 'endless'], category: '三角形の相似条件', blocks: ['2組の', '角が', 'それぞれ', '等しい'] },
+      { id: 'inscribed_const', modes: ['hard', 'endless'], category: '円周角の定理', blocks: ['1つの弧に対する', '円周角の', '大きさは', '一定である'] },
+      { id: 'inscribed_semi', modes: ['hard', 'endless'], category: '円周角の定理', blocks: ['半円の弧に対する', '円周角は', '90°である'] },
+      { id: 'midpoint_thm', modes: ['hard', 'endless'], category: '中点連結定理', blocks: ['三角形の', '2辺の中点を', '結んだ線分は', '底辺に平行で', '長さはその半分である'] }
+    ];
+
+    const HEAL_TOKEN = '💖 回復';
+    const HAND_SIZE = 12;
+    const LOCKOUT_SEC = 2.0;
+
+    /**
+     * ==================== ゲーム状態 ====================
+     */
+    const state = {
+      mode: 'easy',
+      stage: 1,
+      loop: 1,
+      playerHp: 100,
+      playerMaxHp: 100,
+      score: 0,
+      combo: 0,
+      maxCombo: 0,
+      enemyHp: 240,
+      enemyMaxHp: 240,
+      enemyAtk: 14,
+      enemyInterval: 9.5,
+      enemyCharge: 0,
+      battleLoopId: null,
+      paused: false,
+      hand: [],
+      selectedSlots: [],
+      history: [],
+      isLockedOut: false,
+      lockoutTimerId: null,
+      shuffleCooldown: false
+    };
+
+    const screens = {
+      title: document.getElementById('title-screen'),
+      battle: document.getElementById('battle-screen'),
+      result: document.getElementById('result-screen')
+    };
+
+    const el = {
+      soundBtn: document.getElementById('sound-toggle-btn'),
+      stageBadge: document.getElementById('stage-badge'),
+      loopBadge: document.getElementById('loop-badge'),
+      scoreVal: document.getElementById('score-val'),
+      comboVal: document.getElementById('combo-val'),
+      playerHpText: document.getElementById('player-hp-text'),
+      playerHpFill: document.getElementById('player-hp-fill'),
+      stageArena: document.getElementById('stage-arena'),
+      enemyName: document.getElementById('enemy-name'),
+      enemyTag: document.getElementById('enemy-tag'),
+      enemyHpFill: document.getElementById('enemy-hp-fill'),
+      enemyHpText: document.getElementById('enemy-hp-text'),
+      enemyAtkLabel: document.getElementById('enemy-atk-label'),
+      enemyGaugeSec: document.getElementById('enemy-gauge-sec'),
+      enemyAtkGauge: document.getElementById('enemy-atk-gauge'),
+      heroActor: document.getElementById('hero-actor'),
+      enemyActor: document.getElementById('enemy-actor'),
+      bossImg: document.getElementById('boss-img'),
+      enemySvgContainer: document.getElementById('enemy-svg-container'),
+      slashWave: document.getElementById('slash-wave'),
+      cutinStrip: document.getElementById('cutin-strip'),
+      cutinCat: document.getElementById('cutin-cat'),
+      cutinSentence: document.getElementById('cutin-sentence'),
+      bossWarningOverlay: document.getElementById('boss-warning-overlay'),
+      bossWarningSub: document.getElementById('boss-warning-sub'),
+      slotTray: document.getElementById('slot-tray'),
+      statusLine: document.getElementById('status-line'),
+      undoBtn: document.getElementById('undo-btn'),
+      clearBtn: document.getElementById('clear-btn'),
+      shuffleBtn: document.getElementById('shuffle-btn'),
+      attackBtn: document.getElementById('attack-btn'),
+      handGrid: document.getElementById('hand-grid'),
+      lockoutCover: document.getElementById('lockout-cover'),
+      lockoutHint: document.getElementById('lockout-hint'),
+      lockoutBarFill: document.getElementById('lockout-bar-fill'),
+      assetModal: document.getElementById('asset-modal')
+    };
+
+    /**
+     * ==================== ローカルストレージ＆画面遷移 ====================
+     */
+    function loadRecords() {
+      ['easy', 'normal', 'hard'].forEach(m => {
+        const bestScore = Number(localStorage.getItem(`tf2_score_${m}`) || 0);
+        const cleared = localStorage.getItem(`tf2_clear_${m}`) === '1';
+        const bestStage = Number(localStorage.getItem(`tf2_stage_${m}`) || 0);
+        const box = document.getElementById(`best-${m}`);
+        if (box) {
+          const stText = cleared ? '👑 制覇済' : bestStage > 0 ? `最高: ${bestStage}面` : '未クリア';
+          box.innerHTML = `<span>BEST: ${bestScore.toLocaleString()} pt</span><span>${stText}</span>`;
+        }
+      });
+
+      const endScore = Number(localStorage.getItem('tf2_score_endless') || 0);
+      const endStage = Number(localStorage.getItem('tf2_stage_endless') || 1);
+      const endBox = document.getElementById('best-endless');
+      if (endBox) {
+        endBox.innerHTML = `<span>BEST: ${endScore.toLocaleString()} pt</span><span>最高: STAGE ${endStage}</span>`;
+      }
+    }
+
+    function showScreen(key) {
+      Object.values(screens).forEach(s => s.classList.remove('active'));
+      screens[key].classList.add('active');
+    }
+
+    el.soundBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      el.soundBtn.textContent = sound.enabled ? '🔊 ON' : '🔇 OFF';
+      if (sound.enabled) sound.tap();
+    });
+
+    document.getElementById('asset-info-btn').addEventListener('click', () => {
+      sound.tap();
+      el.assetModal.classList.remove('hidden');
+      el.assetModal.classList.add('flex');
+    });
+
+    const closeModal = () => {
+      sound.undo();
+      el.assetModal.classList.add('hidden');
+      el.assetModal.classList.remove('flex');
+    };
+    document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+    document.getElementById('modal-ok-btn').addEventListener('click', closeModal);
+    el.assetModal.addEventListener('click', e => {
+      if (e.target === el.assetModal) closeModal();
+    });
+
+    document.querySelectorAll('.mode-card').forEach(card => {
+      card.addEventListener('click', () => {
+        sound.tap();
+        startBattle(card.dataset.mode);
+      });
+    });
+
+    document.getElementById('quit-btn').addEventListener('click', () => {
+      sound.undo();
+      stopBattleLoop();
+      clearLockout();
+      loadRecords();
+      showScreen('title');
+    });
+
+    document.getElementById('retry-btn').addEventListener('click', () => {
+      sound.tap();
+      startBattle(state.mode);
+    });
+
+    document.getElementById('home-btn').addEventListener('click', () => {
+      sound.tap();
+      loadRecords();
+      showScreen('title');
+    });
+
+    /**
+     * ==================== バトル開始＆ステージ管理 ====================
+     */
+    function startBattle(mode) {
+      state.mode = mode;
+      state.stage = 1;
+      state.loop = 1;
+      state.playerHp = 100;
+      state.playerMaxHp = 100;
+      state.score = 0;
+      state.combo = 0;
+      state.maxCombo = 0;
+      state.history = [];
+      state.selectedSlots = [];
+      state.paused = false;
+      state.shuffleCooldown = false;
+      el.shuffleBtn.disabled = false;
+      el.heroActor.classList.remove('hero-attacking', 'player-damaged');
+      updateHeroSpriteState(false);
+      clearLockout();
+
+      el.statusLine.textContent = '';
+      setupStage(1);
+      dealNewHand();
+      syncHud();
+      showScreen('battle');
+      startBattleLoop();
+    }
+
+    function setupStage(stageNum) {
+      state.stage = stageNum;
+      const stageIdx = (stageNum - 1) % 5; // 0..4 (4が5面ボス)
+      state.loop = Math.floor((stageNum - 1) / 5) + 1;
+
+      const template = STAGE_ENEMIES[stageIdx];
+      const isBoss = stageIdx === 4;
+
+      // 難易度＆周回スケーリング
+      const modeMult = state.mode === 'hard' ? 1.15 : state.mode === 'normal' ? 1.05 : 1.0;
+      const loopHpMult = Math.pow(1.32, state.loop - 1);
+      const loopAtkMult = Math.pow(1.22, state.loop - 1);
+
+      state.enemyMaxHp = Math.round(template.baseHp * modeMult * loopHpMult);
+      state.enemyHp = state.enemyMaxHp;
+      state.enemyAtk = Math.round(template.baseAtk * modeMult * loopAtkMult);
+      state.enemyInterval = Math.max(4.5, template.interval - (state.loop - 1) * 0.45);
+      state.enemyCharge = 0;
+
+      // UI反映
+      if (state.mode === 'endless') {
+        el.stageBadge.textContent = `STAGE ${state.stage}`;
+        el.loopBadge.classList.remove('hidden');
+        el.loopBadge.textContent = `LOOP ${state.loop}`;
+      } else {
+        el.stageBadge.textContent = `STAGE ${state.stage} / 5`;
+        el.loopBadge.classList.add('hidden');
+      }
+
+      const titlePrefix = state.loop > 1 ? `[周回${state.loop}] ` : '';
+      el.enemyName.textContent = `${titlePrefix}${template.name}`;
+      el.enemyTag.textContent = isBoss ? 'BOSS' : `STAGE ${state.stage}`;
+      el.enemyTag.className = isBoss
+        ? 'bg-gradient-to-r from-rose-600 to-purple-700 px-2 py-0.5 rounded text-[10px] font-black shrink-0'
+        : 'bg-sky-600 px-1.5 py-0.5 rounded text-[10px] font-black shrink-0';
+      el.enemyAtkLabel.textContent = `ATK: ${state.enemyAtk}`;
+
+      renderEnemyVisual(isBoss, template.svgKey);
+      updateEnemyHpUi();
+      updateEnemyGaugeUi();
+
+      // 5面ボス到達時のWARNING演出
+      if (isBoss) {
+        triggerBossWarningCutin();
+      }
+    }
+
+    function renderEnemyVisual(isBoss = false, svgKey = 'stage1') {
+      const bossImg = el.bossImg;
+      const hasBossImg = bossImg && bossImg.dataset.broken !== '1';
+
+      if (isBoss && hasBossImg) {
+        el.enemySvgContainer.innerHTML = '';
+        bossImg.classList.remove('hidden');
+        bossImg.style.display = 'block';
+      } else {
+        if (bossImg) {
+          bossImg.classList.add('hidden');
+          bossImg.style.display = 'none';
+        }
+        el.enemySvgContainer.innerHTML = ENEMY_SVGS[svgKey] || ENEMY_SVGS.stage1;
+      }
+    }
+
+    function triggerBossWarningCutin() {
+      state.paused = true;
+      sound.bossWarning();
+      el.bossWarningSub.textContent =
+        state.mode === 'endless'
+          ? `STAGE ${state.stage}（LOOP ${state.loop}）ボス「ダーク定理デーモン」出現！`
+          : 'FINAL STAGE 5 ボス「ダーク定理デーモン」出現！';
+      el.bossWarningOverlay.classList.remove('hidden');
+      el.bossWarningOverlay.classList.add('flex');
+
+      setTimeout(() => {
+        el.bossWarningOverlay.classList.add('hidden');
+        el.bossWarningOverlay.classList.remove('flex');
+        state.paused = false;
+      }, 1750);
+    }
+
+    /**
+     * ==================== リアルタイム敵攻撃ループ ====================
+     */
+    function startBattleLoop() {
+      stopBattleLoop();
+      state.battleLoopId = setInterval(() => {
+        if (state.paused) return;
+
+        state.enemyCharge += 0.1;
+        if (state.enemyCharge >= state.enemyInterval) {
+          state.enemyCharge = 0;
+          executeEnemyAttack();
+        }
+        updateEnemyGaugeUi();
+      }, 100);
+    }
+
+    function stopBattleLoop() {
+      if (state.battleLoopId) {
+        clearInterval(state.battleLoopId);
+        state.battleLoopId = null;
+      }
+    }
+
+    function updateEnemyGaugeUi() {
+      const pct = Math.max(0, Math.min(100, (state.enemyCharge / state.enemyInterval) * 100));
+      const remain = Math.max(0, state.enemyInterval - state.enemyCharge);
+      el.enemyAtkGauge.style.width = `${pct}%`;
+      el.enemyGaugeSec.textContent = `${remain.toFixed(1)}s`;
+    }
+
+    function executeEnemyAttack() {
+      sound.enemyHit();
+
+      // 敵突進＆ヒーロー被弾
+      el.enemyActor.classList.add('enemy-attacking');
+      setTimeout(() => el.enemyActor.classList.remove('enemy-attacking'), 450);
+
+      el.heroActor.classList.remove('player-damaged');
+      void el.heroActor.offsetWidth;
+      el.heroActor.classList.add('player-damaged');
+
+      el.stageArena.classList.remove('arena-shake');
+      void el.stageArena.offsetWidth;
+      el.stageArena.classList.add('arena-shake');
+
+      const dmg = state.enemyAtk;
+      state.playerHp = Math.max(0, state.playerHp - dmg);
+      syncHud();
+
+      // プレイヤー側ダメージ数値ポップアップ
+      const pop = document.createElement('div');
+      pop.className =
+        'dmg-popup absolute left-[16%] top-[34%] z-30 text-xl sm:text-3xl font-black text-rose-500 pointer-events-none';
+      pop.textContent = `-${dmg}`;
+      el.stageArena.appendChild(pop);
+      setTimeout(() => pop.remove(), 850);
+
+      el.statusLine.className = 'min-h-[18px] text-xs font-black text-center text-rose-600';
+      el.statusLine.textContent = `💥 敵の攻撃！ ${dmg} のダメージを受けた！`;
+
+      if (state.playerHp <= 0) {
+        endBattle(false);
+      }
+    }
+
+    /**
+     * ==================== 手札生成・補充・詰み検知（回復カード込み） ====================
+     */
+    function getModePool() {
+      return THEOREMS.filter(t => t.modes.includes(state.mode));
+    }
+
+    function hasValidTheoremInTiles(words) {
+      const pool = getModePool();
+      const freq = {};
+      words.forEach(w => {
+        if (w !== HEAL_TOKEN) freq[w] = (freq[w] || 0) + 1;
+      });
+
+      return pool.some(thm => {
+        const need = {};
+        thm.blocks.forEach(b => {
+          need[b] = (need[b] || 0) + 1;
+        });
+        return Object.keys(need).every(k => (freq[k] || 0) >= need[k]);
+      });
+    }
+
+    function dealNewHand() {
+      const pool = getModePool();
+      const tiles = [HEAL_TOKEN]; // 必ず1枚は回復ブロックを含める
+
+      const shuffled = [...pool].sort(() => Math.random() - 0.5);
+      for (const thm of shuffled) {
+        if (tiles.length + thm.blocks.length <= HAND_SIZE) {
+          tiles.push(...thm.blocks);
+        }
+        if (tiles.length >= 9) break;
+      }
+
+      const allWords = [];
+      pool.forEach(t => allWords.push(...t.blocks));
+      while (tiles.length < HAND_SIZE) {
+        const pick = allWords[Math.floor(Math.random() * allWords.length)];
+        if (tiles.filter(w => w === pick).length < 2) {
+          tiles.push(pick);
+        }
+      }
+
+      for (let i = tiles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+      }
+
+      state.hand = tiles.map((text, idx) => ({
+        idx,
+        text,
+        picked: false,
+        fresh: true
+      }));
+      state.selectedSlots = [];
+      renderAssemblySlots();
+      renderHandTiles();
+    }
+
+    function replaceUsedTiles(usedIndices) {
+      const pool = getModePool();
+      const allWords = [];
+      pool.forEach(t => allWords.push(...t.blocks));
+
+      const keptWords = state.hand
+        .filter((_, idx) => !usedIndices.includes(idx))
+        .map(h => h.text);
+
+      const currentHealCount = keptWords.filter(w => w === HEAL_TOKEN).length;
+
+      let replacement = null;
+      for (let attempt = 0; attempt < 35; attempt++) {
+        const candidate = [];
+        const guide = pool[Math.floor(Math.random() * pool.length)];
+        const guideBlocks = [...guide.blocks].sort(() => Math.random() - 0.5);
+
+        for (let i = 0; i < usedIndices.length; i++) {
+          // 回復カードが盤面に少ない時は一定確率で回復ブロックを補充
+          if (currentHealCount + candidate.filter(c => c === HEAL_TOKEN).length < 2 && Math.random() < 0.24) {
+            candidate.push(HEAL_TOKEN);
+          } else if (i < guideBlocks.length && Math.random() < 0.72) {
+            candidate.push(guideBlocks[i]);
+          } else {
+            candidate.push(allWords[Math.floor(Math.random() * allWords.length)]);
+          }
+        }
+
+        if (hasValidTheoremInTiles([...keptWords, ...candidate])) {
+          replacement = candidate;
+          break;
+        }
+      }
+
+      if (!replacement) {
+        el.statusLine.className = 'min-h-[18px] text-xs font-black text-center text-emerald-600';
+        el.statusLine.textContent = '✨ 手札リフレッシュ！新しいブロックを補充！';
+        dealNewHand();
+        return;
+      }
+
+      state.hand.forEach(h => (h.fresh = false));
+      usedIndices.forEach((slotIdx, i) => {
+        state.hand[slotIdx] = {
+          idx: slotIdx,
+          text: replacement[i],
+          picked: false,
+          fresh: true
+        };
+      });
+
+      state.selectedSlots = [];
+      renderAssemblySlots();
+      renderHandTiles();
+    }
+
+    /**
+     * ==================== UI描画 ====================
+     */
+    function renderAssemblySlots() {
+      el.slotTray.innerHTML = '';
+      if (state.selectedSlots.length === 0) {
+        const hint = document.createElement('span');
+        hint.className = 'w-full text-center text-xs sm:text-sm font-bold text-slate-500';
+        hint.textContent = '下の言葉ブロックをタップして定理（または「💖 回復」）をセット！';
+        el.slotTray.appendChild(hint);
+        el.attackBtn.disabled = true;
+        el.undoBtn.disabled = true;
+        el.clearBtn.disabled = true;
+        return;
+      }
+
+      state.selectedSlots.forEach(slotIdx => {
+        const item = state.hand[slotIdx];
+        if (!item) return;
+        const isHeal = item.text === HEAL_TOKEN;
+        const chip = document.createElement('button');
+        chip.className = isHeal
+          ? 'chip-pop bg-gradient-to-b from-emerald-400 to-emerald-600 text-white px-2.5 py-1 rounded-lg text-xs sm:text-sm font-black border border-emerald-800 shadow-sm active:scale-95'
+          : 'chip-pop bg-gradient-to-b from-sky-500 to-blue-700 text-white px-2.5 py-1 rounded-lg text-xs sm:text-sm font-black border border-blue-900 shadow-sm active:scale-95';
+        chip.textContent = item.text;
+        chip.addEventListener('click', () => {
+          if (state.isLockedOut) return;
+          sound.undo();
+          unpickTile(slotIdx);
+        });
+        el.slotTray.appendChild(chip);
+      });
+
+      el.attackBtn.disabled = state.isLockedOut;
+      el.undoBtn.disabled = state.isLockedOut;
+      el.clearBtn.disabled = state.isLockedOut;
+    }
+
+    function renderHandTiles() {
+      el.handGrid.querySelectorAll('.tile-btn').forEach(b => b.remove());
+
+      state.hand.forEach(item => {
+        const isHeal = item.text === HEAL_TOKEN;
+        const btn = document.createElement('button');
+        let cls = isHeal
+          ? 'tile-btn bg-gradient-to-b from-emerald-50 to-emerald-200 hover:from-emerald-100 hover:to-emerald-300 text-emerald-900 border-2 border-emerald-500 border-b-4 rounded-xl px-1.5 py-1 text-xs sm:text-sm font-black leading-tight flex items-center justify-center text-center shadow-xs transition-transform active:scale-95'
+          : 'tile-btn bg-gradient-to-b from-white to-slate-100 hover:from-sky-50 hover:to-sky-100 text-slate-900 border-2 border-slate-400 hover:border-sky-500 border-b-4 rounded-xl px-1.5 py-1 text-xs sm:text-sm font-black leading-tight flex items-center justify-center text-center shadow-xs transition-transform active:scale-95';
+
+        if (item.picked) cls += ' opacity-25 pointer-events-none scale-95';
+        if (item.fresh) cls += ' tile-fresh';
+
+        btn.className = cls;
+        btn.textContent = item.text;
+        btn.disabled = state.isLockedOut || item.picked;
+
+        btn.addEventListener('click', () => {
+          if (state.isLockedOut || item.picked) return;
+          sound.tap();
+          item.picked = true;
+          item.fresh = false;
+          state.selectedSlots.push(item.idx);
+          el.statusLine.textContent = '';
+          renderAssemblySlots();
+          renderHandTiles();
+        });
+
+        el.handGrid.appendChild(btn);
+      });
+    }
+
+    function unpickTile(slotIdx) {
+      const pos = state.selectedSlots.indexOf(slotIdx);
+      if (pos !== -1) {
+        state.selectedSlots.splice(pos, 1);
+        state.hand[slotIdx].picked = false;
+        renderAssemblySlots();
+        renderHandTiles();
+      }
+    }
+
+    el.undoBtn.addEventListener('click', () => {
+      if (state.isLockedOut || state.selectedSlots.length === 0) return;
+      sound.undo();
+      const last = state.selectedSlots.pop();
+      state.hand[last].picked = false;
+      renderAssemblySlots();
+      renderHandTiles();
+    });
+
+    el.clearBtn.addEventListener('click', () => {
+      if (state.isLockedOut || state.selectedSlots.length === 0) return;
+      sound.undo();
+      state.selectedSlots = [];
+      state.hand.forEach(h => (h.picked = false));
+      renderAssemblySlots();
+      renderHandTiles();
+    });
+
+    el.shuffleBtn.addEventListener('click', () => {
+      if (state.isLockedOut || state.shuffleCooldown) return;
+      sound.shuffle();
+      state.shuffleCooldown = true;
+      el.shuffleBtn.disabled = true;
+      el.statusLine.className = 'min-h-[18px] text-xs font-black text-center text-blue-700';
+      el.statusLine.textContent = '🔄 手札をすべて入れ替えた！';
+      dealNewHand();
+
+      setTimeout(() => {
+        state.shuffleCooldown = false;
+        if (!state.isLockedOut) el.shuffleBtn.disabled = false;
+      }, 1500);
+    });
+
+    /**
+     * ==================== 技・回復判定＆バトルアクション ====================
+     */
+    function getSkillTierInfo(blockCount) {
+      if (blockCount >= 6) return { tier: 3, label: '必殺奥義', baseDmg: 380 };
+      if (blockCount >= 4) return { tier: 2, label: '中技', baseDmg: 220 };
+      return { tier: 1, label: '小技', baseDmg: 110 };
+    }
+
+    el.attackBtn.addEventListener('click', () => {
+      if (state.isLockedOut || state.selectedSlots.length === 0) return;
+
+      const rawBlocks = state.selectedSlots.map(i => state.hand[i].text);
+      const healCount = rawBlocks.filter(b => b === HEAL_TOKEN).length;
+      const theoremBlocks = rawBlocks.filter(b => b !== HEAL_TOKEN);
+
+      // ケース1: 回復カード単独使用（緊急ヒール）
+      if (theoremBlocks.length === 0 && healCount > 0) {
+        executeStandaloneHeal(healCount, [...state.selectedSlots]);
+        return;
+      }
+
+      // ケース2: 定理文（＋任意の回復カード同時使用）
+      const joined = theoremBlocks.join('');
+      const matched = THEOREMS.find(t => t.blocks.join('') === joined);
+
+      if (matched) {
+        executeSkillAttack(matched, healCount, [...state.selectedSlots]);
+      } else {
+        executeInvalidPenalty(theoremBlocks, joined);
+      }
+    });
+
+    function applyHealAmount(amount) {
+      const before = state.playerHp;
+      state.playerHp = Math.min(state.playerMaxHp, state.playerHp + amount);
+      const actual = state.playerHp - before;
+
+      const pop = document.createElement('div');
+      pop.className =
+        'heal-popup absolute left-[16%] top-[28%] z-30 text-xl sm:text-2xl font-black text-emerald-300 pointer-events-none';
+      pop.textContent = `+${amount} HP`;
+      el.stageArena.appendChild(pop);
+      setTimeout(() => pop.remove(), 850);
+
+      return actual;
+    }
+
+    function executeStandaloneHeal(healCount, usedIndices) {
+      sound.heal();
+      const healVal = 18 * healCount;
+      applyHealAmount(healVal);
+      syncHud();
+
+      el.statusLine.className = 'min-h-[18px] text-xs font-black text-center text-emerald-600';
+      el.statusLine.textContent = `💖 緊急ヒール発動！ HEROのHPが ${healVal} 回復！`;
+      replaceUsedTiles(usedIndices);
+    }
+
+    function executeSkillAttack(thm, healCount, usedIndices) {
+      const tierInfo = getSkillTierInfo(thm.blocks.length);
+      sound.slash(tierInfo.tier);
+      if (healCount > 0) sound.heal();
+
+      state.combo += 1;
+      if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+
+      const comboMult = 1 + (state.combo - 1) * 0.1;
+      const damage = Math.round(tierInfo.baseDmg * comboMult);
+      const pts = damage * 10;
+
+      state.score += pts;
+      state.history.push({
+        category: thm.category,
+        tierLabel: tierInfo.label,
+        text: thm.blocks.join(' '),
+        score: pts,
+        healed: healCount > 0
+      });
+
+      // 同時回復がある場合は特大回復（+30 HP × 枚数）
+      let healMsg = '';
+      if (healCount > 0) {
+        const superHeal = 30 * healCount;
+        applyHealAmount(superHeal);
+        healMsg = ` ＆ HP+${superHeal}回復！`;
+      }
+
+      // 攻撃ヒット時に敵の攻撃ゲージを押し戻す（怯み効果）
+      const staggerSec = tierInfo.tier >= 2 ? 2.4 : 1.5;
+      state.enemyCharge = Math.max(0, state.enemyCharge - staggerSec);
+      updateEnemyGaugeUi();
+
+      triggerBattleEffects(thm, damage, tierInfo);
+
+      state.enemyHp -= damage;
+      if (state.enemyHp <= 0) {
+        state.enemyHp = 0;
+        updateEnemyHpUi();
+        state.score += 1000 * state.loop;
+        syncHud();
+        replaceUsedTiles(usedIndices);
+        handleStageCleared();
+        return;
+      }
+
+      updateEnemyHpUi();
+      syncHud();
+      el.statusLine.className = 'min-h-[18px] text-xs font-black text-center text-emerald-600';
+      el.statusLine.textContent = `⚔️ ${tierInfo.label}ヒット！ +${pts.toLocaleString()} pt！${healMsg}`;
+      replaceUsedTiles(usedIndices);
+    }
+
+    function handleStageCleared() {
+      const isFinalStandardStage = state.mode !== 'endless' && state.stage >= 5;
+
+      if (isFinalStandardStage) {
+        el.statusLine.className = 'min-h-[18px] text-xs font-black text-center text-amber-600';
+        el.statusLine.textContent = '🎉 全5ステージ完全制覇！！おめでとう！！';
+        setTimeout(() => endBattle(true), 650);
+        return;
+      }
+
+      // 次のステージへ進行（クリア時にHP少し回復）
+      const nextStage = state.stage + 1;
+      state.playerHp = Math.min(state.playerMaxHp, state.playerHp + 15);
+      syncHud();
+
+      el.statusLine.className = 'min-h-[18px] text-xs font-black text-center text-blue-700';
+      el.statusLine.textContent = `🏆 STAGE ${state.stage} クリア！ HP+15回復 ＆ 次の敵が出現！`;
+
+      setTimeout(() => {
+        sound.defeat();
+        setupStage(nextStage);
+      }, 500);
+    }
+
+    function triggerBattleEffects(thm, damage, tierInfo) {
+      updateHeroSpriteState(true);
+      el.heroActor.classList.add('hero-attacking');
+      setTimeout(() => {
+        el.heroActor.classList.remove('hero-attacking');
+        updateHeroSpriteState(false);
+      }, 460);
+
+      el.slashWave.classList.remove('slash-beam-active');
+      void el.slashWave.offsetWidth;
+      el.slashWave.classList.add('slash-beam-active');
+
+      el.enemyActor.classList.remove('actor-damaged');
+      void el.enemyActor.offsetWidth;
+      el.enemyActor.classList.add('actor-damaged');
+
+      el.stageArena.classList.remove('arena-shake');
+      void el.stageArena.offsetWidth;
+      el.stageArena.classList.add('arena-shake');
+
+      const dmgEl = document.createElement('div');
+      dmgEl.className =
+        'dmg-popup absolute right-[15%] top-[34%] z-30 text-2xl sm:text-3xl font-black text-yellow-300 pointer-events-none';
+      dmgEl.textContent = `-${damage}${tierInfo.tier >= 2 ? '!' : ''}`;
+      el.stageArena.appendChild(dmgEl);
+      setTimeout(() => dmgEl.remove(), 850);
+
+      el.cutinCat.textContent = `★ ${tierInfo.label}発動！【${thm.category}】 ★`;
+      el.cutinSentence.textContent = thm.blocks.join('');
+      el.cutinStrip.classList.remove('scale-y-0');
+      el.cutinStrip.classList.add('scale-y-100');
+      setTimeout(() => {
+        el.cutinStrip.classList.remove('scale-y-100');
+        el.cutinStrip.classList.add('scale-y-0');
+      }, 1000);
+    }
+
+    function executeInvalidPenalty(blocks, joined) {
+      sound.error();
+      state.combo = 0;
+      syncHud();
+
+      let hint = '主語と述語のつながりや語順を確認しよう！';
+      if (joined.includes('斜辺') && !joined.startsWith('直角三角形の')) {
+        hint = '直角三角形の条件には最初に「直角三角形の」が必要です！';
+      } else if (
+        (joined.includes('2組') || joined.includes('3組') || joined.includes('1組') || joined.includes('斜辺')) &&
+        !joined.includes('それぞれ') &&
+        !joined.includes('すべて')
+      ) {
+        hint = '「それぞれ」や「すべて」が抜けていませんか？';
+      } else if (joined.includes('辺の比') && !joined.includes('すべて') && !joined.includes('それぞれ')) {
+        hint = '相似条件の「すべて」または「それぞれ」を確認しよう！';
+      } else if (blocks.length <= 2) {
+        hint = 'まだ文章が途中で終わっています！最後までつなげよう。';
+      }
+
+      el.statusLine.className = 'min-h-[18px] text-xs font-black text-center text-rose-600';
+      el.statusLine.textContent = `ミス！ ${hint}`;
+
+      triggerLockout(LOCKOUT_SEC, hint);
+    }
+
+    function triggerLockout(sec, hintText) {
+      clearLockout();
+      state.isLockedOut = true;
+      el.lockoutHint.textContent = hintText;
+      el.lockoutBarFill.style.width = '100%';
+      el.lockoutCover.classList.remove('hidden');
+      el.lockoutCover.classList.add('flex');
+      el.shuffleBtn.disabled = true;
+      renderAssemblySlots();
+      renderHandTiles();
+
+      let remain = sec;
+      state.lockoutTimerId = setInterval(() => {
+        remain -= 0.05;
+        if (remain <= 0) {
+          clearLockout();
+          state.selectedSlots = [];
+          state.hand.forEach(h => (h.picked = false));
+          if (!state.shuffleCooldown) el.shuffleBtn.disabled = false;
+          renderAssemblySlots();
+          renderHandTiles();
+        } else {
+          const pct = Math.max(0, (remain / sec) * 100);
+          el.lockoutBarFill.style.width = `${pct}%`;
+        }
+      }, 50);
+    }
+
+    function clearLockout() {
+      state.isLockedOut = false;
+      if (state.lockoutTimerId) {
+        clearInterval(state.lockoutTimerId);
+        state.lockoutTimerId = null;
+      }
+      el.lockoutCover.classList.add('hidden');
+      el.lockoutCover.classList.remove('flex');
+    }
+
+    function updateEnemyHpUi() {
+      const pct = Math.max(0, Math.min(100, (state.enemyHp / state.enemyMaxHp) * 100));
+      el.enemyHpFill.style.width = `${pct}%`;
+      el.enemyHpText.textContent = `${Math.max(0, state.enemyHp)} / ${state.enemyMaxHp}`;
+    }
+
+    function syncHud() {
+      el.scoreVal.textContent = state.score.toLocaleString();
+      el.comboVal.textContent = `${state.combo}`;
+      const hpPct = Math.max(0, Math.min(100, (state.playerHp / state.playerMaxHp) * 100));
+      el.playerHpFill.style.width = `${hpPct}%`;
+      el.playerHpText.textContent = `${state.playerHp} / ${state.playerMaxHp}`;
+
+      if (hpPct <= 30) {
+        el.playerHpFill.className = 'h-full bg-gradient-to-r from-rose-600 to-orange-500 transition-all duration-300';
+      } else {
+        el.playerHpFill.className = 'h-full bg-gradient-to-r from-emerald-500 to-sky-400 transition-all duration-300';
+      }
+    }
+
+    /**
+     * ==================== リザルト画面 ====================
+     */
+    function endBattle(isVictory) {
+      stopBattleLoop();
+      clearLockout();
+
+      if (isVictory) {
+        sound.victory();
+      } else {
+        sound.error();
+      }
+
+      const scoreKey = `tf2_score_${state.mode}`;
+      const prevScore = Number(localStorage.getItem(scoreKey) || 0);
+      const isNewBest = state.score > prevScore && state.score > 0;
+      if (isNewBest) localStorage.setItem(scoreKey, state.score);
+
+      if (state.mode === 'endless') {
+        const prevSt = Number(localStorage.getItem('tf2_stage_endless') || 1);
+        if (state.stage > prevSt) localStorage.setItem('tf2_stage_endless', state.stage);
+      } else {
+        const prevSt = Number(localStorage.getItem(`tf2_stage_${state.mode}`) || 0);
+        if (state.stage > prevSt) localStorage.setItem(`tf2_stage_${state.mode}`, state.stage);
+        if (isVictory) localStorage.setItem(`tf2_clear_${state.mode}`, '1');
+      }
+
+      const resTitle = document.getElementById('res-title');
+      if (isVictory) {
+        resTitle.textContent = '👑 ALL STAGE CLEAR! 完全制覇！';
+        resTitle.className = 'text-2xl sm:text-3xl font-black text-amber-600';
+      } else {
+        resTitle.textContent = '💀 GAME OVER... 力尽きた！';
+        resTitle.className = 'text-2xl sm:text-3xl font-black text-rose-700';
+      }
+
+      let rank = 'C';
+      let honor = '称号：見習い証明ファイター';
+      if (state.score >= 28000 || (isVictory && state.playerHp >= 80)) {
+        rank = 'S';
+        honor = '称号：伝説のユークリッド覇王';
+      } else if (isVictory || state.score >= 16000) {
+        rank = 'A';
+        honor = '称号：天空の幾何学マスター';
+      } else if (state.stage >= 3 || state.score >= 8000) {
+        rank = 'B';
+        honor = '称号：一人前の定理剣士';
+      }
+
+      document.getElementById('res-rank').textContent = rank;
+      document.getElementById('res-score').textContent = state.score.toLocaleString();
+      document.getElementById('res-stage').textContent =
+        state.mode === 'endless' ? `STAGE ${state.stage} (周回${state.loop})` : `STAGE ${state.stage} / 5`;
+      document.getElementById('res-combo').textContent = `${state.maxCombo}`;
+      document.getElementById('res-honor').textContent = honor;
+      document.getElementById('record-pill').classList.toggle('hidden', !isNewBest);
+
+      const logScroll = document.getElementById('log-scroll');
+      logScroll.innerHTML = '';
+      document.getElementById('log-header').textContent =
+        `発動した定理リスト（復習用：${state.history.length}回）`;
+
+      if (state.history.length === 0) {
+        logScroll.innerHTML =
+          '<div class="text-slate-500 text-center py-6 text-xs sm:text-sm font-bold">今回は定理を発動できませんでした。次は短い定理から狙ってみよう！</div>';
+      } else {
+        state.history.forEach(item => {
+          const row = document.createElement('div');
+          row.className =
+            'bg-sky-50 border-l-4 border-sky-500 rounded-lg px-3 py-1.5 flex items-center justify-between gap-2 text-xs sm:text-sm';
+          row.innerHTML = `
+            <div>
+              <span class="block text-[10px] font-black text-sky-700">${item.category}（${item.tierLabel}）${item.healed ? ' 💖同時回復' : ''}</span>
+              <strong class="text-slate-900">${item.text}</strong>
+            </div>
+            <div class="font-black text-amber-600 whitespace-nowrap">+${item.score.toLocaleString()}</div>
+          `;
+          logScroll.appendChild(row);
+        });
+      }
+
+      showScreen('result');
+    }
+
+    loadRecords();
+  </script>
+</body>
+</html>
