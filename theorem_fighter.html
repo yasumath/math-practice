@@ -60,14 +60,14 @@
     justify-content: space-between;
     align-items: center;
     padding: 12px 14px 14px;
-    background: linear-gradient(180deg, #0f172a 0%, #1e293b 48%, #e0f2fe 100%);
-    overflow-y: auto;
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 45%, #e0f2fe 100%);
+    gap: 10px;
   }
 
   .title-hero-banner {
     width: 100%;
     aspect-ratio: 16 / 9;
-    max-height: 40dvh;
+    max-height: 36dvh;
     border-radius: 18px;
     overflow: hidden;
     position: relative;
@@ -95,7 +95,7 @@
   }
 
   .title-main {
-    font-size: 2.3rem;
+    font-size: 2.4rem;
     font-weight: 900;
     color: #0284c7;
     text-shadow: 0 3px 0 #fff, 0 6px 12px rgba(2,132,199,0.35);
@@ -105,7 +105,7 @@
 
   .title-sub {
     font-family: 'Orbitron', sans-serif;
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     font-weight: 900;
     color: #f97316;
     letter-spacing: 3px;
@@ -114,29 +114,39 @@
 
   .title-bottom-panel {
     width: 100%;
-    background: rgba(255, 255, 255, 0.96);
-    border-radius: 18px;
-    padding: 13px 14px;
+    background: rgba(255, 255, 255, 0.97);
+    border-radius: 20px;
+    padding: 14px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     border: 2px solid #cbd5e1;
-    margin-top: 10px;
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
+  }
+
+  .title-lead {
+    font-size: 0.84rem;
+    font-weight: 900;
+    color: #334155;
+    text-align: center;
+    line-height: 1.45;
+    padding-bottom: 4px;
   }
 
   .mode-grid {
+    flex: 1;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 9px;
-    margin-top: 8px;
+    grid-template-rows: 1fr 1fr;
+    gap: 11px;
+    margin-top: 6px;
   }
 
   .mode-btn {
     border: none;
-    border-radius: 14px;
-    padding: 10px 10px;
+    border-radius: 16px;
+    padding: 14px 12px;
     color: #fff;
     font-family: inherit;
     font-weight: 900;
@@ -144,13 +154,16 @@
     text-align: left;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     transition: transform 0.1s, filter 0.1s;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+    box-shadow: 0 5px 0 rgba(0,0,0,0.22);
   }
 
   .mode-btn:active {
     transform: translateY(3px);
-    box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.22);
   }
 
   .mode-easy { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
@@ -158,9 +171,9 @@
   .mode-hard { background: linear-gradient(135deg, #f97316, #ea580c); }
   .mode-endless { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
 
-  .mode-title { font-size: 1rem; display: block; }
-  .mode-desc { font-size: 0.7rem; opacity: 0.92; display: block; margin-top: 2px; font-weight: 700; }
-  .mode-best { font-size: 0.66rem; background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 6px; display: inline-block; margin-top: 4px; }
+  .mode-title { font-size: 1.18rem; display: block; letter-spacing: 0.5px; }
+  .mode-desc { font-size: 0.78rem; opacity: 0.95; display: block; margin-top: 4px; font-weight: 700; line-height: 1.3; }
+  .mode-best { font-size: 0.74rem; background: rgba(0,0,0,0.26); padding: 4px 8px; border-radius: 8px; display: inline-block; align-self: flex-start; margin-top: 6px; }
 
   /* ==================== BATTLE ARENA (TOP HALF) ==================== */
   #arena {
@@ -754,36 +767,44 @@
   <div id="title-screen">
     <div class="title-hero-banner" id="title-hero-banner">
       <div class="title-logo-fallback" id="title-logo-fallback">
-        <div style="font-size:0.75rem; font-weight:900; color:#0284c7; margin-bottom:4px;">中学数学 定理バトル</div>
+        <div style="font-size:0.78rem; font-weight:900; color:#0284c7; margin-bottom:4px;">中学数学 定理バトル</div>
         <h1 class="title-main">定理ファイター</h1>
         <div class="title-sub">THEOREM FIGHTER</div>
       </div>
     </div>
 
     <div class="title-bottom-panel">
-      <div style="font-size: 0.78rem; font-weight: 900; color: #334155; text-align: center; line-height: 1.4;">
-        言葉ブロックで定理を組み立てて攻撃！<br>
+      <div class="title-lead">
+        言葉ブロックで定理を組み立てて連続攻撃！<br>
         <span style="color:#059669;">💖回復ブロック</span>でHPを保ち、5面のボスを撃破せよ！
       </div>
       <div class="mode-grid">
         <button class="mode-btn mode-easy" onclick="startGame('easy')">
-          <span class="mode-title">初級（全5面）</span>
-          <span class="mode-desc">角・三角形の合同条件</span>
+          <div>
+            <span class="mode-title">初級（全5面）</span>
+            <span class="mode-desc">角・三角形の合同条件</span>
+          </div>
           <span class="mode-best" id="best-easy">BEST: 0</span>
         </button>
         <button class="mode-btn mode-normal" onclick="startGame('normal')">
-          <span class="mode-title">中級（全5面）</span>
-          <span class="mode-desc">二等辺・平行四辺形</span>
+          <div>
+            <span class="mode-title">中級（全5面）</span>
+            <span class="mode-desc">二等辺・平行四辺形</span>
+          </div>
           <span class="mode-best" id="best-normal">BEST: 0</span>
         </button>
         <button class="mode-btn mode-hard" onclick="startGame('hard')">
-          <span class="mode-title">上級（全5面）</span>
-          <span class="mode-desc">相似・円周角・中点連結</span>
+          <div>
+            <span class="mode-title">上級（全5面）</span>
+            <span class="mode-desc">相似・円周角・中点連結</span>
+          </div>
           <span class="mode-best" id="best-hard">BEST: 0</span>
         </button>
         <button class="mode-btn mode-endless" onclick="startGame('endless')">
-          <span class="mode-title">♾️ エンドレス</span>
-          <span class="mode-desc">全単元・5面ごとボス周回</span>
+          <div>
+            <span class="mode-title">♾️ エンドレス</span>
+            <span class="mode-desc">全単元・5面ごとボス周回</span>
+          </div>
           <span class="mode-best" id="best-endless">BEST: Stage 1</span>
         </button>
       </div>
@@ -1174,23 +1195,21 @@ function sfxStageWin() {
   playTone(783.99, 'triangle', 0.26, 0.15, 0.2);
 }
 function sfxVictoryFanfare() {
-  // Classic celebratory fanfare (C5 - C5 - C5 - C5 - G#4 - A#4 - C5 - A#4 - C5)
   const notes = [
-    { f: 523.25, d: 0.13, t: 0.00 }, // ド
-    { f: 523.25, d: 0.13, t: 0.14 }, // ド
-    { f: 523.25, d: 0.13, t: 0.28 }, // ド
-    { f: 523.25, d: 0.35, t: 0.42 }, // ドーー
-    { f: 415.30, d: 0.35, t: 0.78 }, // ラ♭ーー
-    { f: 466.16, d: 0.35, t: 1.14 }, // シ♭ーー
-    { f: 523.25, d: 0.22, t: 1.50 }, // ドー
-    { f: 466.16, d: 0.14, t: 1.74 }, // シ♭
-    { f: 523.25, d: 0.75, t: 1.90 }  // ドーーーー！
+    { f: 523.25, d: 0.13, t: 0.00 },
+    { f: 523.25, d: 0.13, t: 0.14 },
+    { f: 523.25, d: 0.13, t: 0.28 },
+    { f: 523.25, d: 0.35, t: 0.42 },
+    { f: 415.30, d: 0.35, t: 0.78 },
+    { f: 466.16, d: 0.35, t: 1.14 },
+    { f: 523.25, d: 0.22, t: 1.50 },
+    { f: 466.16, d: 0.14, t: 1.74 },
+    { f: 523.25, d: 0.75, t: 1.90 }
   ];
   notes.forEach(n => {
     playTone(n.f, 'triangle', n.d, 0.18, n.t);
     playTone(n.f * 0.5, 'sine', n.d, 0.14, n.t);
   });
-  // Final chord harmony (E5 & G5)
   playTone(659.25, 'triangle', 0.75, 0.13, 1.90);
   playTone(783.99, 'triangle', 0.75, 0.13, 1.90);
 }
@@ -1334,7 +1353,7 @@ function triggerBossCutin() {
   }, 2000);
 }
 
-// ==================== 6. HAND GENERATION & REPLENISHMENT ====================
+// ==================== 6. SMART HAND GENERATION & CHAIN REPLENISHMENT ====================
 function canFormAnyTheorem(handArr) {
   const pool = getPoolTheorems();
   const counts = {};
@@ -1347,13 +1366,47 @@ function canFormAnyTheorem(handArr) {
   });
 }
 
+function getMissingWordsForBestMatch(remainingWords, maxSlots) {
+  const pool = getPoolTheorems();
+  const remCounts = {};
+  remainingWords.forEach(w => { remCounts[w] = (remCounts[w] || 0) + 1; });
+
+  // Find theorems that can be completed within maxSlots, preferring ones that reuse remaining cards
+  const candidates = [];
+  pool.forEach(th => {
+    const req = {};
+    th.forEach(w => { req[w] = (req[w] || 0) + 1; });
+    const missing = [];
+    let overlap = 0;
+    Object.keys(req).forEach(k => {
+      const have = remCounts[k] || 0;
+      overlap += Math.min(have, req[k]);
+      const need = req[k] - have;
+      for (let i = 0; i < need; i++) missing.push(k);
+    });
+    if (missing.length <= maxSlots) {
+      candidates.push({ missing, overlap });
+    }
+  });
+
+  if (candidates.length === 0) return [];
+  // Sort by highest overlap with existing hand so leftover cards connect into combos!
+  candidates.sort((a, b) => b.overlap - a.overlap || Math.random() - 0.5);
+  const topPool = candidates.slice(0, Math.min(3, candidates.length));
+  return topPool[Math.floor(Math.random() * topPool.length)].missing;
+}
+
 function generateValidHand() {
   const pool = getPoolTheorems();
   const allWords = Array.from(new Set(pool.flat()));
   const hand = [];
 
-  const guaranteed = pool[Math.floor(Math.random() * pool.length)];
-  guaranteed.forEach(w => hand.push(w));
+  // Seed 2 theorems so player has immediate combo choices without deadlocks
+  const first = pool[Math.floor(Math.random() * pool.length)];
+  first.forEach(w => hand.push(w));
+
+  const secondSeed = getMissingWordsForBestMatch(hand, 11 - hand.length);
+  secondSeed.forEach(w => hand.push(w));
 
   if (hand.length < 12) {
     hand.push(HEAL_TOKEN);
@@ -1386,18 +1439,45 @@ function replenishUsedCards(usedIndices) {
   const pool = getPoolTheorems();
   const allWords = Array.from(new Set(pool.flat()));
 
-  usedIndices.forEach(idx => {
-    const currentHeals = gameState.hand.filter((w, i) => !usedIndices.includes(i) && w === HEAL_TOKEN).length;
-    if (currentHeals < 2 && Math.random() < 0.16) {
+  // Collect cards that stay in hand
+  const remainingWords = gameState.hand.filter((_, i) => !usedIndices.includes(i));
+  const currentHeals = remainingWords.filter(w => w === HEAL_TOKEN).length;
+
+  // Determine smart missing words that connect with remaining hand cards to form next theorems
+  const smartQueue = [];
+  const neededForNext = getMissingWordsForBestMatch(remainingWords, usedIndices.length);
+  neededForNext.forEach(w => smartQueue.push(w));
+
+  // If still plenty of empty slots, seed a second follow-up theorem for multi-chain potential
+  const combinedAfterFirst = [...remainingWords, ...smartQueue];
+  const remainingSlotCount = usedIndices.length - smartQueue.length;
+  if (remainingSlotCount >= 2) {
+    const secondChain = getMissingWordsForBestMatch(combinedAfterFirst, remainingSlotCount);
+    secondChain.forEach(w => smartQueue.push(w));
+  }
+
+  // Shuffle usedIndices so smart words don't always land in top-left slots
+  const shuffledTargets = [...usedIndices];
+  for (let i = shuffledTargets.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledTargets[i], shuffledTargets[j]] = [shuffledTargets[j], shuffledTargets[i]];
+  }
+
+  let healCount = currentHeals;
+  shuffledTargets.forEach(idx => {
+    if (smartQueue.length > 0) {
+      gameState.hand[idx] = smartQueue.shift();
+    } else if (healCount < 2 && Math.random() < 0.22) {
       gameState.hand[idx] = HEAL_TOKEN;
+      healCount++;
     } else {
       gameState.hand[idx] = allWords[Math.floor(Math.random() * allWords.length)];
     }
   });
 
+  // Fallback safety only if somehow impossible
   if (!canFormAnyTheorem(gameState.hand)) {
     gameState.hand = generateValidHand();
-    setFeedback("手札に行き詰まりがないよう自動リフレッシュ！", "success");
   }
 }
 
