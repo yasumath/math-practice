@@ -8,16 +8,12 @@
   @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;900&family=Orbitron:wght@700;900&display=swap');
 
   :root {
-    --bg-sky-top: #0f172a;
-    --bg-sky-bot: #1e293b;
     --primary: #0284c7;
     --primary-light: #38bdf8;
     --accent-orange: #f97316;
     --accent-gold: #eab308;
     --accent-red: #ef4444;
     --accent-green: #10b981;
-    --card-bg: #ffffff;
-    --card-border: #cbd5e1;
     --text-dark: #0f172a;
   }
 
@@ -63,60 +59,43 @@
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    padding: 16px;
-    background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 45%, #f8fafc 100%);
-    background-size: cover;
-    background-position: center top;
+    padding: 12px 14px 14px;
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 48%, #e0f2fe 100%);
+    overflow-y: auto;
   }
 
-  #title-screen.has-bg {
-    background-image: linear-gradient(180deg, rgba(15,23,42,0.15) 0%, rgba(15,23,42,0.45) 55%, rgba(15,23,42,0.92) 100%), url('title_bg.jpg');
-  }
-
-  .title-top-bar {
+  .title-hero-banner {
     width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 40dvh;
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(135deg, #bae6fd 0%, #e0f2fe 50%, #fef3c7 100%);
+    border: 2.5px solid rgba(56, 189, 248, 0.6);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    z-index: 2;
+    flex-shrink: 0;
   }
 
-  .badge-pill {
-    background: rgba(15, 23, 42, 0.75);
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255,255,255,0.2);
-  }
-
-  .btn-icon {
-    background: rgba(255,255,255,0.9);
-    border: 2px solid #cbd5e1;
-    color: #0f172a;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.78rem;
-    font-weight: 900;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  .title-hero-banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
   }
 
   .title-logo-fallback {
     text-align: center;
-    margin-top: 20px;
-    z-index: 2;
-  }
-
-  #title-screen.has-bg .title-logo-fallback {
-    opacity: 0;
-    pointer-events: none;
+    padding: 12px;
   }
 
   .title-main {
-    font-size: 2.6rem;
+    font-size: 2.3rem;
     font-weight: 900;
     color: #0284c7;
     text-shadow: 0 3px 0 #fff, 0 6px 12px rgba(2,132,199,0.35);
@@ -126,7 +105,7 @@
 
   .title-sub {
     font-family: 'Orbitron', sans-serif;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 900;
     color: #f97316;
     letter-spacing: 3px;
@@ -135,26 +114,29 @@
 
   .title-bottom-panel {
     width: 100%;
-    background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: blur(8px);
-    border-radius: 20px;
-    padding: 16px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-    border: 2px solid #e2e8f0;
-    z-index: 2;
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 18px;
+    padding: 13px 14px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    border: 2px solid #cbd5e1;
+    margin-top: 10px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .mode-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 9px;
     margin-top: 8px;
   }
 
   .mode-btn {
     border: none;
     border-radius: 14px;
-    padding: 12px 10px;
+    padding: 10px 10px;
     color: #fff;
     font-family: inherit;
     font-weight: 900;
@@ -176,9 +158,9 @@
   .mode-hard { background: linear-gradient(135deg, #f97316, #ea580c); }
   .mode-endless { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
 
-  .mode-title { font-size: 1.05rem; display: block; }
-  .mode-desc { font-size: 0.72rem; opacity: 0.92; display: block; margin-top: 2px; font-weight: 700; }
-  .mode-best { font-size: 0.68rem; background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 6px; display: inline-block; margin-top: 5px; }
+  .mode-title { font-size: 1rem; display: block; }
+  .mode-desc { font-size: 0.7rem; opacity: 0.92; display: block; margin-top: 2px; font-weight: 700; }
+  .mode-best { font-size: 0.66rem; background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 6px; display: inline-block; margin-top: 4px; }
 
   /* ==================== BATTLE ARENA (TOP HALF) ==================== */
   #arena {
@@ -693,7 +675,7 @@
     max-width: 90%;
   }
 
-  /* ==================== MODALS (RESULT & GUIDE) ==================== */
+  /* ==================== RESULT MODAL ==================== */
   .modal-overlay {
     position: absolute;
     inset: 0;
@@ -763,21 +745,6 @@
     cursor: pointer;
     margin-top: 8px;
   }
-
-  .guide-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.74rem;
-    margin: 10px 0;
-    text-align: left;
-  }
-  .guide-table th, .guide-table td {
-    border: 1px solid #cbd5e1;
-    padding: 5px 6px;
-  }
-  .guide-table th { background: #e0f2fe; }
-  .status-ok { color: #059669; font-weight: 900; }
-  .status-fb { color: #d97706; font-weight: 900; }
 </style>
 </head>
 <body>
@@ -785,18 +752,16 @@
 <div id="app">
   <!-- ==================== TITLE SCREEN ==================== -->
   <div id="title-screen">
-    <div class="title-top-bar">
-      <span class="badge-pill">中学数学 定理バトル</span>
-      <button class="btn-icon" onclick="openGuide()">🖼️ 画像確認</button>
-    </div>
-
-    <div class="title-logo-fallback">
-      <h1 class="title-main">定理ファイター</h1>
-      <div class="title-sub">THEOREM FIGHTER</div>
+    <div class="title-hero-banner" id="title-hero-banner">
+      <div class="title-logo-fallback" id="title-logo-fallback">
+        <div style="font-size:0.75rem; font-weight:900; color:#0284c7; margin-bottom:4px;">中学数学 定理バトル</div>
+        <h1 class="title-main">定理ファイター</h1>
+        <div class="title-sub">THEOREM FIGHTER</div>
+      </div>
     </div>
 
     <div class="title-bottom-panel">
-      <div style="font-size: 0.8rem; font-weight: 900; color: #334155; text-align: center;">
+      <div style="font-size: 0.78rem; font-weight: 900; color: #334155; text-align: center; line-height: 1.4;">
         言葉ブロックで定理を組み立てて攻撃！<br>
         <span style="color:#059669;">💖回復ブロック</span>でHPを保ち、5面のボスを撃破せよ！
       </div>
@@ -854,9 +819,7 @@
             <div class="hp-bar-fill hero-hp-fill" id="hero-hp-bar" style="width:100%;"></div>
           </div>
         </div>
-        <div class="sprite-box" id="hero-sprite-box">
-          <!-- Hero Image or SVG injected here -->
-        </div>
+        <div class="sprite-box" id="hero-sprite-box"></div>
       </div>
 
       <!-- Slash Effect -->
@@ -882,9 +845,7 @@
             </div>
           </div>
         </div>
-        <div class="sprite-box" id="enemy-sprite-box">
-          <!-- Enemy Image or SVG injected here -->
-        </div>
+        <div class="sprite-box" id="enemy-sprite-box"></div>
       </div>
     </div>
   </div>
@@ -927,25 +888,6 @@
       <button class="btn-primary-full" onclick="closeResultToTitle()">タイトルへ戻る</button>
     </div>
   </div>
-
-  <!-- ==================== IMAGE GUIDE MODAL ==================== -->
-  <div class="modal-overlay" id="guide-modal">
-    <div class="modal-card">
-      <h2 class="modal-title" style="font-size:1.25rem;">🖼️ イラスト画像・自動透過ステータス</h2>
-      <p style="font-size:0.75rem; color:#475569; text-align:left; line-height:1.4;">
-        <code>index.html</code> と同じフォルダに以下の <code>.jpg</code> を置くと自動で読み込まれ、白背景は自動で透過処理されます。
-      </p>
-      <table class="guide-table">
-        <tr><th>役割</th><th>ファイル名</th><th>状態</th></tr>
-        <tr><td>タイトル背景</td><td><code>title_bg.jpg</code></td><td id="st-title">確認中</td></tr>
-        <tr><td>バトル背景</td><td><code>bg_arena.jpg</code></td><td id="st-arena">確認中</td></tr>
-        <tr><td>ヒーロー待機</td><td><code>hero_idle.jpg</code></td><td id="st-idle">確認中</td></tr>
-        <tr><td>ヒーロー攻撃</td><td><code>hero_attack.jpg</code></td><td id="st-atk">確認中</td></tr>
-        <tr><td>5面ボス</td><td><code>enemy_boss.jpg</code></td><td id="st-boss">確認中</td></tr>
-      </table>
-      <button class="btn-primary-full" onclick="closeGuide()">閉じる</button>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -955,8 +897,6 @@ const THEOREMS = {
     ["対頂角は", "等しい"],
     ["平行線の", "同位角は", "等しい"],
     ["平行線の", "錯角は", "等しい"],
-    ["三角形の", "内角の和は", "180°である"],
-    ["三角形の", "外角は", "隣り合わない", "2つの内角の和に", "等しい"],
     ["3組の", "辺が", "それぞれ", "等しい"],
     ["2組の", "辺と", "その間の角が", "それぞれ", "等しい"],
     ["1組の", "辺と", "その両端の角が", "それぞれ", "等しい"],
@@ -1013,7 +953,6 @@ function removeWhiteBackgroundFloodFill(img) {
     const data = imgData.data;
     const visited = new Uint8Array(w * h);
 
-    // Check if pixel is near-white background
     const isWhite = (idx) => {
       const r = data[idx * 4];
       const g = data[idx * 4 + 1];
@@ -1025,7 +964,6 @@ function removeWhiteBackgroundFloodFill(img) {
     let head = 0;
     let tail = 0;
 
-    // Seed border pixels
     for (let x = 0; x < w; x++) {
       const top = x;
       const bot = (h - 1) * w + x;
@@ -1039,13 +977,12 @@ function removeWhiteBackgroundFloodFill(img) {
       if (isWhite(right) && !visited[right]) { visited[right] = 1; queue[tail++] = right; }
     }
 
-    // BFS flood fill from outer edges
     while (head < tail) {
       const curr = queue[head++];
       const cx = curr % w;
       const cy = (curr - cx) / w;
 
-      data[curr * 4 + 3] = 0; // Set alpha to 0
+      data[curr * 4 + 3] = 0;
 
       if (cx > 0) {
         const n = curr - 1;
@@ -1065,7 +1002,6 @@ function removeWhiteBackgroundFloodFill(img) {
       }
     }
 
-    // Soften 1px edge halo around transparent pixels
     for (let y = 1; y < h - 1; y++) {
       for (let x = 1; x < w - 1; x++) {
         const p = y * w + x;
@@ -1099,11 +1035,9 @@ function preloadAssets() {
         asset.url = asset.src;
       }
       applyLoadedVisuals();
-      updateGuideStatus();
     };
     img.onerror = () => {
       asset.loaded = false;
-      updateGuideStatus();
     };
     img.src = asset.src;
   });
@@ -1111,7 +1045,8 @@ function preloadAssets() {
 
 function applyLoadedVisuals() {
   if (ASSETS.title_bg.loaded) {
-    document.getElementById('title-screen').classList.add('has-bg');
+    const banner = document.getElementById('title-hero-banner');
+    banner.innerHTML = `<img src="${ASSETS.title_bg.url}" alt="定理ファイター">`;
   }
   if (ASSETS.bg_arena.loaded) {
     document.getElementById('arena').classList.add('has-bg');
@@ -1120,25 +1055,6 @@ function applyLoadedVisuals() {
     renderHeroSprite(false);
     renderEnemySprite();
   }
-}
-
-function updateGuideStatus() {
-  const map = {
-    title_bg: 'st-title',
-    bg_arena: 'st-arena',
-    hero_idle: 'st-idle',
-    hero_attack: 'st-atk',
-    enemy_boss: 'st-boss'
-  };
-  Object.keys(map).forEach(k => {
-    const el = document.getElementById(map[k]);
-    if (!el) return;
-    if (ASSETS[k].loaded) {
-      el.innerHTML = '<span class="status-ok">✅ 読込・透過済</span>';
-    } else {
-      el.innerHTML = '<span class="status-fb">代用グラフィック</span>';
-    }
-  });
 }
 
 // ==================== 3. BUILT-IN SVG GRAPHICS (FALLBACK & STAGE 1-4 MONSTERS) ====================
@@ -1252,6 +1168,32 @@ function sfxBossWarn() {
   playTone(440, 'sawtooth', 0.2, 0.15, 0.28);
   playTone(587, 'sawtooth', 0.4, 0.16, 0.56);
 }
+function sfxStageWin() {
+  playTone(523.25, 'triangle', 0.14, 0.14, 0);
+  playTone(659.25, 'triangle', 0.14, 0.14, 0.1);
+  playTone(783.99, 'triangle', 0.26, 0.15, 0.2);
+}
+function sfxVictoryFanfare() {
+  // Classic celebratory fanfare (C5 - C5 - C5 - C5 - G#4 - A#4 - C5 - A#4 - C5)
+  const notes = [
+    { f: 523.25, d: 0.13, t: 0.00 }, // ド
+    { f: 523.25, d: 0.13, t: 0.14 }, // ド
+    { f: 523.25, d: 0.13, t: 0.28 }, // ド
+    { f: 523.25, d: 0.35, t: 0.42 }, // ドーー
+    { f: 415.30, d: 0.35, t: 0.78 }, // ラ♭ーー
+    { f: 466.16, d: 0.35, t: 1.14 }, // シ♭ーー
+    { f: 523.25, d: 0.22, t: 1.50 }, // ドー
+    { f: 466.16, d: 0.14, t: 1.74 }, // シ♭
+    { f: 523.25, d: 0.75, t: 1.90 }  // ドーーーー！
+  ];
+  notes.forEach(n => {
+    playTone(n.f, 'triangle', n.d, 0.18, n.t);
+    playTone(n.f * 0.5, 'sine', n.d, 0.14, n.t);
+  });
+  // Final chord harmony (E5 & G5)
+  playTone(659.25, 'triangle', 0.75, 0.13, 1.90);
+  playTone(783.99, 'triangle', 0.75, 0.13, 1.90);
+}
 
 // ==================== 5. GAME STATE & ENGINE ====================
 const HEAL_TOKEN = "💖 回復";
@@ -1274,7 +1216,7 @@ let gameState = {
   enemyAtkInterval: 9.0,
   enemyAtkTimer: 0,
   isBoss: false,
-  hand: [],         // Array of 12 strings
+  hand: [],
   selectedIndices: [],
   stunned: false,
   timerId: null,
@@ -1410,16 +1352,13 @@ function generateValidHand() {
   const allWords = Array.from(new Set(pool.flat()));
   const hand = [];
 
-  // Guarantee at least 1 complete theorem
   const guaranteed = pool[Math.floor(Math.random() * pool.length)];
   guaranteed.forEach(w => hand.push(w));
 
-  // Add 1 heal card if space permits
   if (hand.length < 12) {
     hand.push(HEAL_TOKEN);
   }
 
-  // Fill remaining slots up to 12
   while (hand.length < 12) {
     if (Math.random() < 0.08 && hand.filter(x => x === HEAL_TOKEN).length < 2) {
       hand.push(HEAL_TOKEN);
@@ -1429,7 +1368,6 @@ function generateValidHand() {
     }
   }
 
-  // Shuffle
   for (let i = hand.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [hand[i], hand[j]] = [hand[j], hand[i]];
@@ -1457,7 +1395,6 @@ function replenishUsedCards(usedIndices) {
     }
   });
 
-  // Anti-deadlock check
   if (!canFormAnyTheorem(gameState.hand)) {
     gameState.hand = generateValidHand();
     setFeedback("手札に行き詰まりがないよう自動リフレッシュ！", "success");
@@ -1555,7 +1492,6 @@ function submitTheorem() {
   const healCount = selectedWords.filter(w => w === HEAL_TOKEN).length;
   const theoremWords = selectedWords.filter(w => w !== HEAL_TOKEN);
 
-  // Case A: Heal only
   if (theoremWords.length === 0 && healCount > 0) {
     sfxHeal();
     const healAmount = healCount * 20;
@@ -1571,14 +1507,12 @@ function submitTheorem() {
     return;
   }
 
-  // Case B: Check against theorem database
   const pool = getPoolTheorems();
   const matched = pool.find(th =>
     th.length === theoremWords.length && th.every((w, idx) => w === theoremWords[idx])
   );
 
   if (matched) {
-    // SUCCESS!
     gameState.combo++;
     if (gameState.combo > gameState.maxCombo) gameState.maxCombo = gameState.combo;
     gameState.clearedCount++;
@@ -1602,7 +1536,6 @@ function submitTheorem() {
     const totalDmg = Math.round(baseDmg * comboMult);
     gameState.score += totalDmg * 10;
 
-    // Heal if heal card was included
     if (healCount > 0) {
       const healAmount = healCount * 30;
       healHero(healAmount);
@@ -1612,10 +1545,7 @@ function submitTheorem() {
     sfxAttack(tier);
     triggerHeroAttackAnim(rankTitle, theoremWords.join(' '), totalDmg);
 
-    // Push back enemy attack timer (flinch)
     gameState.enemyAtkTimer = Math.max(0, gameState.enemyAtkTimer - (1.8 + tier * 0.6));
-
-    // Apply damage
     gameState.enemyHp = Math.max(0, gameState.enemyHp - totalDmg);
     setFeedback(`${theoremWords.join('')}（${totalDmg}ダメージ！）`, 'success');
 
@@ -1626,12 +1556,10 @@ function submitTheorem() {
     renderSlot();
     updateHUD();
 
-    // Check Enemy Defeat
     if (gameState.enemyHp <= 0) {
       handleEnemyDefeated();
     }
   } else {
-    // FAILURE!
     sfxError();
     gameState.combo = 0;
     updateHUD();
@@ -1677,14 +1605,13 @@ function healHero(amount) {
 
 function handleEnemyDefeated() {
   gameState.score += gameState.isBoss ? 3000 : 1000;
-  // Stage clear bonus heal
   healHero(25);
   spawnPopup("撃破！ +25 HP", "#38bdf8", true);
 
   if (gameState.mode !== 'endless' && gameState.stage >= 5) {
-    // Mode Cleared!
-    setTimeout(() => endGame(true), 700);
+    setTimeout(() => endGame(true), 600);
   } else {
+    sfxStageWin();
     setTimeout(() => {
       if (gameState.running) setupStage(gameState.stage + 1);
     }, 750);
@@ -1818,14 +1745,12 @@ function updateHUD() {
   document.getElementById('score-val').textContent = gameState.score;
   document.getElementById('combo-val').textContent = `${gameState.combo} COMBO`;
 
-  // Hero HP
   document.getElementById('hero-hp-text').textContent = `${gameState.heroHp}/${gameState.heroMaxHp}`;
   const heroPct = (gameState.heroHp / gameState.heroMaxHp) * 100;
   const heroBar = document.getElementById('hero-hp-bar');
   heroBar.style.width = `${heroPct}%`;
   heroBar.classList.toggle('low', heroPct <= 30);
 
-  // Enemy HP
   document.getElementById('enemy-name').textContent = gameState.enemyName;
   document.getElementById('enemy-hp-text').textContent = `${gameState.enemyHp}/${gameState.enemyMaxHp}`;
   const enemyPct = (gameState.enemyHp / gameState.enemyMaxHp) * 100;
@@ -1842,6 +1767,7 @@ function endGame(isClear) {
   const titleEl = document.getElementById('res-title');
   const subEl = document.getElementById('res-subtitle');
   if (isClear) {
+    sfxVictoryFanfare();
     titleEl.textContent = "🏆 ALL STAGES CLEAR! 🏆";
     titleEl.className = "modal-title clear";
     subEl.textContent = "見事5面のボスを撃破し、単元を完全制覇しました！";
@@ -1864,15 +1790,6 @@ function endGame(isClear) {
 function closeResultToTitle() {
   document.getElementById('result-modal').classList.remove('active');
   quitToTitle();
-}
-
-function openGuide() {
-  updateGuideStatus();
-  document.getElementById('guide-modal').classList.add('active');
-}
-
-function closeGuide() {
-  document.getElementById('guide-modal').classList.remove('active');
 }
 
 // Initialize on load
