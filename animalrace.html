@@ -1585,44 +1585,61 @@ function closeRankingModal() {
   document.getElementById("ranking-modal").classList.remove("active");
 }
 
+// 現在画面に表示しているランキング配列を保持
+let currentRankingList = [];
+
+function mergeAndSortRanking(baseList, newEntry) {
+  const combined = Array.isArray(baseList) ? [...baseList] : [];
+  if (newEntry && Number(newEntry.score) > 0) {
+    combined.push({
+      name: String(newEntry.name),
+      score: Number(newEntry.score),
+      isJustSubmitted: true
+    });
+  }
+  combined.sort((a, b) => Number(b.score) - Number(a.score));
+  return combined.slice(0, 10);
+}
+
 async function loadRankingData(optimisticEntry = null) {
   const container = document.getElementById("ranking-list-container");
+
   if (!GAS_RANKING_URL) {
     const localList = JSON.parse(localStorage.getItem("abd_local_ranking") || "[]");
-    renderRankingRows(container, localList);
+    currentRankingList = mergeAndSortRanking(localList, optimisticEntry);
+    renderRankingRows(container, currentRankingList);
     return;
   }
 
-  if (!optimisticEntry) {
+  // すでに表示中のリストがある場合はちらつきを防ぐためそのまま土台にする
+  if (!optimisticEntry && currentRankingList.length === 0) {
     container.innerHTML = `<div style="text-align:center; color:var(--muted); padding:20px; font-size:0.88rem;">ランキングを取得中...</div>`;
   }
 
   try {
-    // キャッシュ防止のためタイムスタンプを付与して最新データを取得
-    const url = `${GAS_RANKING_URL}?t=${Date.now()}`;
+    const sep = GAS_RANKING_URL.includes("?") ? "&" : "?";
+    const url = `${GAS_RANKING_URL}${sep}t=${Date.now()}`;
     const res = await fetch(url, {
       method: "GET",
       redirect: "follow"
     });
-    let data = await res.json();
-    if (!Array.isArray(data)) data = [];
+    const data = await res.json();
+    const serverList = Array.isArray(data) ? data : [];
 
-    // 送信直後でまだシート反映が追いついていない場合、自分の記録を補完してソート
-    if (optimisticEntry) {
-      const alreadyExists = data.some(
-        item => item.name === optimisticEntry.name && Number(item.score) === Number(optimisticEntry.score)
-      );
-      if (!alreadyExists) {
-        data.push(optimisticEntry);
-        data.sort((a, b) => Number(b.score) - Number(a.score));
-        data = data.slice(0, 10);
-      }
-    }
+    // サーバー側のデータにまだ今回の記録が含まれていなければ補完して順位計算
+    const hasEntryOnServer = optimisticEntry && serverList.some(
+      item => item.name === optimisticEntry.name && Number(item.score) === Number(optimisticEntry.score)
+    );
 
-    renderRankingRows(container, data);
+    currentRankingList = mergeAndSortRanking(
+      serverList,
+      hasEntryOnServer ? null : optimisticEntry
+    );
+    renderRankingRows(container, currentRankingList);
   } catch (e) {
-    if (optimisticEntry) {
-      renderRankingRows(container, [optimisticEntry]);
+    if (optimisticEntry || currentRankingList.length > 0) {
+      currentRankingList = mergeAndSortRanking(currentRankingList, optimisticEntry);
+      renderRankingRows(container, currentRankingList);
     } else {
       container.innerHTML = `<div style="color:var(--danger); text-align:center; padding:12px; font-size:0.85rem;">読み込みに失敗しました。<br>GASのURLまたは公開設定（全員）を確認してください。</div>`;
     }
@@ -1635,8 +1652,8 @@ function renderRankingRows(container, list) {
     return;
   }
   container.innerHTML = list.slice(0, 10).map((item, i) => `
-    <div class="ranking-row">
-      <span>${i + 1}位：${escapeHTML(item.name)}</span>
+    <div class="ranking-row" style="${item.isJustSubmitted ? 'background:#f0fdf4; border-radius:8px;' : ''}">
+      <span>${i + 1}位：${escapeHTML(item.name)}${item.isJustSubmitted ? ' <small style="color:#15803d;">(NEW)</small>' : ''}</span>
       <span style="color:#15803d;">💰 ${Number(item.score).toLocaleString()}</span>
     </div>
   `).join("");
@@ -1646,21 +1663,31 @@ async function submitRankingScore() {
   const nameInput = document.getElementById("player-name-input");
   const name = nameInput.value.trim() || "ななし馬主";
   const statusEl = document.getElementById("submit-status");
+  const container = document.getElementById("ranking-list-container");
+  const newEntry = { name, score: Number(state.coins) };
+
   statusEl.textContent = "送信中...";
 
   if (!GAS_RANKING_URL) {
     const localList = JSON.parse(localStorage.getItem("abd_local_ranking") || "[]");
-    localList.push({ name, score: state.coins });
-    localList.sort((a, b) => b.score - a.score);
-    localStorage.setItem("abd_local_ranking", JSON.stringify(localList.slice(0, 10)));
+    localList.push(newEntry);
+    localList.sort((a, b) => Number(b.score) - Number(a.score));
+    const top10 = localList.slice(0, 10);
+    localStorage.setItem("abd_local_ranking", JSON.stringify(top10));
+    currentRankingList = top10;
+    renderRankingRows(container, currentRankingList);
     statusEl.textContent = "ローカルランキングに登録しました！";
     document.getElementById("ranking-submit-area").style.display = "none";
-    loadRankingData();
     return;
   }
 
-  const newEntry = { name, score: state.coins };
+  // 1. まず画面のランキングに即座に反映（待ち時間ゼロ）
+  currentRankingList = mergeAndSortRanking(currentRankingList, newEntry);
+  renderRankingRows(container, currentRankingList);
+  statusEl.textContent = "登録完了！";
+  document.getElementById("ranking-submit-area").style.display = "none";
 
+  // 2. 裏側でGASへPOST送信し、2.5秒後にサーバー側の最新データと同期
   try {
     await fetch(GAS_RANKING_URL, {
       method: "POST",
@@ -1670,15 +1697,11 @@ async function submitRankingScore() {
       },
       body: JSON.stringify(newEntry)
     });
-    statusEl.textContent = "登録完了！";
-    document.getElementById("ranking-submit-area").style.display = "none";
-
-    // 書き込み完了を待ってから再取得しつつ、万が一反映前でも自分の記録を即座に合成表示
     setTimeout(() => {
       loadRankingData(newEntry);
-    }, 2200);
+    }, 2500);
   } catch (e) {
-    statusEl.textContent = "送信エラーが発生しました";
+    statusEl.textContent = "通信エラーが発生しましたが画面には反映済みです";
   }
 }
 
