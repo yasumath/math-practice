@@ -9,16 +9,8 @@
 
   :root {
     --bg-main: #f8fafc;
-    --card-bg: #ffffff;
     --text-dark: #1e293b;
     --text-muted: #64748b;
-    --atk-color: #ef4444;
-    --atk-bg: #fef2f2;
-    --heal-color: #10b981;
-    --heal-bg: #ecfdf5;
-    --trump-color: #f59e0b;
-    --trump-bg: #fffbeb;
-    --accent-blue: #3b82f6;
   }
 
   * {
@@ -50,10 +42,10 @@
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    box-shadow: 0 0 30px rgba(0,0,0,0.6);
   }
 
-  /* タイトル画面・クリア画面・ゲームオーバー画面 */
+  /* タイトル・リザルト画面 */
   .overlay-screen {
     position: absolute;
     inset: 0;
@@ -83,11 +75,11 @@
   }
 
   .game-title {
-    font-size: 1.9rem;
+    font-size: 1.85rem;
     font-weight: 900;
     line-height: 1.25;
     color: #0f172a;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     text-shadow: 2px 2px 0px #e2e8f0;
   }
 
@@ -95,7 +87,7 @@
     font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-muted);
-    margin-bottom: 24px;
+    margin-bottom: 20px;
   }
 
   .rule-box {
@@ -104,9 +96,9 @@
     border-radius: 16px;
     padding: 16px;
     text-align: left;
-    font-size: 0.85rem;
+    font-size: 0.84rem;
     line-height: 1.6;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
     width: 100%;
   }
 
@@ -137,35 +129,37 @@
   /* 上部ヘッダー */
   header {
     background: white;
-    padding: 8px 14px;
+    padding: 7px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 2px solid #e2e8f0;
     z-index: 10;
     flex-shrink: 0;
+    gap: 6px;
   }
 
   .stage-pill {
     background: #1e293b;
     color: white;
     font-weight: 800;
-    font-size: 0.85rem;
-    padding: 4px 12px;
+    font-size: 0.8rem;
+    padding: 4px 10px;
     border-radius: 999px;
+    white-space: nowrap;
   }
 
   .player-hp-wrap {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     font-weight: 800;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .hp-bar-bg {
-    width: 110px;
-    height: 14px;
+    width: 90px;
+    height: 13px;
     background: #e2e8f0;
     border-radius: 999px;
     overflow: hidden;
@@ -178,18 +172,30 @@
     transition: width 0.3s ease;
   }
 
+  .sound-btn {
+    background: #f1f5f9;
+    border: 2px solid #cbd5e1;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #334155;
+    cursor: pointer;
+  }
+
   /* バトルエリア（ダンジョン背景） */
   .battle-stage {
     position: relative;
     flex: 1;
-    min-height: 220px;
+    min-height: 210px;
     background-image: url('bg_dungeon.png');
     background-size: cover;
     background-position: center;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 10px 14px;
+    padding: 8px 12px;
     overflow: hidden;
   }
 
@@ -197,18 +203,18 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at center, rgba(15,23,42,0.15) 0%, rgba(15,23,42,0.55) 100%);
+    background: radial-gradient(circle at center, rgba(15,23,42,0.12) 0%, rgba(15,23,42,0.52) 100%);
     pointer-events: none;
   }
 
-  /* 敵情報パネル */
+  /* 敵情報HUD */
   .enemy-hud {
     position: relative;
     z-index: 2;
-    background: rgba(255, 255, 255, 0.94);
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 14px;
-    padding: 8px 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    padding: 7px 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     border: 2px solid #e2e8f0;
   }
 
@@ -216,17 +222,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
 
   .enemy-name {
     font-weight: 900;
-    font-size: 1rem;
+    font-size: 0.98rem;
     color: #0f172a;
   }
 
   .enemy-next-atk {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 800;
     background: #fee2e2;
     color: #dc2626;
@@ -238,12 +244,12 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
   }
 
   .enemy-hp-bg {
     flex: 1;
-    height: 12px;
+    height: 11px;
     background: #e2e8f0;
     border-radius: 999px;
     overflow: hidden;
@@ -256,9 +262,9 @@
   }
 
   .enemy-hp-text {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 800;
-    min-width: 68px;
+    min-width: 64px;
     text-align: right;
   }
 
@@ -267,15 +273,15 @@
     border: 2px solid #3b82f6;
     color: #1d4ed8;
     font-weight: 800;
-    font-size: 0.84rem;
-    padding: 5px 10px;
+    font-size: 0.82rem;
+    padding: 4px 9px;
     border-radius: 8px;
     display: flex;
     align-items: center;
     gap: 6px;
   }
 
-  /* モンスター立ち絵 */
+  /* モンスター立ち絵（背景透過済み） */
   .monster-container {
     position: relative;
     z-index: 2;
@@ -283,18 +289,14 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 4px 0;
+    margin: 2px 0;
   }
 
   .monster-img {
-    max-height: 145px;
-    max-width: 145px;
+    max-height: 155px;
+    max-width: 170px;
     object-fit: contain;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 20px;
-    padding: 6px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
-    border: 3px solid white;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.65));
     transition: transform 0.2s;
   }
 
@@ -315,22 +317,22 @@
     background: white;
     border-top: 2px solid #e2e8f0;
     border-bottom: 2px solid #e2e8f0;
-    padding: 7px 14px;
-    font-size: 0.85rem;
+    padding: 6px 12px;
+    font-size: 0.83rem;
     font-weight: 800;
     text-align: center;
     color: #1e293b;
-    min-height: 38px;
+    min-height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
 
-  /* 下部：手札カルーセルエリア */
+  /* 下部：MTG風手札カルーセルエリア */
   .hand-section {
-    background: #f1f5f9;
-    padding: 8px 0 12px;
+    background: #e2e8f0;
+    padding: 6px 0 10px;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -341,17 +343,17 @@
     justify-content: space-between;
     align-items: center;
     padding: 0 16px 4px;
-    font-size: 0.76rem;
+    font-size: 0.75rem;
     font-weight: 800;
-    color: var(--text-muted);
+    color: #475569;
   }
 
   .carousel-wrapper {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    gap: 12px;
-    padding: 4px 28px 8px;
+    gap: 14px;
+    padding: 4px 28px 6px;
     scrollbar-width: none;
   }
 
@@ -359,87 +361,150 @@
     display: none;
   }
 
-  .card {
+  /* MTG風重厚カードフレーム */
+  .mtg-card {
     scroll-snap-align: center;
-    flex: 0 0 250px;
-    background: white;
-    border-radius: 18px;
-    border: 3px solid #cbd5e1;
-    padding: 10px;
+    flex: 0 0 256px;
+    border-radius: 16px;
+    padding: 7px;
+    background: #1e293b;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.35);
     display: flex;
     flex-direction: column;
-    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
-    transition: transform 0.2s, border-color 0.2s;
     position: relative;
   }
 
-  .card.type-atk {
-    border-color: var(--atk-color);
-    background: linear-gradient(180deg, var(--atk-bg) 0%, #ffffff 35%);
+  .mtg-inner {
+    border-radius: 11px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    height: 100%;
   }
 
-  .card.type-heal {
-    border-color: var(--heal-color);
-    background: linear-gradient(180deg, var(--heal-bg) 0%, #ffffff 35%);
+  /* 属性別フレームカラー */
+  .mtg-card.type-atk .mtg-inner {
+    background: linear-gradient(160deg, #dc2626 0%, #991b1b 50%, #7f1d1d 100%);
+    border: 2px solid #fca5a5;
+  }
+  .mtg-card.type-heal .mtg-inner {
+    background: linear-gradient(160deg, #059669 0%, #065f46 50%, #064e3b 100%);
+    border: 2px solid #6ee7b7;
+  }
+  .mtg-card.type-trump .mtg-inner {
+    background: linear-gradient(160deg, #f59e0b 0%, #b45309 50%, #78350f 100%);
+    border: 2px solid #fde68a;
   }
 
-  .card.type-trump {
-    border-color: var(--trump-color);
-    background: linear-gradient(180deg, var(--trump-bg) 0%, #ffffff 40%);
-    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.28);
-  }
-
-  .card-header {
+  /* MTG上部タイトルバー */
+  .mtg-title-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    padding: 4px 8px;
+    border-radius: 7px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), 0 2px 4px rgba(0,0,0,0.3);
   }
 
-  .card-badge {
-    font-size: 0.72rem;
-    font-weight: 900;
-    padding: 2px 8px;
-    border-radius: 6px;
-    color: white;
+  .type-atk .mtg-title-bar {
+    background: linear-gradient(180deg, #fee2e2 0%, #fecaca 100%);
+    border: 1.5px solid #ef4444;
+  }
+  .type-heal .mtg-title-bar {
+    background: linear-gradient(180deg, #d1fae5 0%, #a7f3d0 100%);
+    border: 1.5px solid #10b981;
+  }
+  .type-trump .mtg-title-bar {
+    background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+    border: 1.5px solid #f59e0b;
   }
 
-  .type-atk .card-badge { background: var(--atk-color); }
-  .type-heal .card-badge { background: var(--heal-color); }
-  .type-trump .card-badge { background: var(--trump-color); }
-
-  .card-title {
+  .mtg-card-name {
     font-weight: 900;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: #0f172a;
+    letter-spacing: -0.02em;
   }
 
-  .card-art-wrap {
+  .mtg-mana-pip {
+    font-size: 0.7rem;
+    font-weight: 900;
+    padding: 2px 7px;
+    border-radius: 999px;
+    color: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+  .type-atk .mtg-mana-pip { background: #dc2626; }
+  .type-heal .mtg-mana-pip { background: #059669; }
+  .type-trump .mtg-mana-pip { background: #d97706; }
+
+  /* MTGアートウィンドウ（空白ゼロの集中線・オーラ背景＋透過キャラ） */
+  .mtg-art-frame {
+    position: relative;
     width: 100%;
-    height: 92px;
+    height: 112px;
+    border-radius: 8px;
+    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
-    background: white;
-    border-radius: 12px;
-    border: 1.5px solid #e2e8f0;
-    margin-bottom: 6px;
-    overflow: hidden;
+    box-shadow: inset 0 0 14px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.3);
   }
 
-  .card-art-wrap img {
-    height: 88px;
+  .type-atk .mtg-art-frame {
+    border: 2.5px solid #fca5a5;
+    background:
+      repeating-conic-gradient(from 0deg, rgba(254, 202, 202, 0.25) 0deg 10deg, transparent 10deg 20deg),
+      radial-gradient(circle at 50% 45%, #fef08a 0%, #f97316 45%, #991b1b 100%);
+  }
+
+  .type-heal .mtg-art-frame {
+    border: 2.5px solid #6ee7b7;
+    background:
+      repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.25) 0deg 12deg, transparent 12deg 24deg),
+      radial-gradient(circle at 50% 45%, #ecfdf5 0%, #34d399 50%, #065f46 100%);
+  }
+
+  .type-trump .mtg-art-frame {
+    border: 2.5px solid #fde68a;
+    background:
+      repeating-conic-gradient(from 0deg, rgba(254, 240, 138, 0.35) 0deg 9deg, transparent 9deg 18deg),
+      radial-gradient(circle at 50% 45%, #ffffff 0%, #facc15 40%, #92400e 100%);
+  }
+
+  .mtg-art-frame img {
+    height: 124px;
     width: auto;
     object-fit: contain;
+    transform: translateY(4px) scale(1.06);
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.45));
   }
 
-  .boxplot-box {
-    background: #f8fafc;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 4px 6px 2px;
-    margin-bottom: 8px;
+  /* タイプライン（MTGの中央帯） */
+  .mtg-type-line {
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 5px;
+    color: #1e293b;
+    display: flex;
+    justify-content: space-between;
   }
+  .type-atk .mtg-type-line { background: #fecaca; border: 1px solid #f87171; }
+  .type-heal .mtg-type-line { background: #a7f3d0; border: 1px solid #34d399; }
+  .type-trump .mtg-type-line { background: #fde68a; border: 1px solid #fbbf24; }
+
+  /* 羊皮紙テキスト＆箱ひげ図ボックス */
+  .mtg-textbox {
+    background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+    border-radius: 7px;
+    padding: 4px 5px 2px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .type-atk .mtg-textbox { border: 2px solid #f87171; }
+  .type-heal .mtg-textbox { border: 2px solid #34d399; }
+  .type-trump .mtg-textbox { border: 2px solid #fbbf24; }
 
   .boxplot-svg {
     width: 100%;
@@ -447,31 +512,31 @@
     display: block;
   }
 
-  .card-btn {
+  /* MTG下部アクションボタン */
+  .mtg-action-btn {
     width: 100%;
     border: none;
-    border-radius: 10px;
-    padding: 8px;
+    border-radius: 8px;
+    padding: 7px;
     font-family: inherit;
     font-weight: 900;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     color: white;
     cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.35);
+    transition: transform 0.1s;
   }
-
-  .card-btn:active {
-    transform: scale(0.97);
+  .mtg-action-btn:active {
+    transform: translateY(2px);
   }
-
-  .card-btn:disabled {
-    opacity: 0.45;
+  .mtg-action-btn:disabled {
+    opacity: 0.5;
     cursor: not-allowed;
   }
-
-  .type-atk .card-btn { background: var(--atk-color); }
-  .type-heal .card-btn { background: var(--heal-color); }
-  .type-trump .card-btn { background: linear-gradient(135deg, #f59e0b, #d97706); }
+  .type-atk .mtg-action-btn { background: linear-gradient(180deg, #ef4444, #b91c1c); border: 1px solid #fca5a5; }
+  .type-heal .mtg-action-btn { background: linear-gradient(180deg, #10b981, #047857); border: 1px solid #6ee7b7; }
+  .type-trump .mtg-action-btn { background: linear-gradient(180deg, #f59e0b, #b45309); border: 1px solid #fde68a; }
 
   /* 宝箱モーダル */
   .chest-modal {
@@ -491,7 +556,7 @@
     width: 100%;
     max-height: 92dvh;
     overflow-y: auto;
-    padding: 18px;
+    padding: 16px;
     text-align: center;
     border: 4px solid #f59e0b;
   }
@@ -500,7 +565,8 @@
     width: 96px;
     height: 96px;
     object-fit: contain;
-    margin: 0 auto 6px;
+    margin: 0 auto 4px;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
   }
 
   .data-chips {
@@ -508,15 +574,15 @@
     justify-content: center;
     flex-wrap: wrap;
     gap: 6px;
-    margin: 10px 0 14px;
+    margin: 8px 0 12px;
   }
 
   .data-chip {
     background: #1e293b;
     color: white;
     font-weight: 900;
-    font-size: 1rem;
-    padding: 5px 10px;
+    font-size: 0.98rem;
+    padding: 4px 9px;
     border-radius: 8px;
   }
 
@@ -524,22 +590,22 @@
     background: #f8fafc;
     border: 2.5px solid #cbd5e1;
     border-radius: 12px;
-    padding: 8px;
-    margin-bottom: 10px;
+    padding: 7px;
+    margin-bottom: 9px;
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
   }
 
   .chest-choice:hover {
-    border-color: #f59e0b;
-    background: #fffbeb;
+    border-color: #3b82f6;
+    background: #eff6ff;
   }
 
   .trump-select-grid {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-top: 12px;
+    margin-top: 10px;
   }
 
   .trump-option {
@@ -554,13 +620,23 @@
     text-align: left;
   }
 
-  .trump-option img {
-    width: 56px;
-    height: 56px;
-    object-fit: contain;
-    background: white;
+  .trump-option-art {
+    width: 60px;
+    height: 60px;
     border-radius: 10px;
-    padding: 2px;
+    border: 2px solid #f59e0b;
+    background: radial-gradient(circle, #ffffff 0%, #facc15 55%, #b45309 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .trump-option-art img {
+    height: 64px;
+    width: auto;
+    object-fit: contain;
   }
 </style>
 </head>
@@ -589,6 +665,7 @@
       </div>
       <span id="player-hp-text">100/100</span>
     </div>
+    <button class="sound-btn" id="sound-toggle" onclick="toggleSound()">🔊 ON</button>
   </header>
 
   <!-- バトル画面 -->
@@ -596,13 +673,13 @@
     <div class="enemy-hud">
       <div class="enemy-top-row">
         <span class="enemy-name" id="enemy-name">キューブスライム</span>
-        <span class="enemy-next-atk" id="enemy-atk-badge">次の攻撃: 15</span>
+        <span class="enemy-next-atk" id="enemy-atk-badge">次の攻撃: 14</span>
       </div>
       <div class="enemy-hp-row">
         <div class="enemy-hp-bg">
           <div class="enemy-hp-fill" id="enemy-hp-bar" style="width: 100%;"></div>
         </div>
-        <span class="enemy-hp-text" id="enemy-hp-text">60 / 60</span>
+        <span class="enemy-hp-text" id="enemy-hp-text">55 / 55</span>
       </div>
       <div class="gimmick-banner">
         <span>🛡️</span>
@@ -632,19 +709,19 @@
   <!-- 中間宝箱イベントモーダル -->
   <div id="chest-modal" class="chest-modal hidden">
     <div class="chest-window" id="chest-step-1">
-      <img src="chest_mimic.png" alt="宝箱" class="chest-img">
-      <h2 style="font-size:1.2rem; font-weight:900; color:#b45309;">🔑 古代のパズル宝箱が現れた！</h2>
-      <p style="font-size:0.84rem; font-weight:700; color:#475569; margin-top:4px;">
+      <img id="chest-img" src="chest_mimic.png" alt="宝箱" class="chest-img">
+      <h2 style="font-size:1.15rem; font-weight:900; color:#b45309;">🔑 古代のパズル宝箱が現れた！</h2>
+      <p style="font-size:0.82rem; font-weight:700; color:#475569; margin-top:4px;">
         下の<strong>7個のデータ</strong>を正しく表した箱ひげ図を選んで鍵を開けよう！
       </p>
       <div class="data-chips" id="chest-data-chips"></div>
       <div id="chest-choices"></div>
-      <p id="chest-feedback" style="font-size:0.84rem; font-weight:800; color:#dc2626; min-height:20px;"></p>
+      <p id="chest-feedback" style="font-size:0.82rem; font-weight:800; color:#dc2626; min-height:18px;"></p>
     </div>
 
     <div class="chest-window hidden" id="chest-step-2">
-      <h2 style="font-size:1.25rem; font-weight:900; color:#059669;">✨ 解錠成功！HPが30回復した！</h2>
-      <p style="font-size:0.84rem; font-weight:700; color:#475569; margin-top:4px;">
+      <h2 style="font-size:1.2rem; font-weight:900; color:#059669;">✨ 解錠成功！HPが30回復した！</h2>
+      <p style="font-size:0.82rem; font-weight:700; color:#475569; margin-top:4px;">
         後半戦で<strong>1回だけ使える切り札</strong>を1つ選ぼう！
       </p>
       <div class="trump-select-grid" id="trump-choices"></div>
@@ -661,6 +738,228 @@
 </div>
 
 <script>
+/* =========================================
+   1. Web Audio API レトロRPGサウンドシステム
+   ========================================= */
+let audioCtx = null;
+let soundEnabled = true;
+
+function initAudio() {
+  if (!audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContext();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊 ON' : '🔇 OFF';
+  if (soundEnabled) {
+    initAudio();
+    playTone(523.25, 0.08, 'square', 0.12);
+  }
+}
+
+function playTone(freq, duration, type = 'square', volume = 0.15, delay = 0) {
+  if (!soundEnabled) return;
+  initAudio();
+  const now = audioCtx.currentTime + delay;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, now);
+
+  gain.gain.setValueAtTime(volume, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + duration);
+}
+
+function playNoise(duration, volume = 0.2, delay = 0) {
+  if (!soundEnabled) return;
+  initAudio();
+  const now = audioCtx.currentTime + delay;
+  const bufferSize = audioCtx.sampleRate * duration;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(900, now);
+
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(volume, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  noise.start(now);
+  noise.stop(now + duration);
+}
+
+// 効果音バリエーション
+function sfxAttackHit() {
+  playNoise(0.18, 0.25, 0);
+  playTone(180, 0.12, 'sawtooth', 0.2, 0.02);
+  playTone(110, 0.18, 'square', 0.22, 0.08);
+}
+
+function sfxBlocked() {
+  playTone(987.77, 0.08, 'triangle', 0.2, 0);
+  playTone(1318.51, 0.22, 'triangle', 0.18, 0.06);
+}
+
+function sfxHeal() {
+  const notes = [523.25, 659.25, 783.99, 1046.50];
+  notes.forEach((f, i) => playTone(f, 0.16, 'triangle', 0.16, i * 0.07));
+}
+
+function sfxPlayerDamage() {
+  playNoise(0.22, 0.28, 0);
+  playTone(130.81, 0.14, 'sawtooth', 0.24, 0);
+  playTone(98.00, 0.24, 'sawtooth', 0.24, 0.1);
+}
+
+function sfxChestUnlock() {
+  const notes = [440, 554.37, 659.25, 880];
+  notes.forEach((f, i) => playTone(f, 0.14, 'square', 0.13, i * 0.08));
+}
+
+// ドラクエ風「戦闘勝利」ファンファーレ（レベルアップではない晴れやかな戦闘勝利ジングル）
+function sfxBattleVictory(isFinalBoss = false) {
+  // 軽快な3連符 (G4-G4-G4) -> Eb4 -> F4 -> G4!
+  const seq = [
+    { f: 392.00, d: 0.10, t: 0.00 }, // ソ
+    { f: 392.00, d: 0.10, t: 0.11 }, // ソ
+    { f: 392.00, d: 0.10, t: 0.22 }, // ソ
+    { f: 311.13, d: 0.22, t: 0.34 }, // ミ♭
+    { f: 349.23, d: 0.22, t: 0.58 }, // ファ
+    { f: 392.00, d: 0.55, t: 0.82 }  // ソーーー！
+  ];
+  seq.forEach(n => {
+    playTone(n.f, n.d, 'square', 0.14, n.t);
+    playTone(n.f * 0.5, n.d, 'triangle', 0.14, n.t);
+  });
+
+  if (isFinalBoss) {
+    // 魔王討伐時はさらに華やかな締め和音を追加
+    const finale = [
+      { f: 349.23, d: 0.14, t: 1.42 }, // ファ
+      { f: 392.00, d: 0.14, t: 1.58 }, // ソ
+      { f: 466.16, d: 0.18, t: 1.74 }, // シ♭
+      { f: 523.25, d: 0.75, t: 1.94 }  // ドーーー！
+    ];
+    finale.forEach(n => {
+      playTone(n.f, n.d, 'square', 0.15, n.t);
+      playTone(n.f * 1.25, n.d, 'triangle', 0.12, n.t);
+    });
+  }
+}
+
+/* =========================================
+   2. 白背景自動透過処理（Canvas Flood-Fill）
+   ========================================= */
+const transparentCache = {};
+
+function getTransparentImage(src) {
+  if (transparentCache[src]) {
+    return Promise.resolve(transparentCache[src]);
+  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      try {
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+        const w = canvas.width;
+        const h = canvas.height;
+        const visited = new Uint8Array(w * h);
+
+        const isNearWhite = (idx) => {
+          const r = data[idx * 4];
+          const g = data[idx * 4 + 1];
+          const b = data[idx * 4 + 2];
+          return r >= 238 && g >= 238 && b >= 238;
+        };
+
+        // 四隅から繋がっている白背景だけを透明化（キャラ内部の白目などは守る）
+        const queue = [];
+        const seeds = [0, w - 1, (h - 1) * w, h * w - 1];
+        for (const s of seeds) {
+          if (isNearWhite(s)) {
+            visited[s] = 1;
+            queue.push(s);
+          }
+        }
+
+        let head = 0;
+        while (head < queue.length) {
+          const curr = queue[head++];
+          data[curr * 4 + 3] = 0;
+          const x = curr % w;
+          const y = (curr - x) / w;
+
+          if (x > 0) {
+            const n = curr - 1;
+            if (!visited[n] && isNearWhite(n)) { visited[n] = 1; queue.push(n); }
+          }
+          if (x < w - 1) {
+            const n = curr + 1;
+            if (!visited[n] && isNearWhite(n)) { visited[n] = 1; queue.push(n); }
+          }
+          if (y > 0) {
+            const n = curr - w;
+            if (!visited[n] && isNearWhite(n)) { visited[n] = 1; queue.push(n); }
+          }
+          if (y < h - 1) {
+            const n = curr + w;
+            if (!visited[n] && isNearWhite(n)) { visited[n] = 1; queue.push(n); }
+          }
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+        const dataUrl = canvas.toDataURL('image/png');
+        transparentCache[src] = dataUrl;
+        resolve(dataUrl);
+      } catch (e) {
+        // ローカル環境等でCanvas読み取り制限がかかった場合は元画像をそのまま返す
+        transparentCache[src] = src;
+        resolve(src);
+      }
+    };
+    img.onerror = () => resolve(src);
+    img.src = src;
+  });
+}
+
+function applyTransparentSrc(imgElement, rawSrc) {
+  getTransparentImage(rawSrc).then(cleanSrc => {
+    imgElement.src = cleanSrc;
+  });
+}
+
+/* =========================================
+   3. ゲームデータ＆ステージ定義
+   ========================================= */
 const IMAGES = {
   dungeon: 'bg_dungeon.png',
   slime: 'enemy_slime.png',
@@ -680,6 +979,11 @@ const IMAGES = {
   meteor: 'trump_meteor.png',
   elixir: 'trump_elixir.png'
 };
+
+// 全イラストをバックグラウンドで事前透過キャッシュ
+Object.values(IMAGES).forEach(src => {
+  if (src !== IMAGES.dungeon) getTransparentImage(src);
+});
 
 const STAGES = [
   {
@@ -702,7 +1006,7 @@ const STAGES = [
       {
         text: '【第1四分位数】が 35 以上の攻撃のみ有効！',
         check: (c) => c.type === 'atk' && c.q1 >= 35,
-        makeCard: () => makeGuaranteedCard('ブレイブソード', IMAGES.sword, 28, 38, 46, 54, 62)
+        makeCard: () => makeGuaranteedCard('ブレイブソード', 'バランス剣', IMAGES.sword, 28, 38, 46, 54, 62)
       }
     ]
   },
@@ -716,7 +1020,7 @@ const STAGES = [
       {
         text: '【第3四分位数】が 65 以上の攻撃のみ有効！',
         check: (c) => c.type === 'atk' && c.q3 >= 65,
-        makeCard: () => makeGuaranteedCard('ギガアックス', IMAGES.axe, 18, 32, 50, 72, 92)
+        makeCard: () => makeGuaranteedCard('ギガアックス', '重撃の斧', IMAGES.axe, 18, 32, 50, 72, 92)
       }
     ]
   },
@@ -730,7 +1034,7 @@ const STAGES = [
       {
         text: '【四分位範囲】が 15 以下（箱が狭い）の攻撃のみ有効！',
         check: (c) => c.type === 'atk' && (c.q3 - c.q1) <= 15,
-        makeCard: () => makeGuaranteedCard('スナイプボウ', IMAGES.bow, 36, 42, 48, 53, 58)
+        makeCard: () => makeGuaranteedCard('スナイプボウ', '精密の弓', IMAGES.bow, 36, 42, 48, 53, 58)
       }
     ]
   },
@@ -744,12 +1048,12 @@ const STAGES = [
       {
         text: '【範囲（最大−最小）】が 45 以上の攻撃のみ有効！',
         check: (c) => c.type === 'atk' && (c.max - c.min) >= 45,
-        makeCard: () => makeGuaranteedCard('メテオロッド', IMAGES.magic, 16, 30, 52, 70, 88)
+        makeCard: () => makeGuaranteedCard('メテオロッド', '広域魔法', IMAGES.magic, 16, 30, 52, 70, 88)
       },
       {
         text: '【中央値】が 50 以上の攻撃のみ有効！',
         check: (c) => c.type === 'atk' && c.med >= 50,
-        makeCard: () => makeGuaranteedCard('ブレイブソード', IMAGES.sword, 32, 44, 54, 64, 74)
+        makeCard: () => makeGuaranteedCard('ブレイブソード', 'バランス剣', IMAGES.sword, 32, 44, 54, 64, 74)
       }
     ]
   },
@@ -763,17 +1067,17 @@ const STAGES = [
       {
         text: '魔王の構え①：【四分位範囲】が 16 以下の攻撃のみ有効！',
         check: (c) => c.type === 'atk' && (c.q3 - c.q1) <= 16,
-        makeCard: () => makeGuaranteedCard('スナイプボウ', IMAGES.bow, 40, 46, 52, 58, 64)
+        makeCard: () => makeGuaranteedCard('スナイプボウ', '精密の弓', IMAGES.bow, 40, 46, 52, 58, 64)
       },
       {
         text: '魔王の構え②：【第1四分位数】が 40 以上の攻撃のみ有効！',
         check: (c) => c.type === 'atk' && c.q1 >= 40,
-        makeCard: () => makeGuaranteedCard('ブレイブソード', IMAGES.sword, 34, 44, 54, 62, 72)
+        makeCard: () => makeGuaranteedCard('ブレイブソード', 'バランス剣', IMAGES.sword, 34, 44, 54, 62, 72)
       },
       {
         text: '魔王の構え③：【範囲】が 50 以上の大技のみ有効！',
         check: (c) => c.type === 'atk' && (c.max - c.min) >= 50,
-        makeCard: () => makeGuaranteedCard('ギガアックス', IMAGES.axe, 20, 35, 55, 76, 95)
+        makeCard: () => makeGuaranteedCard('ギガアックス', '重撃の斧', IMAGES.axe, 20, 35, 55, 76, 95)
       }
     ]
   }
@@ -783,6 +1087,7 @@ const TRUMP_CATALOG = [
   {
     id: 'excalibur',
     name: '聖剣エクスカリバー',
+    subType: '伝説の武器・聖剣',
     type: 'atk',
     isTrump: true,
     img: IMAGES.excalibur,
@@ -792,6 +1097,7 @@ const TRUMP_CATALOG = [
   {
     id: 'meteor',
     name: '魔神のメテオ',
+    subType: '禁呪・隕石魔法',
     type: 'atk',
     isTrump: true,
     img: IMAGES.meteor,
@@ -801,6 +1107,7 @@ const TRUMP_CATALOG = [
   {
     id: 'elixir',
     name: '世界樹のしずく',
+    subType: '秘薬・奇跡の癒やし',
     type: 'heal',
     isTrump: true,
     img: IMAGES.elixir,
@@ -813,8 +1120,8 @@ let state = {
   playerHp: 100,
   playerMaxHp: 100,
   stageIdx: 0,
-  enemyHp: 60,
-  enemyMaxHp: 60,
+  enemyHp: 55,
+  enemyMaxHp: 55,
   currentGimmick: null,
   hand: [],
   trumpCard: null,
@@ -826,10 +1133,11 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function makeGuaranteedCard(name, img, min, q1, med, q3, max) {
+function makeGuaranteedCard(name, subType, img, min, q1, med, q3, max) {
   const jitter = randInt(-2, 2);
   return {
     name,
+    subType,
     type: 'atk',
     isTrump: false,
     img,
@@ -850,6 +1158,7 @@ function generateRandomCard(kind) {
     const q3 = q1 + iqr;
     return {
       name: 'ブレイブソード',
+      subType: '武器・片手剣',
       type: 'atk',
       isTrump: false,
       img: IMAGES.sword,
@@ -865,6 +1174,7 @@ function generateRandomCard(kind) {
     const q3 = med + randInt(14, 20);
     return {
       name: 'ギガアックス',
+      subType: '武器・バトルアックス',
       type: 'atk',
       isTrump: false,
       img: IMAGES.axe,
@@ -880,6 +1190,7 @@ function generateRandomCard(kind) {
     const q3 = med + randInt(16, 22);
     return {
       name: 'メテオロッド',
+      subType: '魔法・元素の杖',
       type: 'atk',
       isTrump: false,
       img: IMAGES.magic,
@@ -895,6 +1206,7 @@ function generateRandomCard(kind) {
     const q3 = med + randInt(4, 6);
     return {
       name: 'スナイプボウ',
+      subType: '武器・狩人の弓',
       type: 'atk',
       isTrump: false,
       img: IMAGES.bow,
@@ -910,6 +1222,7 @@ function generateRandomCard(kind) {
     const q3 = med + randInt(3, 5);
     return {
       name: '癒やしの薬草',
+      subType: '道具・調合ハーブ',
       type: 'heal',
       isTrump: false,
       img: IMAGES.herb,
@@ -919,12 +1232,12 @@ function generateRandomCard(kind) {
       hitVal: null
     };
   }
-  // heal magic
   const med = randInt(32, 42);
   const q1 = med - randInt(14, 18);
   const q3 = med + randInt(16, 22);
   return {
     name: '大回復魔法',
+    subType: '魔法・聖なる祈り',
     type: 'heal',
     isTrump: false,
     img: IMAGES.heal,
@@ -936,6 +1249,7 @@ function generateRandomCard(kind) {
 }
 
 function startGame() {
+  initAudio();
   state = {
     playerHp: 100,
     playerMaxHp: 100,
@@ -982,16 +1296,13 @@ function dealHand() {
     generateRandomCard(healType)
   ];
 
-  // 条件を満たす攻撃カードが最低1枚含まれるよう保証
   const g = state.currentGimmick;
   if (g && g.makeCard && !cards.some(c => g.check(c))) {
     cards[0] = g.makeCard();
   }
 
-  // シャッフル
   cards.sort(() => Math.random() - 0.5);
 
-  // 切り札が未所持または未使用なら先頭または末尾に追加
   if (state.trumpCard && !state.trumpUsed) {
     cards.push({ ...state.trumpCard, hitVal: null });
   }
@@ -1015,7 +1326,8 @@ function updateHUD() {
   document.getElementById('enemy-hp-bar').style.width = `${ePct}%`;
   document.getElementById('enemy-hp-text').textContent = `${state.enemyHp} / ${state.enemyMaxHp}`;
   document.getElementById('gimmick-text').textContent = state.currentGimmick.text;
-  document.getElementById('enemy-img').src = st.img;
+
+  applyTransparentSrc(document.getElementById('enemy-img'), st.img);
 }
 
 function setLog(msg, color = '#1e293b') {
@@ -1024,16 +1336,27 @@ function setLog(msg, color = '#1e293b') {
   bar.style.color = color;
 }
 
-function buildBoxplotSVG(card, hitVal = null) {
+function buildBoxplotSVG(card, hitVal = null, overrideColor = null) {
   const padL = 12;
   const padR = 12;
-  const w = 220;
+  const w = 224;
   const plotW = w - padL - padR;
   const xPos = (val) => padL + (val / 100) * plotW;
 
-  const isHeal = card.type === 'heal';
-  const boxFill = card.isTrump ? '#fde68a' : (isHeal ? '#a7f3d0' : '#fecaca');
-  const strokeCol = card.isTrump ? '#b45309' : (isHeal ? '#047857' : '#b91c1c');
+  let boxFill, strokeCol;
+  if (overrideColor === 'chest') {
+    boxFill = '#bfdbfe';
+    strokeCol = '#1d4ed8';
+  } else if (card.isTrump) {
+    boxFill = '#fde68a';
+    strokeCol = '#b45309';
+  } else if (card.type === 'heal') {
+    boxFill = '#a7f3d0';
+    strokeCol = '#047857';
+  } else {
+    boxFill = '#fecaca';
+    strokeCol = '#b91c1c';
+  }
 
   let gridLines = '';
   let labels = '';
@@ -1065,14 +1388,11 @@ function buildBoxplotSVG(card, hitVal = null) {
       ${gridLines}
       <line x1="${padL}" y1="38" x2="${w - padR}" y2="38" stroke="#64748b" stroke-width="1.2" />
       ${labels}
-      <!-- ひげ -->
       <line x1="${xMin}" y1="21" x2="${xQ1}" y2="21" stroke="${strokeCol}" stroke-width="2.2" />
       <line x1="${xQ3}" y1="21" x2="${xMax}" y2="21" stroke="${strokeCol}" stroke-width="2.2" />
       <line x1="${xMin}" y1="14" x2="${xMin}" y2="28" stroke="${strokeCol}" stroke-width="2.2" />
       <line x1="${xMax}" y1="14" x2="${xMax}" y2="28" stroke="${strokeCol}" stroke-width="2.2" />
-      <!-- 箱 -->
       <rect x="${xQ1}" y="11" width="${Math.max(2, xQ3 - xQ1)}" height="20" fill="${boxFill}" stroke="${strokeCol}" stroke-width="2.2" rx="2" />
-      <!-- 中央値 -->
       <line x1="${xMed}" y1="11" x2="${xMed}" y2="31" stroke="${strokeCol}" stroke-width="3" />
       ${hitMarker}
     </svg>
@@ -1086,25 +1406,32 @@ function renderHand() {
 
   state.hand.forEach((card, idx) => {
     const typeClass = card.isTrump ? 'type-trump' : (card.type === 'heal' ? 'type-heal' : 'type-atk');
-    const badgeText = card.isTrump ? '★切り札(1回)' : (card.type === 'heal' ? '回復' : '攻撃');
+    const pipText = card.isTrump ? '★切り札' : (card.type === 'heal' ? '回復' : '攻撃');
     const btnText = card.type === 'heal' ? 'このカードで回復！' : 'このカードで攻撃！';
 
     const el = document.createElement('div');
-    el.className = `card ${typeClass}`;
+    el.className = `mtg-card ${typeClass}`;
     el.innerHTML = `
-      <div class="card-header">
-        <span class="card-title">${card.name}</span>
-        <span class="card-badge">${badgeText}</span>
+      <div class="mtg-inner">
+        <div class="mtg-title-bar">
+          <span class="mtg-card-name">${card.name}</span>
+          <span class="mtg-mana-pip">${pipText}</span>
+        </div>
+        <div class="mtg-art-frame">
+          <img id="card-art-${idx}" src="${card.img}" alt="${card.name}">
+        </div>
+        <div class="mtg-type-line">
+          <span>${card.subType}</span>
+          <span>分布データ(0-100)</span>
+        </div>
+        <div class="mtg-textbox" id="bp-${idx}">
+          ${buildBoxplotSVG(card, card.hitVal)}
+        </div>
+        <button class="mtg-action-btn" ${state.busy ? 'disabled' : ''} onclick="playCard(${idx})">${btnText}</button>
       </div>
-      <div class="card-art-wrap">
-        <img src="${card.img}" alt="${card.name}">
-      </div>
-      <div class="boxplot-box" id="bp-${idx}">
-        ${buildBoxplotSVG(card, card.hitVal)}
-      </div>
-      <button class="card-btn" ${state.busy ? 'disabled' : ''} onclick="playCard(${idx})">${btnText}</button>
     `;
     wrap.appendChild(el);
+    applyTransparentSrc(document.getElementById(`card-art-${idx}`), card.img);
   });
 }
 
@@ -1128,14 +1455,14 @@ function playCard(idx) {
     state.trumpUsed = true;
   }
 
-  // 箱ひげ図上にヒットマーカーを表示
   const bpBox = document.getElementById(`bp-${idx}`);
   if (bpBox) {
     bpBox.innerHTML = buildBoxplotSVG(card, val);
   }
-  document.querySelectorAll('.card-btn').forEach(b => b.disabled = true);
+  document.querySelectorAll('.mtg-action-btn').forEach(b => b.disabled = true);
 
   if (card.type === 'heal') {
+    sfxHeal();
     const before = state.playerHp;
     state.playerHp = Math.min(state.playerMaxHp, state.playerHp + val);
     const healed = state.playerHp - before;
@@ -1144,6 +1471,7 @@ function playCard(idx) {
   } else {
     const valid = state.currentGimmick.check(card);
     if (valid) {
+      sfxAttackHit();
       state.enemyHp = Math.max(0, state.enemyHp - val);
       const mImg = document.getElementById('enemy-img');
       mImg.classList.remove('shake');
@@ -1152,6 +1480,7 @@ function playCard(idx) {
       updateHUD();
       setLog(`⚔️ 会心の一撃！箱ひげ図から「${val}」を引き、${val} ダメージ！`, '#dc2626');
     } else {
+      sfxBlocked();
       setLog(`🛡️ バリアに弾かれた！（結果:${val} / 敵の条件に合っていない！）`, '#d97706');
     }
   }
@@ -1167,6 +1496,7 @@ function playCard(idx) {
 
 function enemyTurn() {
   const st = STAGES[state.stageIdx];
+  sfxPlayerDamage();
   state.playerHp = Math.max(0, state.playerHp - st.atk);
   updateHUD();
   setLog(`💥 ${st.name} の反撃！勇者は ${st.atk} のダメージを受けた！`, '#dc2626');
@@ -1188,19 +1518,20 @@ function enemyTurn() {
 
 function handleEnemyDefeated() {
   const st = STAGES[state.stageIdx];
+  const isFinal = (state.stageIdx + 1 >= STAGES.length);
+  sfxBattleVictory(isFinal);
   setLog(`🎉 ${st.name} をたおした！`, '#2563eb');
 
   setTimeout(() => {
     if (state.stageIdx === 2) {
-      // STAGE 3 クリア後に中間宝箱イベント
       openChestEvent();
-    } else if (state.stageIdx + 1 < STAGES.length) {
+    } else if (!isFinal) {
       state.busy = false;
       loadStage(state.stageIdx + 1);
     } else {
       showResult(true);
     }
-  }, 1000);
+  }, isFinal ? 2500 : 1450);
 }
 
 function openChestEvent() {
@@ -1208,9 +1539,9 @@ function openChestEvent() {
   document.getElementById('chest-step-1').classList.remove('hidden');
   document.getElementById('chest-step-2').classList.add('hidden');
   document.getElementById('chest-feedback').textContent = '';
+  applyTransparentSrc(document.getElementById('chest-img'), IMAGES.chest);
   modal.classList.remove('hidden');
 
-  // 7個の昇順整数データを生成（最小, Q1, 3番目, 中央値, 5番目, Q3, 最大）
   const min = randInt(10, 20);
   const q1 = min + randInt(10, 16);
   const d3 = q1 + randInt(3, 8);
@@ -1223,9 +1554,10 @@ function openChestEvent() {
   const chipsWrap = document.getElementById('chest-data-chips');
   chipsWrap.innerHTML = dataArr.map(n => `<span class="data-chip">${n}</span>`).join('');
 
-  const correctCard = { type: 'atk', isTrump: true, min, q1, med, q3, max };
-  const wrong1 = { type: 'atk', isTrump: false, min, q1: d3, med, q3: d5, max }; // Q1とQ3がズレている
-  const wrong2 = { type: 'atk', isTrump: false, min: min + 5, q1, med: med + 6, q3, max }; // 中央値と最小がズレている
+  // 3択とも同じ属性・色（overrideColor = 'chest'）で描画し、色バレを完全防止
+  const correctCard = { min, q1, med, q3, max };
+  const wrong1 = { min, q1: d3, med, q3: d5, max };
+  const wrong2 = { min: min + 5, q1, med: med + 6, q3, max };
 
   const options = [
     { card: correctCard, ok: true },
@@ -1239,13 +1571,15 @@ function openChestEvent() {
     const div = document.createElement('div');
     div.className = 'chest-choice';
     div.innerHTML = `
-      <div style="font-size:0.78rem; font-weight:800; color:#475569; text-align:left; margin-bottom:2px;">カギ穴 ${String.fromCharCode(65 + i)}</div>
-      ${buildBoxplotSVG(opt.card)}
+      <div style="font-size:0.78rem; font-weight:800; color:#1e40af; text-align:left; margin-bottom:2px;">カギ穴 ${String.fromCharCode(65 + i)}</div>
+      ${buildBoxplotSVG(opt.card, null, 'chest')}
     `;
     div.onclick = () => {
       if (opt.ok) {
+        sfxChestUnlock();
         unlockChestSuccess();
       } else {
+        sfxBlocked();
         document.getElementById('chest-feedback').textContent = 'カチッ…違うようだ！最小・Q1・中央値・Q3・最大を確かめよう！';
       }
     };
@@ -1263,14 +1597,16 @@ function unlockChestSuccess() {
   const wrap = document.getElementById('trump-choices');
   wrap.innerHTML = '';
 
-  TRUMP_CATALOG.forEach(t => {
+  TRUMP_CATALOG.forEach((t, i) => {
     const div = document.createElement('div');
     div.className = 'trump-option';
     div.innerHTML = `
-      <img src="${t.img}" alt="${t.name}">
+      <div class="trump-option-art">
+        <img id="trump-opt-img-${i}" src="${t.img}" alt="${t.name}">
+      </div>
       <div style="flex:1;">
-        <div style="font-weight:900; font-size:0.95rem; color:#b45309;">${t.name}</div>
-        <div style="font-size:0.76rem; font-weight:700; color:#475569; margin-bottom:4px;">${t.desc}</div>
+        <div style="font-weight:900; font-size:0.93rem; color:#b45309;">${t.name}</div>
+        <div style="font-size:0.75rem; font-weight:700; color:#475569; margin-bottom:3px;">${t.desc}</div>
         ${buildBoxplotSVG(t)}
       </div>
     `;
@@ -1282,6 +1618,7 @@ function unlockChestSuccess() {
       loadStage(state.stageIdx + 1);
     };
     wrap.appendChild(div);
+    applyTransparentSrc(document.getElementById(`trump-opt-img-${i}`), t.img);
   });
 }
 
