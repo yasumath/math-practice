@@ -1585,38 +1585,61 @@ function closeRankingModal() {
   document.getElementById("ranking-modal").classList.remove("active");
 }
 
-async function loadRankingData() {
+async function loadRankingData(optimisticEntry = null) {
   const container = document.getElementById("ranking-list-container");
   if (!GAS_RANKING_URL) {
-    let localList = [];
-    try {
-      localList = JSON.parse(localStorage.getItem("abd_local_ranking") || "[]");
-    } catch (e) {}
-    if (localList.length === 0) {
-      container.innerHTML = `<div style="text-align:center; color:var(--muted); padding:16px; font-size:0.85rem;">まだ記録がありません。<br>レースを終えて最初の記録を登録しよう！</div>`;
-      return;
-    }
-    container.innerHTML = localList.map((item, i) => `
-      <div class="ranking-row">
-        <span>${i + 1}位：${escapeHTML(item.name)}</span>
-        <span style="color:#b45309;">💰 ${Number(item.score).toLocaleString()}</span>
-      </div>
-    `).join("");
+    const localList = JSON.parse(localStorage.getItem("abd_local_ranking") || "[]");
+    renderRankingRows(container, localList);
     return;
   }
 
-  try {
-    const res = await fetch(GAS_RANKING_URL);
-    const data = await res.json();
-    container.innerHTML = data.slice(0, 10).map((item, i) => `
-      <div class="ranking-row">
-        <span>${i + 1}位：${escapeHTML(item.name)}</span>
-        <span style="color:#b45309;">💰 ${Number(item.score).toLocaleString()}</span>
-      </div>
-    `).join("");
-  } catch (e) {
-    container.innerHTML = `<div style="color:var(--danger); text-align:center; padding:12px;">読み込みに失敗しました</div>`;
+  if (!optimisticEntry) {
+    container.innerHTML = `<div style="text-align:center; color:var(--muted); padding:20px; font-size:0.88rem;">ランキングを取得中...</div>`;
   }
+
+  try {
+    // キャッシュ防止のためタイムスタンプを付与して最新データを取得
+    const url = `${GAS_RANKING_URL}?t=${Date.now()}`;
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "follow"
+    });
+    let data = await res.json();
+    if (!Array.isArray(data)) data = [];
+
+    // 送信直後でまだシート反映が追いついていない場合、自分の記録を補完してソート
+    if (optimisticEntry) {
+      const alreadyExists = data.some(
+        item => item.name === optimisticEntry.name && Number(item.score) === Number(optimisticEntry.score)
+      );
+      if (!alreadyExists) {
+        data.push(optimisticEntry);
+        data.sort((a, b) => Number(b.score) - Number(a.score));
+        data = data.slice(0, 10);
+      }
+    }
+
+    renderRankingRows(container, data);
+  } catch (e) {
+    if (optimisticEntry) {
+      renderRankingRows(container, [optimisticEntry]);
+    } else {
+      container.innerHTML = `<div style="color:var(--danger); text-align:center; padding:12px; font-size:0.85rem;">読み込みに失敗しました。<br>GASのURLまたは公開設定（全員）を確認してください。</div>`;
+    }
+  }
+}
+
+function renderRankingRows(container, list) {
+  if (!list || list.length === 0) {
+    container.innerHTML = `<div style="text-align:center; color:var(--muted); padding:16px; font-size:0.85rem;">まだ記録がありません。<br>最初の記録を登録しよう！</div>`;
+    return;
+  }
+  container.innerHTML = list.slice(0, 10).map((item, i) => `
+    <div class="ranking-row">
+      <span>${i + 1}位：${escapeHTML(item.name)}</span>
+      <span style="color:#15803d;">💰 ${Number(item.score).toLocaleString()}</span>
+    </div>
+  `).join("");
 }
 
 async function submitRankingScore() {
@@ -1626,29 +1649,34 @@ async function submitRankingScore() {
   statusEl.textContent = "送信中...";
 
   if (!GAS_RANKING_URL) {
-    let localList = [];
-    try {
-      localList = JSON.parse(localStorage.getItem("abd_local_ranking") || "[]");
-    } catch (e) {}
+    const localList = JSON.parse(localStorage.getItem("abd_local_ranking") || "[]");
     localList.push({ name, score: state.coins });
     localList.sort((a, b) => b.score - a.score);
-    try {
-      localStorage.setItem("abd_local_ranking", JSON.stringify(localList.slice(0, 10)));
-    } catch (e) {}
+    localStorage.setItem("abd_local_ranking", JSON.stringify(localList.slice(0, 10)));
     statusEl.textContent = "ローカルランキングに登録しました！";
     document.getElementById("ranking-submit-area").style.display = "none";
     loadRankingData();
     return;
   }
 
+  const newEntry = { name, score: state.coins };
+
   try {
     await fetch(GAS_RANKING_URL, {
       method: "POST",
-      body: JSON.stringify({ name, score: state.coins })
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(newEntry)
     });
     statusEl.textContent = "登録完了！";
     document.getElementById("ranking-submit-area").style.display = "none";
-    loadRankingData();
+
+    // 書き込み完了を待ってから再取得しつつ、万が一反映前でも自分の記録を即座に合成表示
+    setTimeout(() => {
+      loadRankingData(newEntry);
+    }, 2200);
   } catch (e) {
     statusEl.textContent = "送信エラーが発生しました";
   }
