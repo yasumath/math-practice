@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>アニマル・ボックス・ダービー</title>
+<style>
+  :root {
+    --bg: #dcfce7;
+    --card: #f7fee7;
+    --primary: #15803d;
+    --primary-dark: #14532d;
+    --accent: #f59e0b;
+    --danger: #dc2626;
+    --success: #16a34a;
+    --text: #143622;
+    --muted: #3f624d;
+    --border: #86efac;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: radial-gradient(circle at top, #bbf7d0 0%, #dcfce7 55%, #86efac 100%);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ヘッダー */
+  header {
+    width: 100%;
+    max-width: 720px;
+    background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid #14532d;
+    box-shadow: 0 2px 8px rgba(20, 83, 45, 0.25);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .header-title {
+    font-weight: 900;
+    font-size: 1.05rem;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-pills {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .pill {
+    background: rgba(255, 255, 255, 0.18);
+    border: 1.5px solid #86efac;
+    color: #ffffff;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .pill.coin {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #b45309;
+  }
+
+  /* メインコンテナ */
+  main {
+    width: 100%;
+    max-width: 720px;
+    flex: 1;
+    padding: 12px 12px 96px; /* 下部固定バー用の余白 */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .screen {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .screen.active {
+    display: flex;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* カード共通 */
+  .box-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 3px 10px rgba(20, 83, 45, 0.1);
+    border: 2px solid var(--border);
+  }
+
+  /* タイトル画面 */
+  .hero-banner {
+    text-align: center;
+    padding: 26px 16px;
+    background: linear-gradient(135deg, #166534 0%, #15803d 55%, #16a34a 100%);
+    border: 3px solid #facc15;
+    color: #ffffff;
+  }
+
+  .hero-animals {
+    font-size: 2.6rem;
+    letter-spacing: 6px;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+  }
+
+  .hero-banner h1 {
+    font-size: 1.65rem;
+    color: #fef08a;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    margin-bottom: 8px;
+    font-weight: 900;
+  }
+
+  .hero-banner p {
+    font-size: 0.92rem;
+    color: #f0fdf4;
+    line-height: 1.6;
+    font-weight: 700;
+  }
+
+  .rule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.9rem;
+  }
+
+  .rule-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #ecfdf5;
+    border: 1.5px solid #a7f3d0;
+    padding: 8px 12px;
+    border-radius: 10px;
+  }
+
+  /* 出走表＆箱ひげ図比較 */
+  .race-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .race-badge {
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  .race-desc {
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .runner-card {
+    border: 2.5px solid #bbf7d0;
+    border-radius: 14px;
+    padding: 10px 12px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+
+  .runner-card:hover {
+    border-color: #4ade80;
+  }
+
+  .runner-card.selected {
+    border-color: #15803d;
+    background: #ecfdf5;
+    box-shadow: 0 4px 12px rgba(21, 128, 61, 0.22);
+  }
+
+  .runner-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .runner-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .gate-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 0.85rem;
+    border: 1.5px solid #cbd5e1;
+    flex-shrink: 0;
+  }
+  .gate-1 { background: #ffffff; color: #1e293b; }
+  .gate-2 { background: #1e293b; color: #ffffff; border-color: #1e293b; }
+  .gate-3 { background: #ef4444; color: #ffffff; border-color: #ef4444; }
+  .gate-4 { background: #2563eb; color: #ffffff; border-color: #2563eb; }
+
+  .runner-emoji {
+    font-size: 1.65rem;
+    line-height: 1;
+  }
+
+  .runner-name {
+    font-weight: 900;
+    font-size: 0.98rem;
+  }
+
+  .runner-tag {
+    font-size: 0.72rem;
+    background: #dcfce7;
+    color: #166534;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 700;
+    display: inline-block;
+  }
+
+  .odds-badge {
+    font-size: 1.05rem;
+    font-weight: 900;
+    color: var(--danger);
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    padding: 2px 10px;
+    border-radius: 999px;
+  }
+
+  .boxplot-svg {
+    width: 100%;
+    height: 54px;
+    display: block;
+  }
+
+  .stats-mini {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 2px;
+    padding: 0 4px;
+  }
+
+  /* 賭け金コントロール */
+  .bet-panel {
+    background: #fefce8;
+    border: 2px solid #facc15;
+  }
+
+  .bet-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .bet-amount-display {
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: #b45309;
+  }
+
+  .bet-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .btn-chip {
+    background: #fff;
+    border: 1.5px solid #f59e0b;
+    color: #b45309;
+    font-weight: 800;
+    padding: 8px 4px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .btn-chip:active {
+    background: #fef3c7;
+    transform: scale(0.97);
+  }
+
+  /* レース画面（緑の芝生枠＋砂色のダートコース） */
+  .track-container {
+    background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
+    border: 3px solid #14532d;
+    border-radius: 16px;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(20, 83, 45, 0.25);
+  }
+
+  .track-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.84rem;
+    font-weight: 900;
+    color: #fef08a;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    padding: 0 2px;
+  }
+
+  .lane {
+    background-color: #f3e2c7;
+    background-image:
+      radial-gradient(rgba(161, 128, 72, 0.24) 1px, transparent 1px),
+      radial-gradient(rgba(133, 102, 52, 0.18) 1px, transparent 1px),
+      linear-gradient(180deg, #f3e2c7 0%, #ead3b1 50%, #e6ccb2 100%);
+    background-size: 14px 14px, 19px 19px, 100% 100%;
+    background-position: 0 0, 7px 9px, 0 0;
+    border-radius: 10px;
+    height: 46px;
+    position: relative;
+    border: 2px solid #b5945b;
+    box-shadow: inset 0 2px 4px rgba(120, 85, 35, 0.22);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    overflow: hidden;
+  }
+
+  .lane::after {
+    content: "";
+    position: absolute;
+    left: 36px;
+    right: 40px;
+    top: 50%;
+    border-top: 1.5px dashed rgba(161, 122, 62, 0.45);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .lane.my-bet {
+    border: 2.5px solid #facc15;
+    box-shadow: inset 0 0 0 1.5px #eab308, 0 0 8px rgba(250, 204, 21, 0.55);
+  }
+
+  .goal-line {
+    position: absolute;
+    right: 36px;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background: repeating-linear-gradient(
+      to bottom,
+      #ef4444 0px,
+      #ef4444 6px,
+      #ffffff 6px,
+      #ffffff 12px
+    );
+    border-left: 1px solid rgba(0, 0, 0, 0.2);
+    border-right: 1px solid rgba(0, 0, 0, 0.2);
+    z-index: 1;
+  }
+
+  .lane-runner {
+    position: absolute;
+    left: 34px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: left 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 3;
+  }
+
+  .lane-runner.running .runner-sprite {
+    animation: hop 0.25s infinite alternate;
+  }
+
+  @keyframes hop {
+    from { transform: translateY(0) rotate(-4deg) scaleX(-1); }
+    to { transform: translateY(-5px) rotate(4deg) scaleX(-1); }
+  }
+
+  .runner-sprite {
+    font-size: 1.65rem;
+    display: inline-block;
+    transform: scaleX(-1);
+    filter: drop-shadow(0 2px 2px rgba(80, 50, 15, 0.35));
+  }
+
+  .dist-label {
+    font-size: 0.72rem;
+    font-weight: 900;
+    color: #3e2708;
+    background: rgba(255, 251, 235, 0.94);
+    padding: 1px 5px;
+    border-radius: 6px;
+    border: 1px solid #b5945b;
+    white-space: nowrap;
+  }
+
+  .pop-delta {
+    position: absolute;
+    top: -14px;
+    right: -10px;
+    font-size: 0.72rem;
+    font-weight: 900;
+    padding: 1px 5px;
+    border-radius: 6px;
+    color: #fff;
+    animation: popUp 0.9s forwards;
+    pointer-events: none;
+  }
+
+  @keyframes popUp {
+    0% { opacity: 0; transform: translateY(4px) scale(0.8); }
+    20% { opacity: 1; transform: translateY(0) scale(1.05); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-8px); }
+  }
+
+  /* リアルタイム箱ひげ図モニター */
+  .live-monitor {
+    border: 2.5px solid #4ade80;
+    background: #ffffff;
+  }
+
+  .monitor-title {
+    font-size: 0.88rem;
+    font-weight: 900;
+    color: var(--primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+
+  .live-svg {
+    width: 100%;
+    height: 98px;
+    display: block;
+  }
+
+  .commentary-box {
+    background: #14532d;
+    color: #f0fdf4;
+    border: 1.5px solid #22c55e;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .log-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+  }
+
+  .log-chip {
+    font-size: 0.74rem;
+    font-weight: 800;
+    padding: 3px 7px;
+    border-radius: 999px;
+    border: 1px solid #86efac;
+    background: #f0fdf4;
+  }
+  .log-chip.high { background: #fef3c7; border-color: #f59e0b; color: #b45309; }
+  .log-chip.mid  { background: #dcfce7; border-color: #16a34a; color: #166534; }
+  .log-chip.low  { background: #f3e8ff; border-color: #a855f7; color: #6b21a8; }
+
+  /* リザルト・結果表示 */
+  .result-banner {
+    text-align: center;
+    padding: 18px 14px;
+  }
+
+  .rank-badge {
+    display: inline-block;
+    font-size: 2.2rem;
+    font-weight: 900;
+    padding: 6px 24px;
+    border-radius: 16px;
+    margin: 8px 0;
+  }
+  .rank-S { background: #fef3c7; color: #d97706; border: 3px solid #f59e0b; }
+  .rank-A { background: #fee2e2; color: #dc2626; border: 3px solid #ef4444; }
+  .rank-B { background: #dcfce7; color: #15803d; border: 3px solid #16a34a; }
+  .rank-C { background: #e0f2fe; color: #0284c7; border: 3px solid #0ea5e9; }
+  .rank-F { background: #e2e8f0; color: #475569; border: 3px solid #94a3b8; }
+
+  /* 下部固定アクションバー */
+  .bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(240, 253, 244, 0.96);
+    backdrop-filter: blur(6px);
+    border-top: 2px solid #86efac;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    display: flex;
+    justify-content: center;
+    z-index: 30;
+  }
+
+  .bottom-bar-inner {
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-main {
+    flex: 1;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 1.05rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--primary-dark);
+    transition: transform 0.1s;
+  }
+
+  .btn-main:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--primary-dark);
+  }
+
+  .btn-main:disabled {
+    background: #86a392;
+    box-shadow: 0 4px 0 #5b7867;
+    cursor: not-allowed;
+  }
+
+  .btn-sub {
+    background: #dcfce7;
+    color: #166534;
+    border: 2px solid #4ade80;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  /* ランキングモーダル */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 54, 34, 0.65);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 50;
+  }
+  .modal-overlay.active {
+    display: flex;
+  }
+  .modal-box {
+    background: #f7fee7;
+    border: 3px solid #4ade80;
+    width: 100%;
+    max-width: 440px;
+    border-radius: 18px;
+    padding: 18px;
+    max-height: 85dvh;
+    overflow-y: auto;
+  }
+  .ranking-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-bottom: 1px solid #bbf7d0;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">🏇 アニマル・ボックス・ダービー</div>
+  <div class="status-pills">
+    <div class="pill" id="header-race">全4レース</div>
+    <div class="pill coin">💰 <span id="header-coins">1,000</span></div>
+  </div>
+</header>
+
+<main>
+  <!-- 1. タイトル画面 -->
+  <section id="screen-title" class="screen active">
+    <div class="box-card hero-banner">
+      <div class="hero-animals">🐎🐇🐢🐆</div>
+      <h1>アニマル・ボックス・ダービー</h1>
+      <p>4匹の「箱ひげ図」を読み解き、1着になる動物を予想しよう！<br>全4レース（各150m走）でコインをどこまで増やせるか挑戦！</p>
+    </div>
+
+    <div class="box-card rule-list">
+      <div class="rule-item">📊 <strong>箱ひげ図の見方：</strong> 最小値・第1四分位数・中央値・第3四分位数・最大値の4つの区間に、それぞれ<strong>25%の確率</strong>で記録が出ます。</div>
+      <div class="rule-item">🏁 <strong>レース進行：</strong> 各区間で抽選された距離だけ前進し、先に<strong>150m</strong>のゴールに到達した動物が1着！（平均6〜7区間で決着）</div>
+      <div class="rule-item">💰 <strong>単勝ルール：</strong> 初期所持金は1,000コイン。途中のレースで所持金が<strong>0コイン</strong>になるとその場でゲームオーバーです。</div>
+    </div>
+
+    <div class="box-card" style="display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-size:0.88rem; font-weight:800; color:var(--muted);">過去のベスト記録：<span id="best-record" style="color:var(--primary);">---</span></span>
+      <button class="btn-sub" onclick="openRankingModal(false)" style="padding:6px 12px; font-size:0.82rem;">🏆 ランキング</button>
+    </div>
+  </section>
+
+  <!-- 2. 予想＆ベット画面 -->
+  <section id="screen-bet" class="screen">
+    <div class="box-card" style="padding:10px 14px;">
+      <div class="race-header-bar">
+        <span class="race-badge" id="race-title-badge">第1レース</span>
+        <span class="race-desc" id="race-subtitle">1区間あたりの移動距離（m）の箱ひげ図</span>
+      </div>
+      <!-- 共通目盛りガイド -->
+      <svg id="axis-guide-svg" style="width:100%; height:24px; display:block;"></svg>
+      <div id="runners-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+
+    <div class="box-card bet-panel">
+      <div class="bet-row">
+        <div>
+          <div style="font-size:0.78rem; font-weight:800; color:#92400e;">単勝ベッド（1匹選択）</div>
+          <div id="selected-runner-label" style="font-size:0.95rem; font-weight:900;">動物を選んでください</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.75rem; font-weight:700; color:#92400e;">賭け金（的中時: <span id="expected-payout">0</span>）</div>
+          <div class="bet-amount-display">💰 <span id="bet-amount">100</span></div>
+        </div>
+      </div>
+      <div class="bet-buttons">
+        <button class="btn-chip" onclick="adjustBet(-100)">-100</button>
+        <button class="btn-chip" onclick="adjustBet(100)">+100</button>
+        <button class="btn-chip" onclick="setHalfBet()">半分</button>
+        <button class="btn-chip" onclick="setAllInBet()">全額</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. レース進行画面 -->
+  <section id="screen-race" class="screen">
+    <div class="track-container">
+      <div class="track-header">
+        <span id="race-turn-label">スタート待機中...</span>
+        <span>ゴール：150m 🏁</span>
+      </div>
+      <div id="track-lanes" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+
+    <!-- 選んだ動物の箱ひげ図リアルタイムプロット -->
+    <div class="box-card live-monitor">
+      <div class="monitor-title">
+        <span id="monitor-runner-name">🎯 予想した動物の記録分布</span>
+        <span style="font-size:0.75rem; color:var(--muted);">★Q3以上 / ●箱の中 / ▼Q1未満</span>
+      </div>
+      <svg id="live-boxplot-svg" class="live-svg"></svg>
+      <div class="commentary-box" id="commentary-text">📣 ゲートイン完了！まもなく発走します！</div>
+      <div class="log-chips" id="turn-logs"></div>
+    </div>
+  </section>
+
+  <!-- 4. レース結果（中間リザルト） -->
+  <section id="screen-race-result" class="screen">
+    <div class="box-card result-banner">
+      <div id="res-win-badge" style="font-size:1.4rem; font-weight:900; margin-bottom:6px;"></div>
+      <div id="res-detail-text" style="font-size:0.95rem; color:var(--muted); margin-bottom:12px;"></div>
+      <div style="background:#ecfdf5; border:1.5px solid #86efac; border-radius:12px; padding:12px; font-size:1.1rem; font-weight:900;">
+        現在の所持金：💰 <span id="res-current-coins" style="color:#b45309; font-size:1.35rem;"></span> コイン
+      </div>
+    </div>
+
+    <div class="box-card">
+      <div style="font-size:0.88rem; font-weight:900; margin-bottom:8px;">📊 レース着順＆平均記録（全<span id="res-total-turns">0</span>区間）</div>
+      <div id="res-standings" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+  </section>
+
+  <!-- 5. 最終リザルト画面 -->
+  <section id="screen-final" class="screen">
+    <div class="box-card result-banner">
+      <div style="font-size:0.9rem; font-weight:800; color:var(--muted);">全レース終了！最終スコア</div>
+      <div style="font-size:2.1rem; font-weight:900; color:#b45309; margin:4px 0;">💰 <span id="final-coins">0</span> コイン</div>
+      <div id="final-rank-badge" class="rank-badge rank-B">Bランク</div>
+      <div id="final-rank-title" style="font-size:1.05rem; font-weight:900; margin-top:4px;"></div>
+      <p id="final-comment" style="font-size:0.88rem; color:var(--muted); margin-top:8px;"></p>
+    </div>
+
+    <div class="box-card" style="display:flex; flex-direction:column; gap:8px;">
+      <button class="btn-main" style="background:#f59e0b; box-shadow:0 4px 0 #d97706;" onclick="openRankingModal(true)">🏆 スコアをランキングに登録する</button>
+    </div>
+  </section>
+</main>
+
+<!-- 下部固定アクションバー -->
+<div class="bottom-bar">
+  <div class="bottom-bar-inner" id="bottom-action-area">
+    <button class="btn-main" onclick="startGame()">レースを始める！</button>
+  </div>
+</div>
+
+<!-- ランキングモーダル（GAS連携用） -->
+<div class="modal-overlay" id="ranking-modal">
+  <div class="modal-box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="font-size:1.1rem; font-weight:900;">🏆 ダービー長者ランキング</h3>
+      <button onclick="closeRankingModal()" style="border:none; background:none; font-size:1.3rem; cursor:pointer;">✕</button>
+    </div>
+
+    <div id="ranking-submit-area" style="background:#dcfce7; border:1.5px solid #86efac; padding:12px; border-radius:12px; margin-bottom:12px; display:none;">
+      <div style="font-size:0.85rem; font-weight:800; margin-bottom:6px;">今回の記録：<span id="modal-score-val">0</span> コイン</div>
+      <div style="display:flex; gap:6px;">
+        <input type="text" id="player-name-input" maxlength="12" placeholder="ニックネーム（12文字以内）" style="flex:1; padding:8px 10px; border:1.5px solid #4ade80; border-radius:8px; font-size:0.9rem;">
+        <button onclick="submitRankingScore()" class="btn-main" style="flex:none; padding:8px 14px; font-size:0.88rem;">送信</button>
+      </div>
+      <div id="submit-status" style="font-size:0.78rem; color:var(--primary); margin-top:4px; font-weight:700;"></div>
+    </div>
+
+    <div id="ranking-list-container">
+      <div style="text-align:center; color:var(--muted); padding:20px; font-size:0.88rem;">読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * GASランキング連携URL（必要に応じて既存のデプロイURLを設定してください）
+ * 空文字の場合はローカルストレージのハイスコアランキングとして動作します
+ */
+const GAS_RANKING_URL = "";
+
+// レース設定定数
+const GOAL_DISTANCE = 150;
+
+// 動物マスターデータ
+const ANIMAL_POOL = [
+  { id: "horse",    emoji: "🐎", name: "サラブレッド", tag: "実力バランス型" },
+  { id: "turtle",   emoji: "🐢", name: "マンネンガメ", tag: "超・安定型" },
+  { id: "cheetah",  emoji: "🐆", name: "チーター",     tag: "一発爆発型" },
+  { id: "rabbit",   emoji: "🐇", name: "ユダンウサギ", tag: "ムラあり罠型" },
+  { id: "kangaroo", emoji: "🦘", name: "カンガルー",   tag: "ハイリスク型" },
+  { id: "penguin",  emoji: "🐧", name: "ペンギン",     tag: "堅実追い込み型" }
+];
+
+// ゲーム状態
+let state = {
+  coins: 1000,
+  raceIndex: 0, // 0〜3 (全4レース)
+  totalRaces: 4,
+  runners: [],
+  selectedRunnerIdx: null,
+  betAmount: 100,
+  raceTimer: null,
+  turn: 0,
+  myTurnResults: []
+};
+
+// AudioContext（効果音・2秒ジングル用）
+let audioCtx = null;
+function initAudio() {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+  } catch (e) {}
+}
+
+function playTone(freq, duration, type = "sine", delay = 0, vol = 0.12) {
+  try {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime + delay);
+    osc.stop(audioCtx.currentTime + delay + duration);
+  } catch (e) {}
+}
+
+function playFanfare() {
+  const notes = [523.25, 659.25, 783.99, 1046.50];
+  notes.forEach((f, i) => playTone(f, 0.16, "triangle", i * 0.09, 0.15));
+}
+
+function playStepSound(isHigh) {
+  if (isHigh) {
+    playTone(587.33, 0.12, "triangle", 0, 0.14);
+    playTone(880.00, 0.2, "triangle", 0.08, 0.14);
+  } else {
+    playTone(330, 0.1, "sine", 0, 0.1);
+  }
+}
+
+function playWinSound() {
+  const melody = [523.25, 659.25, 783.99, 659.25, 783.99, 1046.5];
+  const times  = [0, 0.1, 0.2, 0.32, 0.44, 0.58];
+  melody.forEach((f, i) => playTone(f, 0.22, "triangle", times[i], 0.16));
+}
+
+function playLoseSound() {
+  playTone(311.13, 0.25, "sawtooth", 0, 0.08);
+  playTone(277.18, 0.4, "sawtooth", 0.22, 0.08);
+}
+
+// 全レースクリア時：約2.0秒間の華やかな勝利ファンファーレ（和音付き）
+function playClearJingle() {
+  // 主旋律（G1ファンファーレ風 約2.0秒）
+  const leadNotes = [
+    { f: 523.25, t: 0.00, d: 0.16 }, // C5
+    { f: 659.25, t: 0.16, d: 0.16 }, // E5
+    { f: 783.99, t: 0.32, d: 0.16 }, // G5
+    { f: 1046.50, t: 0.48, d: 0.34 }, // C6
+    { f: 880.00, t: 0.86, d: 0.18 }, // A5
+    { f: 987.77, t: 1.04, d: 0.18 }, // B5
+    { f: 1046.50, t: 1.24, d: 0.85 }  // C6（ロングフィニッシュ）
+  ];
+  // 伴奏ハーモニー和音
+  const harmonyNotes = [
+    { f: 261.63, t: 0.00, d: 0.45 }, // C4
+    { f: 329.63, t: 0.48, d: 0.35 }, // E4
+    { f: 349.23, t: 0.86, d: 0.35 }, // F4
+    { f: 523.25, t: 1.24, d: 0.85 }, // C5
+    { f: 659.25, t: 1.24, d: 0.85 }, // E5
+    { f: 783.99, t: 1.24, d: 0.85 }  // G5
+  ];
+
+  leadNotes.forEach(n => playTone(n.f, n.d, "triangle", n.t, 0.17));
+  harmonyNotes.forEach(n => playTone(n.f, n.d, "sine", n.t, 0.10));
+}
+
+// ゲームオーバー（破産）時：約2.0秒間の哀愁ある下降ジングル
+function playGameOverJingle() {
+  const sadNotes = [
+    { f: 392.00, t: 0.00, d: 0.28 }, // G4
+    { f: 369.99, t: 0.30, d: 0.28 }, // F#4
+    { f: 349.23, t: 0.60, d: 0.28 }, // F4
+    { f: 329.63, t: 0.90, d: 0.40 }, // E4
+    { f: 261.63, t: 1.32, d: 0.75 }  // C4（余韻）
+  ];
+  const bassNotes = [
+    { f: 196.00, t: 0.00, d: 0.58 }, // G3
+    { f: 174.61, t: 0.60, d: 0.68 }, // F3
+    { f: 130.81, t: 1.32, d: 0.75 }  // C3
+  ];
+
+  sadNotes.forEach(n => playTone(n.f, n.d, "triangle", n.t, 0.15));
+  bassNotes.forEach(n => playTone(n.f, n.d, "sawtooth", n.t, 0.06));
+}
+
+// 画面切り替え
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo(0, 0);
+}
+
+function updateHeader() {
+  document.getElementById("header-coins").textContent = state.coins.toLocaleString();
+  if (state.raceIndex < state.totalRaces && document.getElementById("screen-title").classList.contains("active") === false) {
+    document.getElementById("header-race").textContent = `第${state.raceIndex + 1} / ${state.totalRaces}レース`;
+  } else {
+    document.getElementById("header-race").textContent = `全${state.totalRaces}レース`;
+  }
+}
+
+// 初期化
+window.addEventListener("DOMContentLoaded", () => {
+  try {
+    const best = localStorage.getItem("abd_best_score");
+    if (best) {
+      document.getElementById("best-record").textContent = `${Number(best).toLocaleString()} コイン`;
+    }
+  } catch (e) {}
+});
+
+// ゲーム開始
+function startGame() {
+  initAudio();
+  state.coins = 1000;
+  state.raceIndex = 0;
+  setupNextRace();
+}
+
+/**
+ * 150m走（平均6〜7区間）用にチューニングした4タイプの箱ひげ図生成
+ * 期待値を接近させつつ、散らばり（箱の幅・ヒゲの長さ）で個性と逆転ドラマを演出する
+ */
+function generateRaceRunners(raceIdx) {
+  let runners = [];
+  let attempts = 0;
+
+  // オッズのメリハリ（1番人気と4番人気の差が適度につくこと）を保証するループ
+  while (attempts < 15) {
+    attempts++;
+    const patterns = [
+      // ① マンネンガメ（超・安定型：箱が極小でブレない）
+      () => {
+        const med = randInt(23, 25);
+        const q1 = med - 2;
+        const q3 = med + 2;
+        const min = Math.max(12, q1 - randInt(3, 5));
+        const max = Math.min(35, q3 + randInt(3, 5));
+        return { min, q1, med, q3, max, animalId: "turtle" };
+      },
+      // ② サラブレッド（実力バランス型：全体的にやや右寄り）
+      () => {
+        const q1 = randInt(20, 22);
+        const med = randInt(24, 26);
+        const q3 = randInt(28, 30);
+        const min = Math.max(10, q1 - randInt(4, 6));
+        const max = Math.min(38, q3 + randInt(4, 6));
+        return { min, q1, med, q3, max, animalId: "horse" };
+      },
+      // ③ チーター（一発爆発型：普段は控えめだが右ヒゲが35〜40まで伸び、6〜7区間で2〜3回引けば逆転可能）
+      () => {
+        const q1 = randInt(14, 17);
+        const med = randInt(19, 22);
+        const q3 = randInt(25, 28);
+        const min = Math.max(6, q1 - randInt(4, 6));
+        const max = randInt(36, 40);
+        return { min, q1, med, q3, max, animalId: "cheetah" };
+      },
+      // ④ ユダンウサギ（ムラあり罠型）または カンガルー（ハイリスク型）
+      () => {
+        if (raceIdx % 2 === 1) {
+          // 罠型：中央値はトップクラス(25〜28)だが左ヒゲが長い(最小3〜7, Q1:14〜17)
+          const med = randInt(25, 28);
+          const q3 = Math.min(35, med + randInt(3, 4));
+          const max = Math.min(39, q3 + randInt(2, 4));
+          const q1 = randInt(14, 17);
+          const min = randInt(3, 7);
+          return { min, q1, med, q3, max, animalId: "rabbit" };
+        } else {
+          // ハイリスク型：箱が広く上下に大きく振れる
+          const q1 = randInt(14, 17);
+          const med = randInt(23, 25);
+          const q3 = randInt(31, 34);
+          const min = Math.max(5, q1 - randInt(4, 6));
+          const max = Math.min(40, q3 + randInt(3, 5));
+          return { min, q1, med, q3, max, animalId: "kangaroo" };
+        }
+      }
+    ];
+
+    // 第3レースはペンギン（堅実追い込み型）を登場させる
+    if (raceIdx === 2) {
+      patterns[0] = () => {
+        const q1 = randInt(19, 21);
+        const med = randInt(24, 26);
+        const q3 = randInt(28, 30);
+        const min = Math.max(11, q1 - randInt(4, 5));
+        const max = Math.min(36, q3 + randInt(3, 5));
+        return { min, q1, med, q3, max, animalId: "penguin" };
+      };
+    }
+
+    let raw = patterns.map(fn => fn());
+
+    // 第4レース（G1）は全体の底上げでハイレベルな接戦に
+    if (raceIdx === 3) {
+      raw.forEach(r => {
+        r.min = Math.min(36, r.min + 1);
+        r.q1  = Math.min(37, r.q1 + 1);
+        r.med = Math.min(38, r.med + 1);
+        r.q3  = Math.min(39, r.q3 + 1);
+        r.max = Math.min(40, r.max + 1);
+      });
+    }
+
+    raw.sort(() => Math.random() - 0.5);
+
+    runners = raw.map((stats, idx) => {
+      const info = ANIMAL_POOL.find(a => a.id === stats.animalId);
+      return {
+        gate: idx + 1,
+        ...info,
+        ...stats,
+        distance: 0,
+        wins: 0,
+        odds: 2.0
+      };
+    });
+
+    // モンテカルロシミュレーション（2,000回）で150m到達の理論勝率を算出
+    const SIM_COUNT = 2000;
+    for (let s = 0; s < SIM_COUNT; s++) {
+      const dists = [0, 0, 0, 0];
+      let finished = false;
+      while (!finished) {
+        for (let i = 0; i < 4; i++) {
+          dists[i] += sampleFromBoxplot(runners[i]);
+        }
+        const maxD = Math.max(...dists);
+        if (maxD >= GOAL_DISTANCE) {
+          let winner = 0;
+          for (let i = 1; i < 4; i++) {
+            if (dists[i] > dists[winner]) winner = i;
+          }
+          runners[winner].wins++;
+          finished = true;
+        }
+      }
+    }
+
+    // 極端なオッズを抑えつつメリハリを残す圧縮カーブ（Math.pow(prob, 0.78) + クランプ 1.5〜9.5倍）
+    runners.forEach(r => {
+      const prob = Math.max(0.04, r.wins / SIM_COUNT);
+      const compressedProb = Math.pow(prob, 0.78);
+      let rawOdds = (1 / compressedProb) * 0.68;
+      rawOdds = Math.max(1.5, Math.min(9.5, rawOdds));
+      r.odds = Math.round(rawOdds * 10) / 10;
+    });
+
+    // オッズのメリハリ検証（1番人気と4番人気の差が1.8倍以上あり、かつ同じ倍率ばかりでないこと）
+    const oddsList = runners.map(r => r.odds);
+    const minOdds = Math.min(...oddsList);
+    const maxOdds = Math.max(...oddsList);
+    const uniqueCount = new Set(oddsList).size;
+
+    if (maxOdds - minOdds >= 1.8 && uniqueCount >= 3) {
+      break;
+    }
+  }
+
+  return runners;
+}
+
+// 箱ひげ図の4区間から各25%の確率で記録を抽選（整数）
+function sampleFromBoxplot(r) {
+  const q = Math.floor(Math.random() * 4);
+  let low, high;
+  if (q === 0) { low = r.min; high = r.q1; }
+  else if (q === 1) { low = r.q1; high = r.med; }
+  else if (q === 2) { low = r.med; high = r.q3; }
+  else { low = r.q3; high = r.max; }
+  return randInt(low, high);
+}
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// 次のレースの予想画面をセットアップ
+function setupNextRace() {
+  state.runners = generateRaceRunners(state.raceIndex);
+  state.selectedRunnerIdx = null;
+  state.betAmount = Math.min(state.coins, Math.max(100, Math.floor(state.coins * 0.2 / 100) * 100));
+  if (state.betAmount === 0) state.betAmount = state.coins;
+
+  updateHeader();
+
+  const titles = [
+    "第1レース：若葉ステークス（150m・基本の比較）",
+    "第2レース：データ杯（150m・ヒゲの罠に注意！）",
+    "第3レース：四分位チャンピオンシップ（150m）",
+    "第4レース：ファイナルG1・箱ひげ王決定戦（150m）"
+  ];
+  document.getElementById("race-title-badge").textContent = `第${state.raceIndex + 1}レース`;
+  document.getElementById("race-subtitle").textContent = titles[state.raceIndex];
+
+  renderAxisGuide();
+  renderRunnersList();
+  updateBetUI();
+
+  showScreen("screen-bet");
+  document.getElementById("bottom-action-area").innerHTML = `
+    <button id="btn-start-race" class="btn-main" disabled onclick="startRace()">予想する動物を選んでください</button>
+  `;
+}
+
+// 共通横軸（0〜40）の描画
+function renderAxisGuide() {
+  const svg = document.getElementById("axis-guide-svg");
+  let html = "";
+  for (let v = 0; v <= 40; v += 5) {
+    const x = 16 + (v / 40) * 668;
+    html += `<line x1="${x}" y1="16" x2="${x}" y2="23" stroke="#94a3b8" stroke-width="1.5"/>`;
+    html += `<text x="${x}" y="13" text-anchor="middle" font-size="11" font-weight="bold" fill="#64748b">${v}</text>`;
+  }
+  svg.setAttribute("viewBox", "0 0 700 24");
+  svg.innerHTML = html;
+}
+
+// 箱ひげ図SVG生成（0〜40スケール）
+function createBoxplotSVG(r, color = "#15803d", fill = "#bbf7d0") {
+  const toX = v => 16 + (v / 40) * 668;
+  const xMin = toX(r.min);
+  const xQ1  = toX(r.q1);
+  const xMed = toX(r.med);
+  const xQ3  = toX(r.q3);
+  const xMax = toX(r.max);
+
+  let grid = "";
+  for (let v = 0; v <= 40; v += 5) {
+    const gx = toX(v);
+    grid += `<line x1="${gx}" y1="4" x2="${gx}" y2="48" stroke="#ecfdf5" stroke-width="1"/>`;
+  }
+
+  return `
+    ${grid}
+    <!-- 左ヒゲ -->
+    <line x1="${xMin}" y1="26" x2="${xQ1}" y2="26" stroke="#14532d" stroke-width="2.5"/>
+    <line x1="${xMin}" y1="16" x2="${xMin}" y2="36" stroke="#14532d" stroke-width="2.5"/>
+    <!-- 右ヒゲ -->
+    <line x1="${xQ3}" y1="26" x2="${xMax}" y2="26" stroke="#14532d" stroke-width="2.5"/>
+    <line x1="${xMax}" y1="16" x2="${xMax}" y2="36" stroke="#14532d" stroke-width="2.5"/>
+    <!-- 箱 -->
+    <rect x="${xQ1}" y="10" width="${Math.max(4, xQ3 - xQ1)}" height="32" fill="${fill}" stroke="${color}" stroke-width="2.5" rx="3"/>
+    <!-- 中央値 -->
+    <line x1="${xMed}" y1="10" x2="${xMed}" y2="42" stroke="#dc2626" stroke-width="3.5"/>
+  `;
+}
+
+function renderRunnersList() {
+  const container = document.getElementById("runners-list");
+  container.innerHTML = "";
+
+  state.runners.forEach((r, idx) => {
+    const card = document.createElement("div");
+    card.className = "runner-card" + (state.selectedRunnerIdx === idx ? " selected" : "");
+    card.onclick = () => selectRunner(idx);
+
+    card.innerHTML = `
+      <div class="runner-top">
+        <div class="runner-info">
+          <span class="gate-num gate-${r.gate}">${r.gate}</span>
+          <span class="runner-emoji">${r.emoji}</span>
+          <div>
+            <div class="runner-name">${r.name}</div>
+            <span class="runner-tag">${r.tag}</span>
+          </div>
+        </div>
+        <div class="odds-badge">${r.odds.toFixed(1)}倍</div>
+      </div>
+      <svg class="boxplot-svg" viewBox="0 0 700 52">
+        ${createBoxplotSVG(r)}
+      </svg>
+      <div class="stats-mini">
+        <span>最小:${r.min}</span>
+        <span>Q1:${r.q1}</span>
+        <span style="color:#ef4444; font-weight:800;">中央値:${r.med}</span>
+        <span>Q3:${r.q3}</span>
+        <span>最大:${r.max}</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function selectRunner(idx) {
+  playTone(520, 0.06, "sine", 0, 0.08);
+  state.selectedRunnerIdx = idx;
+  renderRunnersList();
+  updateBetUI();
+}
+
+function adjustBet(delta) {
+  playTone(440, 0.05, "sine", 0, 0.06);
+  let next = state.betAmount + delta;
+  const minBet = Math.min(100, state.coins);
+  next = Math.max(minBet, Math.min(state.coins, next));
+  state.betAmount = next;
+  updateBetUI();
+}
+
+function setHalfBet() {
+  playTone(480, 0.05, "sine", 0, 0.06);
+  let half = Math.floor((state.coins / 2) / 100) * 100;
+  state.betAmount = Math.max(Math.min(100, state.coins), half);
+  updateBetUI();
+}
+
+function setAllInBet() {
+  playTone(600, 0.08, "triangle", 0, 0.1);
+  state.betAmount = state.coins;
+  updateBetUI();
+}
+
+function updateBetUI() {
+  document.getElementById("bet-amount").textContent = state.betAmount.toLocaleString();
+  const btn = document.getElementById("btn-start-race");
+
+  if (state.selectedRunnerIdx !== null) {
+    const r = state.runners[state.selectedRunnerIdx];
+    document.getElementById("selected-runner-label").textContent = `${r.gate}枠 ${r.emoji} ${r.name}（${r.odds.toFixed(1)}倍）`;
+    const payout = Math.floor(state.betAmount * r.odds);
+    document.getElementById("expected-payout").textContent = `${payout.toLocaleString()}コイン`;
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = `💰 ${state.betAmount.toLocaleString()}コイン賭けて出走！`;
+    }
+  } else {
+    document.getElementById("selected-runner-label").textContent = "動物を選んでください";
+    document.getElementById("expected-payout").textContent = "0コイン";
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "予想する動物を選んでください";
+    }
+  }
+}
+
+// レース開始
+function startRace() {
+  if (state.selectedRunnerIdx === null) return;
+  state.coins -= state.betAmount;
+  updateHeader();
+
+  state.turn = 0;
+  state.myTurnResults = [];
+  state.runners.forEach(r => {
+    r.distance = 0;
+    r.history = [];
+  });
+
+  const myRunner = state.runners[state.selectedRunnerIdx];
+  document.getElementById("monitor-runner-name").textContent = `🎯 ${myRunner.emoji} ${myRunner.name} の記録分布`;
+  document.getElementById("turn-logs").innerHTML = "";
+  document.getElementById("commentary-text").textContent = "📣 ファンファーレ！150mレース一斉にスタート！";
+  document.getElementById("race-turn-label").textContent = "スタート待機中...";
+
+  renderTrackLanes();
+  renderLiveBoxplot();
+
+  showScreen("screen-race");
+  document.getElementById("bottom-action-area").innerHTML = `
+    <button class="btn-main" disabled>レース進行中...</button>
+  `;
+
+  playFanfare();
+  state.raceTimer = setTimeout(stepRaceTurn, 1050);
+}
+
+function renderTrackLanes() {
+  const container = document.getElementById("track-lanes");
+  container.innerHTML = "";
+
+  state.runners.forEach((r, idx) => {
+    const isMine = idx === state.selectedRunnerIdx;
+    const lane = document.createElement("div");
+    lane.className = "lane" + (isMine ? " my-bet" : "");
+    lane.innerHTML = `
+      <span class="gate-num gate-${r.gate}" style="margin-right:6px; z-index:2;">${r.gate}</span>
+      <div class="goal-line"></div>
+      <div class="lane-runner" id="runner-sprite-${idx}" style="left: 34px;">
+        <span class="runner-sprite">${r.emoji}</span>
+        <span class="dist-label" id="dist-label-${idx}">0m</span>
+      </div>
+    `;
+    container.appendChild(lane);
+  });
+}
+
+// 1区間進行
+function stepRaceTurn() {
+  state.turn++;
+  document.getElementById("race-turn-label").textContent = `第 ${state.turn} 区間（残り約${Math.max(0, GOAL_DISTANCE - Math.max(...state.runners.map(r => r.distance)))}m）`;
+
+  let maxDist = 0;
+  let leaderIdx = 0;
+  let secondDist = 0;
+
+  state.runners.forEach((r, idx) => {
+    const step = sampleFromBoxplot(r);
+    r.distance += step;
+    r.history.push(step);
+
+    if (r.distance > maxDist) {
+      secondDist = maxDist;
+      maxDist = r.distance;
+      leaderIdx = idx;
+    } else if (r.distance > secondDist) {
+      secondDist = r.distance;
+    }
+
+    // 150mを100%としてトラック上の位置を更新
+    const el = document.getElementById(`runner-sprite-${idx}`);
+    const pct = Math.min(106, (r.distance / GOAL_DISTANCE) * 100);
+    el.classList.add("running");
+    el.style.left = `calc(34px + (100% - 86px) * ${pct / 100})`;
+    document.getElementById(`dist-label-${idx}`).textContent = `${r.distance}m`;
+
+    // 増分ポップアップ
+    const pop = document.createElement("span");
+    pop.className = "pop-delta";
+    pop.textContent = `+${step}m`;
+    pop.style.background = step >= r.q3 ? "#f59e0b" : (step < r.q1 ? "#9333ea" : "#15803d");
+    el.appendChild(pop);
+    setTimeout(() => pop.remove(), 900);
+
+    if (idx === state.selectedRunnerIdx) {
+      state.myTurnResults.push({ turn: state.turn, val: step });
+    }
+  });
+
+  document.getElementById("race-turn-label").textContent = `第 ${state.turn} 区間終了（先頭 ${maxDist}m / 150m）`;
+
+  // 自分の予想動物の記録を箱ひげ図にプロット＆実況
+  const myRunner = state.runners[state.selectedRunnerIdx];
+  const myLast = myRunner.history[myRunner.history.length - 1];
+  renderLiveBoxplot();
+  addTurnLogChip(state.turn, myLast, myRunner);
+
+  const isHigh = myLast >= myRunner.q3;
+  playStepSound(isHigh);
+
+  const leader = state.runners[leaderIdx];
+  const gap = maxDist - secondDist;
+  let msg = "";
+  if (maxDist >= GOAL_DISTANCE) {
+    msg = `🏁 ゴールイン！！先頭で駆け抜けたのは ${leader.emoji} ${leader.name}（${leader.distance}m）！`;
+  } else if (myLast >= myRunner.q3) {
+    msg = `🔥 ${myRunner.name}が第3四分位数(${myRunner.q3}m)超えの「${myLast}m」で猛追！先頭は${leader.name}(${maxDist}m)！`;
+  } else if (myLast < myRunner.q1) {
+    msg = `💦 ${myRunner.name}は第1四分位数(${myRunner.q1}m)未満の「${myLast}m」…巻き返しに期待！`;
+  } else if (maxDist >= 115) {
+    msg = `⚡ 終盤戦！先頭${leader.name}(${maxDist}m)に2番手が${gap}m差で迫る激戦！`;
+  } else {
+    msg = `🏃 第${state.turn}区間終了！先頭は${leader.name}（${leader.distance}m）、2番手と${gap}m差！`;
+  }
+  document.getElementById("commentary-text").textContent = msg;
+
+  // ゴール判定（150m到達）
+  if (maxDist >= GOAL_DISTANCE) {
+    setTimeout(() => {
+      document.querySelectorAll(".lane-runner").forEach(el => el.classList.remove("running"));
+      finishRace();
+    }, 950);
+  } else {
+    // 6〜8区間でもテンポよく見られるよう1.1秒間隔で進行
+    state.raceTimer = setTimeout(stepRaceTurn, 1100);
+  }
+}
+
+// 選んだ動物の箱ひげ図＋実測ドット描画（6〜8個並んでも見やすい配置）
+function renderLiveBoxplot() {
+  const svg = document.getElementById("live-boxplot-svg");
+  const r = state.runners[state.selectedRunnerIdx];
+  const toX = v => 16 + (v / 40) * 668;
+
+  let html = "";
+  for (let v = 0; v <= 40; v += 5) {
+    const gx = toX(v);
+    html += `<line x1="${gx}" y1="16" x2="${gx}" y2="76" stroke="#f1f5f9" stroke-width="1"/>`;
+    html += `<text x="${gx}" y="12" text-anchor="middle" font-size="10" fill="#94a3b8">${v}</text>`;
+  }
+
+  // 箱ひげ図本体（Y=45付近）
+  const xMin = toX(r.min), xQ1 = toX(r.q1), xMed = toX(r.med), xQ3 = toX(r.q3), xMax = toX(r.max);
+  html += `
+    <line x1="${xMin}" y1="45" x2="${xQ1}" y2="45" stroke="#14532d" stroke-width="2.5"/>
+    <line x1="${xMin}" y1="31" x2="${xMin}" y2="59" stroke="#14532d" stroke-width="2.5"/>
+    <line x1="${xQ3}" y1="45" x2="${xMax}" y2="45" stroke="#14532d" stroke-width="2.5"/>
+    <line x1="${xMax}" y1="31" x2="${xMax}" y2="59" stroke="#14532d" stroke-width="2.5"/>
+    <rect x="${xQ1}" y="25" width="${Math.max(4, xQ3 - xQ1)}" height="40" fill="#dcfce7" stroke="#15803d" stroke-width="2.5" rx="4"/>
+    <line x1="${xMed}" y1="25" x2="${xMed}" y2="65" stroke="#dc2626" stroke-width="3.5"/>
+    <text x="${xQ1}" y="91" text-anchor="middle" font-size="10" font-weight="bold" fill="#15803d">Q1:${r.q1}</text>
+    <text x="${xMed}" y="91" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc2626">中央:${r.med}</text>
+    <text x="${xQ3}" y="91" text-anchor="middle" font-size="10" font-weight="bold" fill="#15803d">Q3:${r.q3}</text>
+  `;
+
+  // 6〜8個プロットされても重なりにくいよう、上下5段階のレーンに分散配置
+  const yOffsets = [0, -9, 9, -5, 5, -12, 12, 0];
+  state.myTurnResults.forEach((item, idx) => {
+    const px = toX(item.val);
+    const py = 45 + yOffsets[idx % yOffsets.length];
+    let dotColor = "#2563eb";
+    if (item.val >= r.q3) dotColor = "#f59e0b";
+    else if (item.val < r.q1) dotColor = "#9333ea";
+
+    html += `
+      <circle cx="${px}" cy="${py}" r="7.2" fill="${dotColor}" stroke="#ffffff" stroke-width="1.8"/>
+      <text x="${px}" y="${py + 3.2}" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#ffffff">${item.turn}</text>
+    `;
+  });
+
+  svg.setAttribute("viewBox", "0 0 700 98");
+  svg.innerHTML = html;
+}
+
+function addTurnLogChip(turn, val, r) {
+  const container = document.getElementById("turn-logs");
+  const chip = document.createElement("span");
+  let cls = "mid", icon = "●";
+  if (val >= r.q3) { cls = "high"; icon = "★"; }
+  else if (val < r.q1) { cls = "low"; icon = "▼"; }
+
+  chip.className = `log-chip ${cls}`;
+  chip.textContent = `${icon} ${turn}走:${val}m`;
+  container.appendChild(chip);
+}
+
+// レース終了・精算
+function finishRace() {
+  const ranked = [...state.runners].sort((a, b) => b.distance - a.distance);
+  const winner = ranked[0];
+  const myRunner = state.runners[state.selectedRunnerIdx];
+  const isWin = winner.gate === myRunner.gate;
+
+  let payout = 0;
+  if (isWin) {
+    payout = Math.floor(state.betAmount * myRunner.odds);
+    state.coins += payout;
+    playWinSound();
+    document.getElementById("res-win-badge").innerHTML = `<span style="color:#d97706;">🎉 的中！おめでとう！</span>`;
+    document.getElementById("res-detail-text").textContent = `${myRunner.name}が1着！配当 ${payout.toLocaleString()} コイン獲得！`;
+  } else {
+    playLoseSound();
+    document.getElementById("res-win-badge").innerHTML = `<span style="color:#64748b;">😢 残念…ハズレ</span>`;
+    document.getElementById("res-detail-text").textContent = `1着は ${winner.emoji} ${winner.name} でした（賭け金 ${state.betAmount.toLocaleString()} コイン没収）`;
+  }
+
+  updateHeader();
+  document.getElementById("res-current-coins").textContent = state.coins.toLocaleString();
+  document.getElementById("res-total-turns").textContent = state.turn;
+
+  const listEl = document.getElementById("res-standings");
+  listEl.innerHTML = ranked.map((r, i) => {
+    const avg = (r.distance / r.history.length).toFixed(1);
+    const isMine = r.gate === myRunner.gate;
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-radius:10px; background:${isMine ? '#dcfce7' : '#ffffff'}; border:1.5px solid ${isMine ? '#22c55e' : '#bbf7d0'};">
+        <div style="display:flex; align-items:center; gap:8px; font-weight:800;">
+          <span>${i + 1}着</span>
+          <span class="gate-num gate-${r.gate}">${r.gate}</span>
+          <span>${r.emoji} ${r.name}</span>
+        </div>
+        <div style="text-align:right; font-size:0.82rem;">
+          <div style="font-weight:900;">${r.distance}m</div>
+          <div style="color:var(--muted);">平均 ${avg}m/区間</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  showScreen("screen-race-result");
+
+  state.raceIndex++;
+  if (state.coins <= 0) {
+    document.getElementById("bottom-action-area").innerHTML = `
+      <button class="btn-main" style="background:var(--danger); box-shadow:0 4px 0 #b91c1c;" onclick="showFinalResult(true)">所持金0…結果を見る</button>
+    `;
+  } else if (state.raceIndex >= state.totalRaces) {
+    document.getElementById("bottom-action-area").innerHTML = `
+      <button class="btn-main" style="background:#10b981; box-shadow:0 4px 0 #059669;" onclick="showFinalResult(false)">全レース終了！最終結果へ</button>
+    `;
+  } else {
+    document.getElementById("bottom-action-area").innerHTML = `
+      <button class="btn-main" onclick="setupNextRace()">次のレース（第${state.raceIndex + 1}レース）へ ➡</button>
+    `;
+  }
+}
+
+// 最終リザルト表示（クリア時・ゲームオーバー時それぞれ約2秒の音楽を再生）
+function showFinalResult(isBankrupt) {
+  document.getElementById("final-coins").textContent = state.coins.toLocaleString();
+  const badge = document.getElementById("final-rank-badge");
+  const title = document.getElementById("final-rank-title");
+  const comment = document.getElementById("final-comment");
+
+  badge.className = "rank-badge";
+  if (isBankrupt || state.coins === 0) {
+    playGameOverJingle();
+    badge.classList.add("rank-F");
+    badge.textContent = "破産";
+    title.textContent = "ゲームオーバー";
+    comment.textContent = "ヒゲの罠にハマってしまったかも？次は中央値や第1四分位数に注目して再挑戦しよう！";
+  } else {
+    playClearJingle();
+    if (state.coins >= 10000) {
+      badge.classList.add("rank-S");
+      badge.textContent = "Sランク";
+      title.textContent = "伝説のデータ馬主";
+      comment.textContent = "素晴らしい分析力と勝負強さ！箱ひげ図の分布を完璧に読み切りました！";
+    } else if (state.coins >= 3000) {
+      badge.classList.add("rank-A");
+      badge.textContent = "Aランク";
+      title.textContent = "凄腕データ分析官";
+      comment.textContent = "見事なプラス収支！データの散らばりと期待値をしっかり見極められています。";
+    } else if (state.coins >= 1000) {
+      badge.classList.add("rank-B");
+      badge.textContent = "Bランク";
+      title.textContent = "堅実な予想家";
+      comment.textContent = "元本割れなしで全4レースを完走！次は高配当の大穴狙いにも挑戦してみよう。";
+    } else {
+      badge.classList.add("rank-C");
+      badge.textContent = "Cランク";
+      title.textContent = "なんとか生還";
+      comment.textContent = "最後まで生き残りました！箱の大きさと中央値の位置を比べるとさらに勝率が上がります。";
+    }
+  }
+
+  try {
+    const prevBest = Number(localStorage.getItem("abd_best_score") || 0);
+    if (state.coins > prevBest) {
+      localStorage.setItem("abd_best_score", state.coins);
+      document.getElementById("best-record").textContent = `${state.coins.toLocaleString()} コイン`;
+    }
+  } catch (e) {}
+
+  showScreen("screen-final");
+  document.getElementById("bottom-action-area").innerHTML = `
+    <button class="btn-main" onclick="startGame()">もう一度プレイする 🔄</button>
+  `;
+}
+
+// ランキングモーダル処理
+function openRankingModal(canSubmit) {
+  document.getElementById("ranking-modal").classList.add("active");
+  const submitArea = document.getElementById("ranking-submit-area");
+  if (canSubmit && state.coins > 0) {
+    submitArea.style.display = "block";
+    document.getElementById("modal-score-val").textContent = state.coins.toLocaleString();
+    document.getElementById("submit-status").textContent = "";
+  } else {
+    submitArea.style.display = "none";
+  }
+  loadRankingData();
+}
+
+function closeRankingModal() {
+  document.getElementById("ranking-modal").classList.remove("active");
+}
+
+async function loadRankingData() {
+  const container = document.getElementById("ranking-list-container");
+  if (!GAS_RANKING_URL) {
+    let localList = [];
+    try {
+      localList = JSON.parse(localStorage.getItem("abd_local_ranking") || "[]");
+    } catch (e) {}
+    if (localList.length === 0) {
+      container.innerHTML = `<div style="text-align:center; color:var(--muted); padding:16px; font-size:0.85rem;">まだ記録がありません。<br>レースを終えて最初の記録を登録しよう！</div>`;
+      return;
+    }
+    container.innerHTML = localList.map((item, i) => `
+      <div class="ranking-row">
+        <span>${i + 1}位：${escapeHTML(item.name)}</span>
+        <span style="color:#b45309;">💰 ${Number(item.score).toLocaleString()}</span>
+      </div>
+    `).join("");
+    return;
+  }
+
+  try {
+    const res = await fetch(GAS_RANKING_URL);
+    const data = await res.json();
+    container.innerHTML = data.slice(0, 10).map((item, i) => `
+      <div class="ranking-row">
+        <span>${i + 1}位：${escapeHTML(item.name)}</span>
+        <span style="color:#b45309;">💰 ${Number(item.score).toLocaleString()}</span>
+      </div>
+    `).join("");
+  } catch (e) {
+    container.innerHTML = `<div style="color:var(--danger); text-align:center; padding:12px;">読み込みに失敗しました</div>`;
+  }
+}
+
+async function submitRankingScore() {
+  const nameInput = document.getElementById("player-name-input");
+  const name = nameInput.value.trim() || "ななし馬主";
+  const statusEl = document.getElementById("submit-status");
+  statusEl.textContent = "送信中...";
+
+  if (!GAS_RANKING_URL) {
+    let localList = [];
+    try {
+      localList = JSON.parse(localStorage.getItem("abd_local_ranking") || "[]");
+    } catch (e) {}
+    localList.push({ name, score: state.coins });
+    localList.sort((a, b) => b.score - a.score);
+    try {
+      localStorage.setItem("abd_local_ranking", JSON.stringify(localList.slice(0, 10)));
+    } catch (e) {}
+    statusEl.textContent = "ローカルランキングに登録しました！";
+    document.getElementById("ranking-submit-area").style.display = "none";
+    loadRankingData();
+    return;
+  }
+
+  try {
+    await fetch(GAS_RANKING_URL, {
+      method: "POST",
+      body: JSON.stringify({ name, score: state.coins })
+    });
+    statusEl.textContent = "登録完了！";
+    document.getElementById("ranking-submit-area").style.display = "none";
+    loadRankingData();
+  } catch (e) {
+    statusEl.textContent = "送信エラーが発生しました";
+  }
+}
+
+function escapeHTML(str) {
+  return String(str).replace(/[&<>"']/g, s => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[s]));
+}
+</script>
+</body>
+</html>
