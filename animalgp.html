@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>アニマルボックスグランプリ｜箱ひげ図授業用アプリ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --grass-dark: #2e7d32;
+      --grass-light: #43a047;
+      --dirt-track: #d7ccc8;
+      --dirt-line: #bcaaa4;
+      --accent-gold: #ffb300;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #142417;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    h1, h2, h3, .heading-strong {
+      font-weight: 700;
+    }
+
+    .font-num {
+      font-family: 'Fredoka', 'Zen Maru Gothic', sans-serif;
+      font-weight: 600;
+    }
+
+    /* 16:9 仮想ステージ（1280x720）自動スケーリング＆中央配置 */
+    #viewport-wrapper {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #1e3823 0%, #0f1c11 100%);
+    }
+
+    #stage {
+      width: 1280px;
+      height: 720px;
+      position: relative;
+      overflow: hidden;
+      background-color: #f4fbf5;
+      background-image: radial-gradient(#c8e6c9 1.6px, transparent 1.6px);
+      background-size: 24px 24px;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65);
+      display: flex;
+      flex-direction: column;
+      transform-origin: center center;
+    }
+
+    /* レースコース（芝生＋ダートレーン） */
+    .track-container {
+      background: linear-gradient(180deg, #43a047 0%, #2e7d32 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dirt-lane {
+      background: linear-gradient(180deg, #e7dedb 0%, #d7ccc8 55%, #cbbdb7 100%);
+      border-bottom: 2px dashed rgba(255, 255, 255, 0.85);
+      position: relative;
+    }
+
+    .dirt-lane:first-child {
+      border-top: 3px solid #ffffff;
+    }
+
+    .dirt-lane:last-child {
+      border-bottom: 3px solid #ffffff;
+    }
+
+    /* チェッカーフラッグ柄（400mゴールライン） */
+    .checkered-flag {
+      background-image:
+        linear-gradient(45deg, #1e293b 25%, transparent 25%),
+        linear-gradient(-45deg, #1e293b 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #1e293b 75%),
+        linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+      background-size: 14px 14px;
+      background-position: 0 0, 0 7px, 7px -7px, -7px 0;
+      background-color: #ffffff;
+    }
+
+    /* ターン加算ポップアップ（見切れ防止） */
+    @keyframes floatUpFade {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, 6px) scale(0.75);
+      }
+      18% {
+        opacity: 1;
+        transform: translate(-50%, -6px) scale(1.08);
+      }
+      82% {
+        opacity: 1;
+        transform: translate(-50%, -12px) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -18px) scale(0.95);
+      }
+    }
+
+    .roll-popup {
+      animation: floatUpFade 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      pointer-events: none;
+      z-index: 40;
+    }
+
+    /* 勝利王冠バウンス */
+    @keyframes crownFloat {
+      0%, 100% { transform: translateY(0px) rotate(-3deg); }
+      50% { transform: translateY(-7px) rotate(3deg); }
+    }
+
+    .crown-anim {
+      animation: crownFloat 2s ease-in-out infinite;
+    }
+
+    #confetti-canvas {
+      position: absolute;
+      inset: 0;
+      width: 1280px;
+      height: 720px;
+      pointer-events: none;
+      z-index: 60;
+    }
+  </style>
+</head>
+<body>
+  <div id="viewport-wrapper">
+    <!-- スマホ縦画面時のプレビュー案内バッジ -->
+    <div id="mobile-preview-badge" class="hidden fixed top-2 left-1/2 -translate-x-1/2 z-50 bg-black/80 text-emerald-200 border border-emerald-500/40 px-3.5 py-1 rounded-full text-[11px] pointer-events-none whitespace-nowrap">
+      📺 PC・プロジェクター投影用（16:9 ワイド画面プレビュー中）
+    </div>
+
+    <!-- 1280x720 固定比率メインステージ -->
+    <div id="stage">
+      <!-- 紙吹雪エフェクト用Canvas -->
+      <canvas id="confetti-canvas" width="1280" height="720"></canvas>
+
+      <!-- ===================================================================== -->
+      <!-- 共通コンパクトヘッダー (高さ 54px)                                    -->
+      <!-- ===================================================================== -->
+      <header class="h-[54px] shrink-0 bg-white border-b-4 border-[#2e7d32] px-6 flex items-center justify-between z-30">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#43a047] to-[#2e7d32] text-white flex items-center justify-center text-xl shadow-sm">
+            🏆
+          </div>
+          <h1 class="text-xl text-[#2e7d32] tracking-tight">
+            アニマルボックスグランプリ
+          </h1>
+          <span class="bg-emerald-100 text-[#2e7d32] border border-emerald-300 text-xs px-3 py-0.5 rounded-full">
+            箱ひげ図でよみとく 400m 大レース
+          </span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <span id="header-context-badge" class="hidden text-xs bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 rounded-full">
+            モードA｜第1問
+          </span>
+          <button
+            id="btn-sound"
+            onclick="toggleSound()"
+            class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
+          >
+            <span id="sound-icon">🔊</span>
+            <span id="sound-label">効果音 ON</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- メインコンテンツ領域 (高さ 666px) -->
+      <main class="flex-1 h-[666px] px-6 py-3.5 flex flex-col justify-between overflow-hidden">
+
+        <!-- =================================================================== -->
+        <!-- SCREEN 1: タイトル ＆ モード・問題選択画面                          -->
+        <!-- =================================================================== -->
+        <section id="screen-1" class="h-full flex flex-col justify-between gap-3">
+          <!-- タイトルバナー -->
+          <div class="bg-white rounded-3xl border-4 border-[#43a047] shadow-sm px-6 py-3.5 text-center">
+            <div class="inline-flex items-center gap-2 bg-emerald-50 text-[#2e7d32] border border-emerald-300 px-3.5 py-0.5 rounded-full text-xs mb-1">
+              <span>📊 中学校数学「データの活用（箱ひげ図）」授業用Webアプリ</span>
+            </div>
+            <h2 class="text-4xl text-[#2e7d32] tracking-tight mb-1">
+              アニマルボックスグランプリ
+            </h2>
+            <p class="text-base text-slate-700">
+              1ターンごとに箱ひげ図の分布から進む距離を抽選！先に <span class="font-num text-xl text-rose-600">400m</span> のゴールテープを切る動物を予想しよう！
+              <span class="ml-2 text-2xl align-middle">🐢 🐇 🐕 🐆 🦥</span>
+            </p>
+          </div>
+
+          <!-- STEP 1: 授業モード選択 -->
+          <div class="bg-white rounded-3xl border-4 border-slate-200 shadow-sm px-5 py-3">
+            <div class="flex items-center gap-2.5 mb-2">
+              <span class="bg-[#2e7d32] text-white text-xs px-3 py-1 rounded-xl">STEP 1</span>
+              <h3 class="text-lg text-slate-800">授業のモードを選ぶ</h3>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <!-- Mode A -->
+              <button
+                id="btn-mode-A"
+                onclick="selectMode('A')"
+                class="text-left p-3.5 rounded-2xl border-4 border-[#2e7d32] bg-emerald-50/75 shadow-sm transition cursor-pointer"
+              >
+                <div class="flex items-center justify-between mb-1">
+                  <span class="bg-[#2e7d32] text-white text-xs px-3 py-0.5 rounded-full">クラス全体で予想・導入向け</span>
+                  <span id="check-mode-A" class="w-6 h-6 rounded-full bg-[#2e7d32] text-white flex items-center justify-center text-xs">✓</span>
+                </div>
+                <div class="text-xl font-bold text-[#2e7d32] mb-0.5">
+                  モードA：クラスみんなで1着予想
+                </div>
+                <p class="text-xs text-slate-700 leading-relaxed">
+                  レース前に「箱ひげ図の表示／シークレット（隠す）」を切り替え可能！クラスで1着予想を選んでからレースをスタートします。
+                </p>
+              </button>
+
+              <!-- Mode B -->
+              <button
+                id="btn-mode-B"
+                onclick="selectMode('B')"
+                class="text-left p-3.5 rounded-2xl border-4 border-slate-200 bg-white hover:border-sky-300 transition cursor-pointer"
+              >
+                <div class="flex items-center justify-between mb-1">
+                  <span class="bg-sky-600 text-white text-xs px-3 py-0.5 rounded-full">データ読み取り・考察向け</span>
+                  <span id="check-mode-B" class="w-6 h-6 rounded-full bg-slate-200 text-transparent flex items-center justify-center text-xs">✓</span>
+                </div>
+                <div class="text-xl font-bold text-sky-800 mb-0.5">
+                  モードB：箱ひげ図分析・観戦
+                </div>
+                <p class="text-xs text-slate-700 leading-relaxed">
+                  最初から5匹の箱ひげ図を大きく表示！生徒が各自のプリントや頭の中で予想したあと、入力なしでそのままレースを観戦します。
+                </p>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 2: 問題・データセット選択 -->
+          <div class="bg-white rounded-3xl border-4 border-slate-200 shadow-sm px-5 py-3">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2.5">
+                <span class="bg-[#2e7d32] text-white text-xs px-3 py-1 rounded-xl">STEP 2</span>
+                <h3 class="text-lg text-slate-800">問題データを選ぶ（1ターンあたりの進む距離：0m〜80m）</h3>
+              </div>
+              <button
+                id="btn-title-reroll"
+                onclick="rerollDatasets()"
+                class="hidden px-3 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-300 text-xs transition active:scale-95 cursor-pointer"
+              >
+                🎲 ランダムデータを再生成
+              </button>
+            </div>
+
+            <div class="grid grid-cols-5 gap-2.5">
+              <button
+                onclick="selectProblem('preset1')"
+                data-prob="preset1"
+                class="prob-card text-left p-3 rounded-2xl border-4 border-amber-400 bg-amber-50/75 shadow-sm transition cursor-pointer"
+              >
+                <div class="text-[11px] text-amber-800 mb-0.5">第1問｜基本</div>
+                <div class="text-sm font-bold text-slate-900 mb-1 leading-snug">箱の位置を比べよう</div>
+                <p class="text-[11px] text-slate-600 leading-snug">箱が全体的に右側にある動物ほど安定して勝ちやすい入門編。</p>
+              </button>
+
+              <button
+                onclick="selectProblem('preset2')"
+                data-prob="preset2"
+                class="prob-card text-left p-3 rounded-2xl border-4 border-slate-200 bg-white hover:border-amber-300 transition cursor-pointer"
+              >
+                <div class="text-[11px] text-emerald-700 mb-0.5">第2問｜思考</div>
+                <div class="text-sm font-bold text-slate-900 mb-1 leading-snug">中央値は全員45m！どこを見る？</div>
+                <p class="text-[11px] text-slate-600 leading-snug">5匹全員の中央値が同じ45m！箱の広さや左ひげ（失速リスク）を比較。</p>
+              </button>
+
+              <button
+                onclick="selectProblem('preset3')"
+                data-prob="preset3"
+                class="prob-card text-left p-3 rounded-2xl border-4 border-slate-200 bg-white hover:border-amber-300 transition cursor-pointer"
+              >
+                <div class="text-[11px] text-sky-700 mb-0.5">第3問｜四分位範囲</div>
+                <div class="text-sm font-bold text-slate-900 mb-1 leading-snug">超安定型 vs 一発逆転型</div>
+                <p class="text-[11px] text-slate-600 leading-snug">箱が狭く右寄りの安定型と、最大値80mの爆発型の対決！</p>
+              </button>
+
+              <button
+                onclick="selectProblem('preset4')"
+                data-prob="preset4"
+                class="prob-card text-left p-3 rounded-2xl border-4 border-slate-200 bg-white hover:border-amber-300 transition cursor-pointer"
+              >
+                <div class="text-[11px] text-rose-700 mb-0.5">第4問｜ひっかけ</div>
+                <div class="text-sm font-bold text-slate-900 mb-1 leading-snug">最大値にだまされるな！</div>
+                <p class="text-[11px] text-slate-600 leading-snug">右ひげの先端（最大値）が一番長い動物が、実は箱は左寄りで苦戦！？</p>
+              </button>
+
+              <button
+                onclick="selectProblem('random')"
+                data-prob="random"
+                class="prob-card text-left p-3 rounded-2xl border-4 border-slate-200 bg-white hover:border-purple-300 transition cursor-pointer"
+              >
+                <div class="text-[11px] text-purple-700 mb-0.5">毎回ちがう分布</div>
+                <div class="text-sm font-bold text-slate-900 mb-1 leading-snug">🎲 ランダム生成</div>
+                <p class="text-[11px] text-slate-600 leading-snug">毎回新しい5匹の箱ひげ図データを自動生成（再生成ボタン付き）。</p>
+              </button>
+            </div>
+          </div>
+
+          <!-- 出場動物を見るボタン -->
+          <div class="flex justify-center">
+            <button
+              onclick="goToScreen2()"
+              class="px-14 py-3 rounded-2xl bg-gradient-to-r from-[#43a047] to-[#2e7d32] hover:from-[#2e7d32] hover:to-emerald-900 text-white text-xl shadow-lg border-b-4 border-emerald-950 transition transform active:scale-95 flex items-center gap-3 cursor-pointer"
+            >
+              <span>出場動物を見る ▶</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- SCREEN 2: 出場動物一覧・作戦＆予想画面（全5匹一望表示）             -->
+        <!-- =================================================================== -->
+        <section id="screen-2" class="hidden h-full flex-col justify-between gap-2.5">
+          <!-- 上部操作バー -->
+          <div class="bg-white rounded-2xl border-4 border-[#43a047] shadow-sm px-4 py-2 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <button
+                onclick="goToScreen1()"
+                class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs transition active:scale-95 cursor-pointer"
+              >
+                ◀ モード選択へ戻る
+              </button>
+              <span id="s2-mode-badge" class="text-xs px-3 py-1 rounded-full bg-[#2e7d32] text-white">
+                モードA：クラスみんなで1着予想
+              </span>
+              <span id="s2-prob-badge" class="text-xs px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                第1問：箱の位置を比べよう（基本）
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+              <!-- ランダム時のみ再生成ボタン -->
+              <button
+                id="btn-s2-reroll"
+                onclick="rerollDatasets()"
+                class="hidden px-3.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 border-2 border-purple-300 text-xs transition active:scale-95 cursor-pointer"
+              >
+                🎲 データを再生成
+              </button>
+
+              <!-- モードA専用：箱ひげ図 表示/シークレット切替 -->
+              <button
+                id="btn-toggle-secret"
+                onclick="toggleSecretBoxplot()"
+                class="px-4 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 border-2 border-amber-400 text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
+              >
+                <span id="secret-btn-label">👁 箱ひげ図を表示中</span>
+              </button>
+
+              <!-- モードA専用：クラス予想ステータス -->
+              <div id="s2-class-pick-box" class="px-3.5 py-1.5 rounded-xl bg-rose-50 border-2 border-rose-300 text-xs text-rose-800">
+                👑 クラスの1着予想：<span id="s2-class-pick-name" class="font-bold">未選択</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 全5匹の箱ひげ図一覧 -->
+          <div class="flex-1 bg-white rounded-3xl border-4 border-slate-200 shadow-sm px-4 py-2 flex flex-col justify-between overflow-hidden">
+            <!-- スケールヘッダー (0m〜80m) -->
+            <div id="s2-scale-header" class="grid grid-cols-12 gap-3 px-2 text-xs font-num text-slate-500 border-b border-slate-100 pb-1">
+              <div class="col-span-4 font-sans text-slate-700">出場アニマル（1ターンの進む距離：0m〜80m）</div>
+              <div class="col-span-8 flex justify-between px-4">
+                <span>0m</span>
+                <span>10m</span>
+                <span>20m</span>
+                <span>30m</span>
+                <span>40m</span>
+                <span>50m</span>
+                <span>60m</span>
+                <span>70m</span>
+                <span>80m</span>
+              </div>
+            </div>
+
+            <!-- 5行の動物カード -->
+            <div id="s2-animals-container" class="flex-1 flex flex-col justify-between gap-1.5 py-1">
+              <!-- JSで描画 -->
+            </div>
+          </div>
+
+          <!-- 下部レーススタートバー -->
+          <div class="bg-white rounded-2xl border-2 border-emerald-200 px-5 py-2 flex items-center justify-between shadow-sm">
+            <p id="s2-guide-text" class="text-xs text-slate-700">
+              💡 動物カードをクリックすると「👑 クラスの1着予想」を選択できます（上部のボタンで箱ひげ図を隠すこともできます）。
+            </p>
+            <button
+              onclick="startRace()"
+              class="px-10 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white text-lg shadow-lg border-b-4 border-rose-800 transition transform active:scale-95 flex items-center gap-2.5 cursor-pointer"
+            >
+              <span>🏁 400mレーススタート！</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- SCREEN 3: 400m ターン制横スクロールレース（メートル割合％カメラ）    -->
+        <!-- =================================================================== -->
+        <section id="screen-3" class="hidden h-full flex-col justify-between gap-2.5">
+          <!-- 上部HUD＆コントロール -->
+          <div class="bg-white rounded-2xl border-4 border-[#2e7d32] shadow-sm px-4 py-2 flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="bg-[#2e7d32] text-white text-lg px-4 py-1 rounded-xl shadow-sm">
+                  第 <span id="race-turn-num" class="font-num text-xl">0</span> ターン
+                </span>
+                <h2 class="text-lg text-slate-800">
+                  400m アニマルボックスグランプリ
+                </h2>
+                <span id="race-pick-badge" class="hidden text-xs bg-rose-100 text-rose-800 border border-rose-300 px-3 py-1 rounded-full">
+                  👑 クラス予想：コツコツガメ 🐢
+                </span>
+              </div>
+
+              <!-- レース進行操作ボタン -->
+              <div class="flex items-center gap-2">
+                <button
+                  id="btn-pause"
+                  onclick="togglePause()"
+                  class="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs shadow transition active:scale-95 cursor-pointer"
+                >
+                  ⏯ 一時停止
+                </button>
+                <button
+                  id="btn-step"
+                  onclick="stepOneTurn()"
+                  class="px-4 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 text-xs shadow border-b-2 border-amber-600 transition active:scale-95 cursor-pointer"
+                >
+                  ⏭ 1ターン進める
+                </button>
+                <button
+                  id="btn-speed"
+                  onclick="toggleSpeed()"
+                  class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs transition active:scale-95 cursor-pointer"
+                >
+                  ⚡ 1倍速
+                </button>
+              </div>
+            </div>
+
+            <!-- 0m〜400m 全体ミニマップ -->
+            <div class="bg-emerald-50 rounded-xl px-3 py-1.5 border border-emerald-200">
+              <div class="flex justify-between text-[11px] font-num text-[#2e7d32] mb-1">
+                <span>0m START</span>
+                <span>100m</span>
+                <span>200m</span>
+                <span>300m</span>
+                <span class="text-rose-600">400m GOAL 🏁</span>
+              </div>
+              <div id="minimap-bar" class="relative h-6 bg-[#e7dedb] rounded-lg border border-[#bcaaa4] overflow-hidden">
+                <div class="absolute inset-y-0 left-[25%] w-0.5 bg-white/80"></div>
+                <div class="absolute inset-y-0 left-[50%] w-0.5 bg-white/80"></div>
+                <div class="absolute inset-y-0 left-[75%] w-0.5 bg-white/80"></div>
+                <div class="absolute inset-y-0 right-0 w-3 checkered-flag border-l border-slate-700"></div>
+                <!-- 5匹のミニピンはJSで配置 -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 横スクロールレースコース（純粋メートル割合％位置決め） -->
+          <div id="track-viewport" class="flex-1 track-container rounded-3xl border-4 border-[#2e7d32] shadow-lg flex flex-col">
+            <!-- 上部芝生バナー -->
+            <div class="h-8 shrink-0 bg-gradient-to-b from-sky-100 to-emerald-50 border-b-2 border-[#2e7d32] relative overflow-hidden">
+              <div id="track-banner-layer" class="absolute inset-y-0 left-0 flex items-center whitespace-nowrap text-xs text-[#2e7d32] tracking-wider">
+                🚩 400m ANIMAL BOX GRAND PRIX 🚩 毎ターン箱ひげ図から進む距離を抽選！ 📣 先に400mのゴールテープを切るのはどの動物だ！？ 🚩 400m ANIMAL BOX GRAND PRIX 🚩 毎ターン箱ひげ図から進む距離を抽選！ 📣 先に400mのゴールテープを切るのはどの動物だ！？ 🚩
+              </div>
+            </div>
+
+            <!-- コース本体（距離看板レイヤー ＋ 5レーン） -->
+            <div class="relative flex-1 w-full overflow-hidden">
+              <!-- 距離看板・ゴールライン（純粋％ left 更新） -->
+              <div id="track-markers" class="absolute inset-0 pointer-events-none z-10"></div>
+
+              <!-- 5つのダートレーン -->
+              <div id="track-lanes" class="relative z-20 h-full flex flex-col justify-between pt-7 pb-1.5">
+                <!-- JSで生成 -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ゴール直後の勝利セレブレーションモーダル（画面4の振り返りへ遷移） -->
+          <div id="victory-overlay" class="hidden absolute inset-0 z-50 bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-6">
+            <div class="bg-white rounded-3xl border-4 border-amber-400 shadow-2xl max-w-xl w-full p-6 text-center relative">
+              <div class="inline-flex items-center gap-1.5 bg-amber-400 text-amber-950 text-xs px-4 py-1 rounded-full mb-3">
+                🏆 400m ゴール達成！優勝決定！
+              </div>
+
+              <div class="relative inline-block my-2">
+                <div class="text-5xl absolute -top-8 left-1/2 -translate-x-1/2 crown-anim">👑</div>
+                <div id="modal-winner-emoji" class="w-28 h-28 rounded-3xl bg-amber-50 border-4 border-amber-400 shadow-md flex items-center justify-center text-6xl mx-auto">
+                  🐢
+                </div>
+              </div>
+
+              <h3 id="modal-winner-name" class="text-3xl text-slate-900 mt-2">
+                コツコツガメ
+              </h3>
+
+              <div class="mt-2 flex items-center justify-center gap-4 text-sm">
+                <span class="bg-emerald-50 border border-emerald-300 text-[#2e7d32] px-3.5 py-1 rounded-xl">
+                  最終記録：<strong id="modal-winner-dist" class="font-num text-xl text-rose-600">412m</strong>
+                </span>
+                <span class="bg-slate-100 border border-slate-300 text-slate-700 px-3.5 py-1 rounded-xl">
+                  決着ターン：<strong id="modal-turn-count" class="font-num text-xl text-slate-900">9</strong> ターン
+                </span>
+              </div>
+
+              <!-- モードA専用：クラス予想の的中判定 -->
+              <div id="modal-prediction-result" class="hidden mt-4 p-3 rounded-2xl border-2">
+                <div id="modal-pred-title" class="text-lg font-bold">🎉 クラスの予想的中！</div>
+                <p id="modal-pred-desc" class="text-xs mt-0.5"></p>
+              </div>
+
+              <div class="mt-5">
+                <button
+                  onclick="goToScreen4()"
+                  class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#43a047] to-[#2e7d32] hover:from-[#2e7d32] hover:to-emerald-900 text-white text-lg shadow-lg border-b-4 border-emerald-950 transition transform active:scale-95 cursor-pointer"
+                >
+                  📊 箱ひげ図で結果を振り返る
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- SCREEN 4: 箱ひげ図 × 全ターン記録オーバーレイ振り返り画面             -->
+        <!-- =================================================================== -->
+        <section id="screen-4" class="hidden h-full grid-cols-12 gap-4">
+          <!-- 左カラム（4列）：優勝動物サマリー ＆ 再戦ボタン -->
+          <div class="col-span-4 bg-gradient-to-b from-amber-50 via-yellow-50/70 to-emerald-50 rounded-3xl border-4 border-amber-400 shadow-sm p-5 flex flex-col justify-between items-center text-center">
+            <div>
+              <div class="inline-flex items-center gap-1.5 bg-amber-400 text-amber-950 text-xs px-3.5 py-1 rounded-full mb-1.5">
+                🏆 優勝アニマル
+              </div>
+              <div class="text-xs text-slate-600">
+                全 <span id="s4-turns" class="font-num text-base text-slate-900">9</span> ターンで決着
+              </div>
+            </div>
+
+            <div>
+              <div class="relative inline-block">
+                <div class="text-4xl absolute -top-7 left-1/2 -translate-x-1/2 crown-anim">👑</div>
+                <div id="s4-winner-emoji" class="w-24 h-24 rounded-3xl bg-white border-4 border-amber-400 shadow flex items-center justify-center text-5xl">
+                  🐢
+                </div>
+              </div>
+              <h2 id="s4-winner-name" class="text-2xl text-slate-900 mt-2.5">
+                コツコツガメ
+              </h2>
+              <div class="mt-1 inline-block bg-white px-4 py-1 rounded-2xl border-2 border-emerald-300">
+                <span class="text-xs text-[#2e7d32]">合計距離：</span>
+                <span id="s4-winner-dist" class="font-num text-2xl text-rose-600">412m</span>
+              </div>
+            </div>
+
+            <!-- モードAの予想結果サマリー -->
+            <div id="s4-pred-box" class="hidden w-full rounded-2xl p-3 border-2">
+              <div id="s4-pred-title" class="text-base font-bold">🎉 クラスの予想的中！</div>
+              <p id="s4-pred-desc" class="text-xs mt-0.5 leading-snug"></p>
+            </div>
+
+            <div class="w-full flex flex-col gap-2">
+              <button
+                onclick="replaySameProblem()"
+                class="w-full py-2.5 rounded-2xl bg-[#2e7d32] hover:bg-emerald-800 text-white text-sm shadow transition active:scale-95 cursor-pointer"
+              >
+                🔄 同じ問題でもう一度レース
+              </button>
+              <button
+                onclick="goToScreen1()"
+                class="w-full py-2.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-800 border-2 border-slate-300 text-sm shadow-xs transition active:scale-95 cursor-pointer"
+              >
+                📝 別の問題・モードを選ぶ
+              </button>
+            </div>
+          </div>
+
+          <!-- 右カラム（8列）：全5匹の箱ひげ図 ＋ 全ターン記録（★）プロット -->
+          <div class="col-span-8 bg-white rounded-3xl border-4 border-[#43a047] shadow-sm px-4 py-3 flex flex-col justify-between overflow-hidden">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+              <h3 class="text-lg text-slate-800 flex items-center gap-2">
+                <span class="bg-rose-600 text-white text-xs px-2.5 py-0.5 rounded-lg">振り返り</span>
+                <span>箱ひげ図 × 全ターンの記録プロット（★＝各ターンの距離）</span>
+              </h3>
+              <span id="s4-hover-readout" class="text-xs bg-amber-100 text-amber-950 border border-amber-300 px-2.5 py-1 rounded-lg">
+                ★にカーソルを合わせるとターン詳細を表示
+              </span>
+            </div>
+
+            <!-- 0m〜80m スケール目盛り -->
+            <div class="grid grid-cols-12 gap-2 px-2 text-[11px] font-num text-slate-500">
+              <div class="col-span-4 font-sans text-slate-600">順位・動物・合計（1回平均）</div>
+              <div class="col-span-8 flex justify-between px-3">
+                <span>0m</span>
+                <span>10m</span>
+                <span>20m</span>
+                <span>30m</span>
+                <span>40m</span>
+                <span>50m</span>
+                <span>60m</span>
+                <span>70m</span>
+                <span>80m</span>
+              </div>
+            </div>
+
+            <!-- 5匹の箱ひげ図＋全ターンプロット行 -->
+            <div id="s4-review-list" class="flex-1 flex flex-col justify-between gap-1.5 py-1">
+              <!-- JSで描画 -->
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. 16:9 (1280x720) 仮想ステージの自動スケーリング
+    // =========================================================================
+    function fitStageToViewport() {
+      const stage = document.getElementById('stage');
+      const badge = document.getElementById('mobile-preview-badge');
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const scale = Math.min(vw / 1280, vh / 720);
+      stage.style.transform = `scale(${scale})`;
+
+      if (vh > vw * 1.1) {
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    window.addEventListener('resize', fitStageToViewport);
+    window.addEventListener('DOMContentLoaded', fitStageToViewport);
+
+    // =========================================================================
+    // 2. Web Audio API 効果音エンジン（開始ホイッスル・ターン足音・2秒ファンファーレ）
+    // =========================================================================
+    let soundOn = true;
+    let audioCtx = null;
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) audioCtx = new Ctx();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleSound() {
+      soundOn = !soundOn;
+      const icon = document.getElementById('sound-icon');
+      const label = document.getElementById('sound-label');
+      if (soundOn) {
+        ensureAudioContext();
+        icon.textContent = '🔊';
+        label.textContent = '効果音 ON';
+        playNote(587.33, 0.1, 'triangle', 0.15);
+      } else {
+        icon.textContent = '🔇';
+        label.textContent = 'ミュート';
+      }
+    }
+
+    function playNote(freq, dur, type = 'triangle', vol = 0.16, delay = 0) {
+      if (!soundOn) return;
+      try {
+        ensureAudioContext();
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+        gain.gain.setValueAtTime(0.001, audioCtx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(vol, audioCtx.currentTime + delay + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + delay);
+        osc.stop(audioCtx.currentTime + delay + dur + 0.03);
+      } catch (e) {}
+    }
+
+    function playStartWhistle() {
+      playNote(523.25, 0.11, 'square', 0.14, 0.0);
+      playNote(523.25, 0.11, 'square', 0.14, 0.25);
+      playNote(1046.50, 0.38, 'square', 0.18, 0.50);
+    }
+
+    function playStepTicks(turn) {
+      const base = 320 + (turn % 4) * 35;
+      playNote(base, 0.06, 'triangle', 0.12, 0.04);
+      playNote(base * 1.18, 0.06, 'triangle', 0.12, 0.28);
+      playNote(base * 1.35, 0.08, 'triangle', 0.14, 0.54);
+    }
+
+    function playVictoryFanfare() {
+      const melody = [
+        { f: 523.25, d: 0.14, t: 0.00 },
+        { f: 659.25, d: 0.14, t: 0.16 },
+        { f: 783.99, d: 0.14, t: 0.32 },
+        { f: 1046.50, d: 0.40, t: 0.48 },
+        { f: 783.99, d: 0.15, t: 0.94 },
+        { f: 880.00, d: 0.15, t: 1.12 },
+        { f: 1046.50, d: 0.75, t: 1.30 },
+      ];
+      melody.forEach((n) => playNote(n.f, n.d, 'triangle', 0.22, n.t));
+    }
+
+    // =========================================================================
+    // 3. 出場動物 ＆ 授業用データセット定義（0m〜80mスケール / 400mゴール）
+    // =========================================================================
+    const GOAL_DISTANCE = 400;
+    const SCALE_MAX = 80;
+
+    const ANIMALS = [
+      {
+        id: 'turtle',
+        name: 'コツコツガメ',
+        emoji: '🐢',
+        color: '#2e7d32',
+        badgeBg: 'bg-emerald-50 border-emerald-300',
+        hint: 'いつも同じくらいのペースで着実に進む堅実派！大失速が少なく安定した走りが持ち味。',
+      },
+      {
+        id: 'rabbit',
+        name: 'ギャンブルウサギ',
+        emoji: '🐇',
+        color: '#db2777',
+        badgeBg: 'bg-pink-50 border-pink-300',
+        hint: '気分次第で記録が大きく変わるスピードスター！調子が良いターンは一気に距離を伸ばす。',
+      },
+      {
+        id: 'dog',
+        name: 'バランスワンコ',
+        emoji: '🐕',
+        color: '#0284c7',
+        badgeBg: 'bg-sky-50 border-sky-300',
+        hint: '安定感とスピードを兼ね備えた優等生。大きな失敗が少なく、毎ターンしっかり距離を稼ぐ。',
+      },
+      {
+        id: 'cheetah',
+        name: 'ばくはつチーター',
+        emoji: '🐆',
+        color: '#d97706',
+        badgeBg: 'bg-amber-50 border-amber-300',
+        hint: '普段は力を温存しているが、本気を出したターンの爆発力は全動物ナンバーワン！',
+      },
+      {
+        id: 'sloth',
+        name: 'マイペースナマケモノ',
+        emoji: '🦥',
+        color: '#7c3aed',
+        badgeBg: 'bg-purple-50 border-purple-300',
+        hint: 'のんびり屋に見えて意外と粘り強い！自分のリズムを崩さずゴールを目指す。',
+      },
+    ];
+
+    // 5数要約: [最小値, Q1, 中央値, Q3, 最大値]
+    const PRESETS = {
+      preset1: {
+        title: '第1問：箱の位置を比べよう（基本）',
+        data: {
+          turtle:  [42, 46, 50, 54, 58],
+          dog:     [33, 38, 42, 46, 52],
+          rabbit:  [12, 22, 36, 52, 70],
+          sloth:   [22, 28, 33, 38, 44],
+          cheetah: [14, 20, 28, 38, 66],
+        },
+      },
+      preset2: {
+        title: '第2問：中央値は全員45m！どこを見る？',
+        data: {
+          dog:     [36, 42, 45, 53, 62],
+          turtle:  [38, 42, 45, 48, 52],
+          cheetah: [15, 30, 45, 56, 74],
+          sloth:   [18, 28, 45, 49, 55],
+          rabbit:  [6,  18, 45, 64, 76],
+        },
+      },
+      preset3: {
+        title: '第3問：超安定型 vs 一発逆転型',
+        data: {
+          turtle:  [42, 45, 48, 51, 54],
+          dog:     [32, 39, 44, 49, 55],
+          cheetah: [18, 26, 34, 56, 80],
+          rabbit:  [10, 20, 35, 58, 78],
+          sloth:   [24, 32, 38, 44, 50],
+        },
+      },
+      preset4: {
+        title: '第4問：最大値にだまされるな！',
+        data: {
+          dog:     [38, 43, 47, 51, 56],
+          turtle:  [36, 40, 44, 48, 52],
+          sloth:   [26, 34, 40, 46, 54],
+          rabbit:  [12, 24, 34, 45, 68],
+          cheetah: [12, 20, 26, 32, 80],
+        },
+      },
+    };
+
+    // =========================================================================
+    // 4. アプリ全体状態
+    // =========================================================================
+    let currentMode = 'A';
+    let currentProblemKey = 'preset1';
+    let currentStats = JSON.parse(JSON.stringify(PRESETS.preset1.data));
+    let isSecretMode = false;
+    let classPickId = null;
+
+    // レース状態
+    let turnCount = 0;
+    let runners = [];
+    let isPaused = false;
+    let speedMultiplier = 1;
+    let isAnimatingStep = false;
+    let raceOver = false;
+    let autoStepTimeout = null;
+    let rafId = null;
+
+    // =========================================================================
+    // 5. 画面遷移・設定操作
+    // =========================================================================
+    function switchScreen(num) {
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`screen-${i}`);
+        if (i === num) {
+          el.classList.remove('hidden');
+          if (i === 4) {
+            el.classList.add('grid');
+          } else {
+            el.classList.add('flex');
+          }
+        } else {
+          el.classList.add('hidden');
+          el.classList.remove('flex', 'grid');
+        }
+      }
+    }
+
+    function selectMode(mode) {
+      currentMode = mode;
+      playNote(560, 0.08, 'sine', 0.14);
+
+      const btnA = document.getElementById('btn-mode-A');
+      const btnB = document.getElementById('btn-mode-B');
+      const chkA = document.getElementById('check-mode-A');
+      const chkB = document.getElementById('check-mode-B');
+
+      if (mode === 'A') {
+        btnA.className = 'text-left p-3.5 rounded-2xl border-4 border-[#2e7d32] bg-emerald-50/75 shadow-sm transition cursor-pointer';
+        chkA.className = 'w-6 h-6 rounded-full bg-[#2e7d32] text-white flex items-center justify-center text-xs';
+        btnB.className = 'text-left p-3.5 rounded-2xl border-4 border-slate-200 bg-white hover:border-sky-300 transition cursor-pointer';
+        chkB.className = 'w-6 h-6 rounded-full bg-slate-200 text-transparent flex items-center justify-center text-xs';
+      } else {
+        btnB.className = 'text-left p-3.5 rounded-2xl border-4 border-sky-600 bg-sky-50/75 shadow-sm transition cursor-pointer';
+        chkB.className = 'w-6 h-6 rounded-full bg-sky-600 text-white flex items-center justify-center text-xs';
+        btnA.className = 'text-left p-3.5 rounded-2xl border-4 border-slate-200 bg-white hover:border-emerald-300 transition cursor-pointer';
+        chkA.className = 'w-6 h-6 rounded-full bg-slate-200 text-transparent flex items-center justify-center text-xs';
+      }
+    }
+
+    function selectProblem(key) {
+      currentProblemKey = key;
+      playNote(620, 0.08, 'sine', 0.14);
+
+      document.querySelectorAll('.prob-card').forEach((card) => {
+        if (card.dataset.prob === key) {
+          card.className = 'prob-card text-left p-3 rounded-2xl border-4 border-amber-400 bg-amber-50/75 shadow-sm transition cursor-pointer';
+        } else {
+          card.className = 'prob-card text-left p-3 rounded-2xl border-4 border-slate-200 bg-white hover:border-amber-300 transition cursor-pointer';
+        }
+      });
+
+      const titleReroll = document.getElementById('btn-title-reroll');
+      if (key === 'random') {
+        titleReroll.classList.remove('hidden');
+        generateRandomBoxplots();
+      } else {
+        titleReroll.classList.add('hidden');
+        currentStats = JSON.parse(JSON.stringify(PRESETS[key].data));
+      }
+    }
+
+    function generateRandomBoxplots() {
+      const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+      const makeBox = (medMin, medMax, iqrHalfMin, iqrHalfMax, whiskerMax) => {
+        const med = randInt(medMin, medMax);
+        const q1 = Math.max(8, med - randInt(iqrHalfMin, iqrHalfMax));
+        const q3 = Math.min(72, med + randInt(iqrHalfMin, iqrHalfMax));
+        const min = Math.max(2, q1 - randInt(2, whiskerMax));
+        const max = Math.min(80, q3 + randInt(2, whiskerMax));
+        return [min, q1, med, q3, max];
+      };
+
+      currentStats = {
+        turtle:  makeBox(41, 52, 2, 4, 5),
+        rabbit:  makeBox(34, 48, 12, 20, 12),
+        dog:     makeBox(38, 50, 4, 7, 7),
+        cheetah: makeBox(30, 43, 6, 12, 22),
+        sloth:   makeBox(32, 46, 5, 10, 8),
+      };
+    }
+
+    function rerollDatasets() {
+      playNote(660, 0.08, 'triangle', 0.16);
+      generateRandomBoxplots();
+      if (!document.getElementById('screen-2').classList.contains('hidden')) {
+        renderScreen2Lineup();
+      }
+    }
+
+    function goToScreen1() {
+      clearTimeout(autoStepTimeout);
+      cancelAnimationFrame(rafId);
+      stopConfetti();
+      document.getElementById('header-context-badge').classList.add('hidden');
+      switchScreen(1);
+    }
+
+    // =========================================================================
+    // 6. SCREEN 2: 出場動物一覧・箱ひげ図描画ロジック
+    // =========================================================================
+    function goToScreen2() {
+      ensureAudioContext();
+      playNote(659.25, 0.11, 'triangle', 0.16);
+
+      if (currentProblemKey === 'random') {
+        generateRandomBoxplots();
+      }
+      isSecretMode = false;
+      classPickId = null;
+
+      const probTitle =
+        currentProblemKey === 'random' ? '🎲 ランダム生成データ' : PRESETS[currentProblemKey].title;
+
+      const headerBadge = document.getElementById('header-context-badge');
+      headerBadge.textContent = `モード${currentMode}｜${probTitle}`;
+      headerBadge.classList.remove('hidden');
+
+      const s2ModeBadge = document.getElementById('s2-mode-badge');
+      const s2ProbBadge = document.getElementById('s2-prob-badge');
+      const s2Reroll = document.getElementById('btn-s2-reroll');
+      const btnSecret = document.getElementById('btn-toggle-secret');
+      const pickBox = document.getElementById('s2-class-pick-box');
+      const guideText = document.getElementById('s2-guide-text');
+
+      s2ProbBadge.textContent = probTitle;
+      if (currentProblemKey === 'random') {
+        s2Reroll.classList.remove('hidden');
+      } else {
+        s2Reroll.classList.add('hidden');
+      }
+
+      if (currentMode === 'A') {
+        s2ModeBadge.textContent = 'モードA：クラスみんなで1着予想';
+        s2ModeBadge.className = 'text-xs px-3 py-1 rounded-full bg-[#2e7d32] text-white';
+        btnSecret.classList.remove('hidden');
+        pickBox.classList.remove('hidden');
+        updateSecretButtonUI();
+        updateClassPickUI();
+        guideText.textContent =
+          '💡 動物カードをクリックすると「👑 クラスの1着予想」を選択できます（上部のボタンで箱ひげ図を隠すこともできます）。';
+      } else {
+        s2ModeBadge.textContent = 'モードB：箱ひげ図分析・観戦';
+        s2ModeBadge.className = 'text-xs px-3 py-1 rounded-full bg-sky-600 text-white';
+        btnSecret.classList.add('hidden');
+        pickBox.classList.add('hidden');
+        guideText.textContent =
+          '💡 5匹の箱ひげ図（0m〜80m）をじっくり読み取って、誰が最初に400mへ到達するか考えよう！';
+      }
+
+      renderScreen2Lineup();
+      switchScreen(2);
+    }
+
+    function toggleSecretBoxplot() {
+      isSecretMode = !isSecretMode;
+      playNote(500, 0.08, 'sine', 0.14);
+      updateSecretButtonUI();
+      renderScreen2Lineup();
+    }
+
+    function updateSecretButtonUI() {
+      const label = document.getElementById('secret-btn-label');
+      label.textContent = isSecretMode ? '🙈 シークレット（隠す）' : '👁 箱ひげ図を表示中';
+    }
+
+    function toggleClassPick(animalId) {
+      if (currentMode !== 'A') return;
+      classPickId = classPickId === animalId ? null : animalId;
+      playNote(720, 0.09, 'triangle', 0.16);
+      updateClassPickUI();
+      renderScreen2Lineup();
+    }
+
+    function updateClassPickUI() {
+      const nameEl = document.getElementById('s2-class-pick-name');
+      if (!classPickId) {
+        nameEl.textContent = '未選択（カードをクリック）';
+      } else {
+        const a = ANIMALS.find((item) => item.id === classPickId);
+        nameEl.textContent = `${a.emoji} ${a.name}`;
+      }
+    }
+
+    function onStarHover(animalName, turnIdx, dist) {
+      const readout = document.getElementById('s4-hover-readout');
+      if (readout) {
+        readout.textContent = `★ ${animalName}｜第${turnIdx}ターン：${dist}m`;
+      }
+    }
+
+    // 水平箱ひげ図SVG生成（0m〜80mスケール / 振り返り時は全ターンの★記録を直接プロット）
+    function createBoxplotSVG(stats, rolls = null, color = '#2e7d32', animalName = '') {
+      const [min, q1, med, q3, max] = stats;
+      const W = 740;
+      const H = rolls ? 74 : 58;
+      const padX = 18;
+      const innerW = W - padX * 2;
+      const xOf = (v) => padX + (v / SCALE_MAX) * innerW;
+
+      const xMin = xOf(min);
+      const xQ1 = xOf(q1);
+      const xMed = xOf(med);
+      const xQ3 = xOf(q3);
+      const xMax = xOf(max);
+      const cy = rolls ? 40 : 29;
+      const boxH = 22;
+
+      let gridLines = '';
+      for (let m = 0; m <= SCALE_MAX; m += 10) {
+        const gx = xOf(m);
+        const major = m % 20 === 0;
+        gridLines += `<line x1="${gx}" y1="3" x2="${gx}" y2="${H - 3}" stroke="${major ? '#cbd5e1' : '#e2e8f0'}" stroke-width="${major ? 1.6 : 1}" />`;
+      }
+
+      let starsMarkup = '';
+      if (rolls && rolls.length > 0) {
+        rolls.forEach((val, idx) => {
+          const sx = xOf(val);
+          const jitterY = ((idx % 3) - 1) * 4.5;
+          starsMarkup += `
+            <g
+              class="cursor-pointer"
+              onmouseenter="onStarHover('${animalName}', ${idx + 1}, ${val})"
+              onclick="onStarHover('${animalName}', ${idx + 1}, ${val})"
+            >
+              <title>${animalName} 第${idx + 1}ターン: ${val}m</title>
+              <circle cx="${sx}" cy="${cy + jitterY}" r="8.5" fill="#fef08a" stroke="#e11d48" stroke-width="2" />
+              <text x="${sx}" y="${cy + jitterY + 3.8}" text-anchor="middle" font-size="11" font-family="Fredoka, sans-serif" font-weight="600" fill="#e11d48">★</text>
+              <text x="${sx}" y="${cy + jitterY - 10.5}" text-anchor="middle" font-size="9.5" font-family="Fredoka, sans-serif" font-weight="600" fill="#be123c">${val}</text>
+            </g>
+          `;
+        });
+      }
+
+      return `
+        <svg viewBox="0 0 ${W} ${H}" class="w-full h-auto overflow-visible">
+          ${gridLines}
+          <!-- 左ひげ -->
+          <line x1="${xMin}" y1="${cy}" x2="${xQ1}" y2="${cy}" stroke="#334155" stroke-width="3" />
+          <line x1="${xMin}" y1="${cy - 8}" x2="${xMin}" y2="${cy + 8}" stroke="#334155" stroke-width="3" stroke-linecap="round" />
+          <!-- 右ひげ -->
+          <line x1="${xQ3}" y1="${cy}" x2="${xMax}" y2="${cy}" stroke="#334155" stroke-width="3" />
+          <line x1="${xMax}" y1="${cy - 8}" x2="${xMax}" y2="${cy + 8}" stroke="#334155" stroke-width="3" stroke-linecap="round" />
+          <!-- 箱 (四分位範囲) -->
+          <rect x="${xQ1}" y="${cy - boxH / 2}" width="${Math.max(4, xQ3 - xQ1)}" height="${boxH}" rx="4" fill="${color}33" stroke="${color}" stroke-width="3" />
+          <!-- 中央値 -->
+          <line x1="${xMed}" y1="${cy - boxH / 2}" x2="${xMed}" y2="${cy + boxH / 2}" stroke="#e11d48" stroke-width="4" />
+
+          <!-- 5数要約ラベル -->
+          <text x="${xMin}" y="${cy + 20}" text-anchor="middle" font-size="10.5" font-family="Fredoka, sans-serif" font-weight="600" fill="#475569">${min}</text>
+          <text x="${xQ1}" y="${cy - boxH / 2 - 4}" text-anchor="middle" font-size="10" font-family="Fredoka, sans-serif" font-weight="600" fill="#64748b">${q1}</text>
+          <text x="${xMed}" y="${cy - boxH / 2 - 4}" text-anchor="middle" font-size="11.5" font-family="Fredoka, sans-serif" font-weight="600" fill="#be123c">中:${med}</text>
+          <text x="${xQ3}" y="${cy - boxH / 2 - 4}" text-anchor="middle" font-size="10" font-family="Fredoka, sans-serif" font-weight="600" fill="#64748b">${q3}</text>
+          <text x="${xMax}" y="${cy + 20}" text-anchor="middle" font-size="10.5" font-family="Fredoka, sans-serif" font-weight="600" fill="#475569">${max}</text>
+
+          ${starsMarkup}
+        </svg>
+      `;
+    }
+
+    function renderScreen2Lineup() {
+      const container = document.getElementById('s2-animals-container');
+      const scaleHeader = document.getElementById('s2-scale-header');
+      const hideBox = currentMode === 'A' && isSecretMode;
+
+      scaleHeader.style.visibility = hideBox ? 'hidden' : 'visible';
+
+      container.innerHTML = ANIMALS.map((a) => {
+        const st = currentStats[a.id];
+        const picked = currentMode === 'A' && classPickId === a.id;
+        const cardBorder = picked
+          ? 'border-rose-500 ring-4 ring-rose-400/50 bg-rose-50/40'
+          : 'border-slate-200 hover:border-[#43a047] bg-white';
+
+        return `
+          <div
+            onclick="toggleClassPick('${a.id}')"
+            class="flex-1 rounded-2xl border-2 px-3.5 py-1.5 grid grid-cols-12 items-center gap-3 transition ${cardBorder} ${currentMode === 'A' ? 'cursor-pointer' : ''}"
+          >
+            <!-- 左4列：動物アイコン・名前・数値バッジ -->
+            <div class="col-span-4 flex items-center gap-2.5">
+              <div class="w-11 h-11 rounded-2xl ${a.badgeBg} border-2 flex items-center justify-center text-3xl shrink-0">
+                ${a.emoji}
+              </div>
+              <div class="min-w-0">
+                <div class="text-base font-bold text-slate-900 truncate">${a.name}</div>
+                ${
+                  hideBox
+                    ? `<div class="text-[11px] text-amber-800 mt-0.5">🔒 SECRET DATA</div>`
+                    : `<div class="flex flex-wrap gap-1 mt-1 text-[10px] font-num text-slate-600">
+                        <span class="bg-slate-100 px-1.5 py-0.5 rounded">最小:${st[0]}</span>
+                        <span class="bg-slate-100 px-1.5 py-0.5 rounded">Q1:${st[1]}</span>
+                        <span class="bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded">中央:${st[2]}</span>
+                        <span class="bg-slate-100 px-1.5 py-0.5 rounded">Q3:${st[3]}</span>
+                        <span class="bg-slate-100 px-1.5 py-0.5 rounded">最大:${st[4]}</span>
+                      </div>`
+                }
+              </div>
+            </div>
+
+            <!-- 右8列：箱ひげ図 or SECRETミステリーバナー -->
+            <div class="col-span-8 flex items-center gap-2.5">
+              ${
+                hideBox
+                  ? `<div class="flex-1 bg-amber-50 border-2 border-dashed border-amber-400 rounded-xl px-4 py-2 flex items-center gap-3">
+                      <span class="px-2.5 py-0.5 rounded-lg bg-amber-400 text-amber-950 font-num text-xs">SECRET</span>
+                      <span class="text-xs text-slate-700">${a.hint}</span>
+                    </div>`
+                  : `<div class="flex-1 bg-slate-50 rounded-xl px-2.5 py-0.5 border border-slate-200">
+                      ${createBoxplotSVG(st, null, a.color, a.name)}
+                    </div>`
+              }
+
+              ${
+                currentMode === 'A'
+                  ? `<div class="shrink-0">
+                      <span class="px-3 py-1.5 rounded-xl text-xs transition ${
+                        picked
+                          ? 'bg-rose-600 text-white shadow'
+                          : 'bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-700'
+                      }">
+                        ${picked ? '👑 クラスの1着予想' : '1着予想にする'}
+                      </span>
+                    </div>`
+                  : ''
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 7. SCREEN 3: 400m ターン制横スクロールレース（純粋メートル割合％カメラ）
+    // =========================================================================
+    // コース描画定数（画面横幅のpx測定に一切依存しない純粋メートル割合方式）
+    const VIEW_SPAN_M = 220;   // 1画面の横幅（100%）＝ 220m分の長さ
+    const ANCHOR_M = 143;      // 143 / 220 = 65%（先頭が143mを超えたら常に left: 65% に固定！）
+    const INITIAL_PAD_M = 28;  // スタート地点(0m)の左余白（28 / 220 ≈ 12.7%）
+
+    function sampleDistanceFromBoxplot(stats) {
+      const [min, q1, med, q3, max] = stats;
+      const quartile = Math.floor(Math.random() * 4);
+      let lo, hi;
+      if (quartile === 0) {
+        lo = min;
+        hi = q1;
+      } else if (quartile === 1) {
+        lo = q1;
+        hi = med;
+      } else if (quartile === 2) {
+        lo = med;
+        hi = q3;
+      } else {
+        lo = q3;
+        hi = max;
+      }
+      return Math.round(lo + Math.random() * (hi - lo));
+    }
+
+    function startRace() {
+      ensureAudioContext();
+      playStartWhistle();
+
+      clearTimeout(autoStepTimeout);
+      cancelAnimationFrame(rafId);
+
+      turnCount = 0;
+      isPaused = false;
+      speedMultiplier = 1;
+      isAnimatingStep = false;
+      raceOver = false;
+
+      document.getElementById('victory-overlay').classList.add('hidden');
+      document.getElementById('race-turn-num').textContent = '0';
+      document.getElementById('btn-pause').textContent = '⏯ 一時停止';
+      document.getElementById('btn-speed').textContent = '⚡ 1倍速';
+
+      const pickBadge = document.getElementById('race-pick-badge');
+      if (currentMode === 'A' && classPickId) {
+        const picked = ANIMALS.find((a) => a.id === classPickId);
+        pickBadge.textContent = `👑 クラス予想：${picked.emoji} ${picked.name}`;
+        pickBadge.classList.remove('hidden');
+      } else {
+        pickBadge.classList.add('hidden');
+      }
+
+      runners = ANIMALS.map((a) => ({
+        ...a,
+        stats: currentStats[a.id],
+        startDist: 0,
+        endDist: 0,
+        currentDist: 0,
+        lastRoll: 0,
+        rolls: [],
+        rank: 1,
+      }));
+
+      buildTrackDOM();
+      renderRaceFrame(0, false);
+      switchScreen(3);
+
+      // スタートホイッスル後に最初のターンをスケジュール
+      autoStepTimeout = setTimeout(() => {
+        if (!isPaused && !raceOver) runNextTurn();
+      }, 850);
+    }
+
+    function buildTrackDOM() {
+      // 1. 距離看板（0m〜400m、50mごと）生成
+      const markersEl = document.getElementById('track-markers');
+      let markersHTML = '';
+      for (let m = 0; m <= GOAL_DISTANCE; m += 50) {
+        const isGoal = m === GOAL_DISTANCE;
+        markersHTML += `
+          <div id="marker-${m}" class="absolute top-0 bottom-0 flex flex-col items-center -translate-x-1/2">
+            <div class="mt-1 px-2.5 py-0.5 rounded-lg text-xs font-num shadow ${
+              isGoal
+                ? 'bg-rose-600 text-white border-2 border-white scale-110'
+                : 'bg-white/95 text-[#2e7d32] border border-[#2e7d32]'
+            }">
+              ${m === 0 ? 'START 0m' : isGoal ? '🏁 400m GOAL' : m + 'm'}
+            </div>
+            ${
+              isGoal
+                ? `<div class="w-4 flex-1 checkered-flag border-x-2 border-slate-800 shadow"></div>`
+                : `<div class="w-0.5 flex-1 bg-white/55"></div>`
+            }
+          </div>
+        `;
+      }
+      markersEl.innerHTML = markersHTML;
+
+      // 2. 5つのダートレーン＆動物ランナー生成
+      const lanesEl = document.getElementById('track-lanes');
+      lanesEl.innerHTML = runners
+        .map(
+          (r, idx) => `
+          <div class="dirt-lane flex-1 flex items-center justify-between overflow-visible">
+            <!-- 左端固定のレーンラベル -->
+            <div class="ml-3 z-30 bg-white/95 border-2 border-[#2e7d32] rounded-xl px-2.5 py-1 shadow-xs flex items-center gap-1.5">
+              <span class="font-num text-xs text-[#2e7d32]">#${idx + 1}</span>
+              <span class="text-lg">${r.emoji}</span>
+              <span class="text-xs font-bold text-slate-800">${r.name}</span>
+            </div>
+
+            <!-- ランナー本体（left を純粋％で直接決定） -->
+            <div
+              id="runner-node-${r.id}"
+              class="absolute z-30 -translate-x-1/2 flex flex-col items-center overflow-visible"
+            >
+              <!-- ポップアップコンテナ -->
+              <div id="popup-slot-${r.id}" class="relative h-6 w-24 overflow-visible"></div>
+              <!-- 動物アイコン -->
+              <div id="sprite-${r.id}" class="text-4xl leading-none drop-shadow" style="transform: scaleX(-1);">
+                ${r.emoji}
+              </div>
+            </div>
+
+            <!-- 右端固定のライブ累計距離バッジ -->
+            <div class="mr-3 z-30 bg-slate-900/90 border-2 border-amber-400 rounded-xl px-3 py-1 shadow-xs text-right">
+              <div class="text-[10px] text-slate-300 leading-none">累計距離</div>
+              <div id="live-dist-${r.id}" class="font-num text-sm text-amber-300 leading-tight">0m</div>
+            </div>
+          </div>
+        `
+        )
+        .join('');
+
+      // 3. ミニマップ上の5匹ピン初期化
+      const minimap = document.getElementById('minimap-bar');
+      minimap.querySelectorAll('.mini-pin').forEach((el) => el.remove());
+      runners.forEach((r) => {
+        const pin = document.createElement('div');
+        pin.id = `minipin-${r.id}`;
+        pin.className = 'mini-pin absolute top-1/2 -translate-y-1/2 -translate-x-1/2 text-base';
+        pin.style.left = '2%';
+        pin.textContent = r.emoji;
+        minimap.appendChild(pin);
+      });
+    }
+
+    // 60fps カメラ＆ランナー描画関数（純粋メートル割合％方式：先頭は絶対に left: 65% を超えない）
+    function renderRaceFrame(phase, isHopping) {
+      // 1. その瞬間の先頭距離（leaderM）を全ランナーの現在座標から直接取得
+      const leaderM = Math.max(...runners.map((r) => r.currentDist));
+
+      // 2. 現在の画面左端の基準メートル（viewStartM）を決定：
+      //    leaderM + INITIAL_PAD_M <= ANCHOR_M の間は viewStartM = 0（画面左端は0m）
+      //    それを超えると viewStartM = leaderM + INITIAL_PAD_M - ANCHOR_M となり、
+      //    先頭ランナーの left は常に (ANCHOR_M / VIEW_SPAN_M) * 100 = 65.0% にピタッとロック！
+      const viewStartM = Math.max(0, leaderM + INITIAL_PAD_M - ANCHOR_M);
+
+      // 任意の距離 m をコース横幅に対する％（0%〜100%）に変換する共通関数
+      const meterToLeftPct = (m) => ((m + INITIAL_PAD_M - viewStartM) / VIEW_SPAN_M) * 100;
+
+      // 3. 上部観客バナーのパララックススクロール
+      const bannerEl = document.getElementById('track-banner-layer');
+      if (bannerEl) {
+        const scrollPct = (viewStartM * 0.35) % 45;
+        bannerEl.style.transform = `translate3d(${-scrollPct}%, 0, 0)`;
+      }
+
+      // 4. 50mごとの距離看板＆400mゴールラインの位置更新（ランナーと完全に同じ関数を使用）
+      for (let m = 0; m <= GOAL_DISTANCE; m += 50) {
+        const markerEl = document.getElementById(`marker-${m}`);
+        if (markerEl) {
+          markerEl.style.left = `${meterToLeftPct(m)}%`;
+        }
+      }
+
+      // 5. 各ランナーの位置（％）・バウンド・ライブ距離・ミニマップ更新
+      runners.forEach((r) => {
+        const node = document.getElementById(`runner-node-${r.id}`);
+        const sprite = document.getElementById(`sprite-${r.id}`);
+        const distLabel = document.getElementById(`live-dist-${r.id}`);
+        const miniPin = document.getElementById(`minipin-${r.id}`);
+
+        if (node) {
+          node.style.left = `${meterToLeftPct(r.currentDist)}%`;
+        }
+        if (sprite) {
+          const hopY = isHopping ? -Math.abs(Math.sin(phase * Math.PI * 4)) * 8 : 0;
+          sprite.style.transform = `scaleX(-1) translateY(${hopY}px)`;
+        }
+        if (distLabel) {
+          distLabel.textContent = `${Math.round(r.currentDist)}m`;
+        }
+        if (miniPin) {
+          const pct = Math.min(98, Math.max(2, (r.currentDist / GOAL_DISTANCE) * 95 + 2));
+          miniPin.style.left = `${pct}%`;
+        }
+      });
+    }
+
+    function runNextTurn() {
+      if (raceOver || isAnimatingStep) return;
+      clearTimeout(autoStepTimeout);
+
+      isAnimatingStep = true;
+      turnCount++;
+      document.getElementById('race-turn-num').textContent = turnCount;
+      playStepTicks(turnCount);
+
+      // 各動物の箱ひげ図分布から今ターンの移動距離を抽選
+      runners.forEach((r) => {
+        r.startDist = r.endDist;
+        const step = sampleDistanceFromBoxplot(r.stats);
+        r.lastRoll = step;
+        r.rolls.push(step);
+        r.endDist = r.startDist + step;
+
+        // +XXm ポップアップ表示
+        const slot = document.getElementById(`popup-slot-${r.id}`);
+        if (slot) {
+          slot.innerHTML = `
+            <div class="roll-popup absolute bottom-0 left-1/2 px-2.5 py-0.5 rounded-full bg-rose-600 text-white font-num text-xs shadow border border-white whitespace-nowrap">
+              +${step}m
+            </div>
+          `;
+        }
+      });
+
+      const animDuration = speedMultiplier === 2 ? 700 : 1400;
+      const startTime = performance.now();
+
+      function stepLoop(now) {
+        const rawT = Math.min(1, (now - startTime) / animDuration);
+        // なめらかな加減速イージング
+        const easeT = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2;
+
+        runners.forEach((r) => {
+          r.currentDist = r.startDist + (r.endDist - r.startDist) * easeT;
+        });
+
+        renderRaceFrame(rawT, rawT < 1);
+
+        if (rawT < 1) {
+          rafId = requestAnimationFrame(stepLoop);
+        } else {
+          isAnimatingStep = false;
+          onTurnCompleted();
+        }
+      }
+
+      rafId = requestAnimationFrame(stepLoop);
+    }
+
+    function onTurnCompleted() {
+      // 400m以上に到達した動物がいるかチェック
+      const crossed = runners.filter((r) => r.endDist >= GOAL_DISTANCE);
+      if (crossed.length > 0) {
+        raceOver = true;
+        // 複数同時に400mを超えた場合は累計距離が最も長い動物が1着
+        const ordered = [...runners].sort((a, b) => b.endDist - a.endDist);
+        ordered.forEach((r, idx) => {
+          r.rank = idx + 1;
+        });
+
+        setTimeout(() => {
+          showVictoryModal();
+        }, 650);
+      } else if (!isPaused) {
+        const pauseBetweenTurns = speedMultiplier === 2 ? 350 : 750;
+        autoStepTimeout = setTimeout(() => {
+          if (!isPaused && !raceOver) runNextTurn();
+        }, pauseBetweenTurns);
+      }
+    }
+
+    function togglePause() {
+      if (raceOver) return;
+      isPaused = !isPaused;
+      const btn = document.getElementById('btn-pause');
+      if (isPaused) {
+        clearTimeout(autoStepTimeout);
+        btn.textContent = '▶ 再開';
+        btn.className = 'px-4 py-1.5 rounded-xl bg-[#2e7d32] hover:bg-emerald-800 text-white text-xs shadow transition active:scale-95 cursor-pointer';
+      } else {
+        btn.textContent = '⏯ 一時停止';
+        btn.className = 'px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs shadow transition active:scale-95 cursor-pointer';
+        if (!isAnimatingStep) {
+          autoStepTimeout = setTimeout(() => runNextTurn(), 250);
+        }
+      }
+    }
+
+    function stepOneTurn() {
+      if (raceOver || isAnimatingStep) return;
+      clearTimeout(autoStepTimeout);
+      if (!isPaused) {
+        isPaused = true;
+        const btn = document.getElementById('btn-pause');
+        btn.textContent = '▶ 再開';
+        btn.className = 'px-4 py-1.5 rounded-xl bg-[#2e7d32] hover:bg-emerald-800 text-white text-xs shadow transition active:scale-95 cursor-pointer';
+      }
+      runNextTurn();
+    }
+
+    function toggleSpeed() {
+      speedMultiplier = speedMultiplier === 1 ? 2 : 1;
+      document.getElementById('btn-speed').textContent =
+        speedMultiplier === 2 ? '⚡ 2倍速' : '⚡ 1倍速';
+      playNote(680, 0.06, 'sine', 0.12);
+    }
+
+    // PCキーボードショートカット（Space: 一時停止/再開, →: 1ターン進める）
+    window.addEventListener('keydown', (e) => {
+      if (document.getElementById('screen-3').classList.contains('hidden')) return;
+      if (raceOver) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePause();
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        stepOneTurn();
+      }
+    });
+
+    // =========================================================================
+    // 8. 勝利モーダル ＆ SCREEN 4（箱ひげ図＋全ターン記録★プロット振り返り）
+    // =========================================================================
+    function showVictoryModal() {
+      playVictoryFanfare();
+      startConfetti();
+
+      const winner = runners.find((r) => r.rank === 1);
+      document.getElementById('modal-winner-emoji').textContent = winner.emoji;
+      document.getElementById('modal-winner-name').textContent = winner.name;
+      document.getElementById('modal-winner-dist').textContent = `${winner.endDist}m`;
+      document.getElementById('modal-turn-count').textContent = turnCount;
+
+      const predBox = document.getElementById('modal-prediction-result');
+      if (currentMode === 'A' && classPickId) {
+        predBox.classList.remove('hidden');
+        const picked = ANIMALS.find((a) => a.id === classPickId);
+        const titleEl = document.getElementById('modal-pred-title');
+        const descEl = document.getElementById('modal-pred-desc');
+
+        if (classPickId === winner.id) {
+          predBox.className = 'mt-4 p-3 rounded-2xl border-2 border-rose-400 bg-rose-50 text-rose-800';
+          titleEl.textContent = '🎉 クラスの予想的中！';
+          descEl.textContent = `クラスで予想した「${picked.emoji} ${picked.name}」が見事1位になりました！`;
+        } else {
+          const pickedRunner = runners.find((r) => r.id === classPickId);
+          predBox.className = 'mt-4 p-3 rounded-2xl border-2 border-sky-300 bg-sky-50 text-sky-900';
+          titleEl.textContent = '惜しい！予想はハズレ…！';
+          descEl.textContent = `予想した「${picked.emoji} ${picked.name}」は ${pickedRunner.rank}位（${pickedRunner.endDist}m）でした！`;
+        }
+      } else {
+        predBox.classList.add('hidden');
+      }
+
+      document.getElementById('victory-overlay').classList.remove('hidden');
+    }
+
+    function goToScreen4() {
+      document.getElementById('victory-overlay').classList.add('hidden');
+
+      const winner = runners.find((r) => r.rank === 1);
+      document.getElementById('s4-turns').textContent = turnCount;
+      document.getElementById('s4-winner-emoji').textContent = winner.emoji;
+      document.getElementById('s4-winner-name').textContent = winner.name;
+      document.getElementById('s4-winner-dist').textContent = `${winner.endDist}m`;
+
+      const s4PredBox = document.getElementById('s4-pred-box');
+      if (currentMode === 'A' && classPickId) {
+        s4PredBox.classList.remove('hidden');
+        const picked = ANIMALS.find((a) => a.id === classPickId);
+        const titleEl = document.getElementById('s4-pred-title');
+        const descEl = document.getElementById('s4-pred-desc');
+
+        if (classPickId === winner.id) {
+          s4PredBox.className = 'w-full rounded-2xl p-3 border-2 border-rose-400 bg-rose-50 text-rose-800';
+          titleEl.textContent = '🎉 クラスの予想的中！';
+          descEl.textContent = `予想した「${picked.emoji} ${picked.name}」が1位！`;
+        } else {
+          const pickedRunner = runners.find((r) => r.id === classPickId);
+          s4PredBox.className = 'w-full rounded-2xl p-3 border-2 border-sky-300 bg-sky-50 text-sky-900';
+          titleEl.textContent = '惜しい！';
+          descEl.textContent = `予想「${picked.emoji} ${picked.name}」は ${pickedRunner.rank}位（${pickedRunner.endDist}m）`;
+        }
+      } else {
+        s4PredBox.classList.add('hidden');
+      }
+
+      renderScreen4Review();
+      switchScreen(4);
+    }
+
+    function renderScreen4Review() {
+      const listEl = document.getElementById('s4-review-list');
+      const ranked = [...runners].sort((a, b) => a.rank - b.rank);
+
+      listEl.innerHTML = ranked
+        .map((r) => {
+          const avg = (r.endDist / r.rolls.length).toFixed(1);
+          const rankStyle =
+            r.rank === 1
+              ? 'bg-amber-400 text-amber-950 border-amber-500'
+              : r.rank === 2
+              ? 'bg-slate-200 text-slate-800 border-slate-300'
+              : r.rank === 3
+              ? 'bg-orange-200 text-orange-900 border-orange-300'
+              : 'bg-slate-100 text-slate-600 border-slate-200';
+
+          return `
+            <div class="flex-1 rounded-2xl border-2 ${
+              r.rank === 1 ? 'border-amber-400 bg-amber-50/40' : 'border-slate-200 bg-white'
+            } px-3 py-1 grid grid-cols-12 items-center gap-2">
+              <!-- 左4列：順位・動物・合計・1回平均 -->
+              <div class="col-span-4 flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl border-2 ${rankStyle} font-num text-xs flex items-center justify-center shrink-0">
+                  ${r.rank}位
+                </div>
+                <div class="text-2xl shrink-0">${r.emoji}</div>
+                <div class="min-w-0">
+                  <div class="text-sm font-bold text-slate-900 truncate">${r.name}</div>
+                  <div class="text-xs text-[#2e7d32] leading-tight">
+                    合計 <span class="font-num text-sm text-rose-600">${r.endDist}m</span>
+                    <span class="text-[11px] text-slate-500">（平均 ${avg}m）</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 右8列：箱ひげ図 ＋ 全ターン記録★プロット -->
+              <div class="col-span-8 bg-slate-50 rounded-xl px-2 py-0.5 border border-slate-200">
+                ${createBoxplotSVG(r.stats, r.rolls, r.color, r.name)}
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    function replaySameProblem() {
+      stopConfetti();
+      startRace();
+    }
+
+    // =========================================================================
+    // 9. 紙吹雪パーティクルアニメーション
+    // =========================================================================
+    let confettiPieces = [];
+    let confettiRaf = null;
+
+    function startConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      const palette = ['#f43f5e', '#f59e0b', '#2e7d32', '#0284c7', '#8b5cf6', '#fde047'];
+
+      confettiPieces = Array.from({ length: 140 }, () => ({
+        x: Math.random() * 1280,
+        y: Math.random() * 720 - 720,
+        w: Math.random() * 10 + 6,
+        h: Math.random() * 6 + 4,
+        color: palette[Math.floor(Math.random() * palette.length)],
+        vy: Math.random() * 3.5 + 2.2,
+        vx: Math.random() * 2 - 1,
+        rot: Math.random() * 360,
+        vRot: Math.random() * 6 - 3,
+      }));
+
+      let frame = 0;
+      function loop() {
+        frame++;
+        ctx.clearRect(0, 0, 1280, 720);
+        confettiPieces.forEach((p) => {
+          p.y += p.vy;
+          p.x += p.vx;
+          p.rot += p.vRot;
+          if (p.y > 720 && frame < 260) {
+            p.y = -12;
+            p.x = Math.random() * 1280;
+          }
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rot * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        });
+
+        if (frame < 340) {
+          confettiRaf = requestAnimationFrame(loop);
+        } else {
+          ctx.clearRect(0, 0, 1280, 720);
+        }
+      }
+
+      cancelAnimationFrame(confettiRaf);
+      confettiRaf = requestAnimationFrame(loop);
+    }
+
+    function stopConfetti() {
+      cancelAnimationFrame(confettiRaf);
+      const canvas = document.getElementById('confetti-canvas');
+      if (canvas) {
+        canvas.getContext('2d').clearRect(0, 0, 1280, 720);
+      }
+    }
+  </script>
+</body>
+</html>
