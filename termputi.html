@@ -556,6 +556,17 @@
       animation: praisePop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
 
+    .praise-text.stage-clear-word {
+      font-size: clamp(2.4rem, 8vw, 3.6rem);
+      color: #f59e0b;
+      text-shadow:
+        0 4px 0 #ffffff,
+        0 -4px 0 #ffffff,
+        4px 0 0 #ffffff,
+        -4px 0 0 #ffffff,
+        0 10px 24px rgba(245, 158, 11, 0.45);
+    }
+
     .combo-badge {
       font-family: var(--font-num);
       font-size: clamp(1.2rem, 4vw, 1.6rem);
@@ -1264,7 +1275,6 @@
         const str = formatTermHTML(c.coeff, c.base);
         if (idx === 0) return str;
         if (c.coeff > 0) return ` + ${str}`;
-        // 先頭のマイナスを取り除いて " - " でつなぐ
         return ` - ${str.replace(/^-/, '')}`;
       }).join('');
     }
@@ -1281,21 +1291,17 @@
       const totalSlots = CONFIG.CARD_COUNT[difficulty];
       const pool = difficulty === 'hard' ? [...HARD_BASES] : [...NORMAL_BASES];
 
-      // シャッフル
       for (let i = pool.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [pool[i], pool[j]] = [pool[j], pool[i]];
       }
 
-      // 少なくとも2〜3組は同類項ペアができるようにグループ数を決定
       const groupCount = difficulty === 'hard' ? 4 : 3;
       const chosenBases = pool.slice(0, groupCount);
 
-      // 各グループに最低2枚を割り当て、残りをランダム配分（1枚だけの孤立項も適度に混ぜる）
       const counts = new Array(groupCount).fill(2);
       let remaining = totalSlots - groupCount * 2;
 
-      // 1つだけ孤立項（まとめられないおとりカード）を作る余地を残す
       let singleDecoyBase = null;
       if (remaining >= 1 && pool.length > groupCount) {
         singleDecoyBase = pool[groupCount];
@@ -1334,7 +1340,6 @@
         });
       }
 
-      // スロット位置をシャッフル
       for (let i = cards.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [cards[i], cards[j]] = [cards[j], cards[i]];
@@ -1396,14 +1401,12 @@
       }
 
       async function submitScore(entry) {
-        // 1. ローカル即時反映（送信後すぐに自分の順位を見せるため）
         loadLocal();
         const diffKey = entry.difficulty === 'hard' ? 'hard' : 'normal';
         const taggedEntry = { ...entry, isMine: true };
         cache[diffKey] = sortAndTrim([...cache[diffKey], taggedEntry]);
         saveLocal();
 
-        // 2. GASへPOST送信（CORS回避のためtext/plain + no-cors）
         if (CONFIG.GAS_API_URL) {
           try {
             await fetch(CONFIG.GAS_API_URL, {
@@ -1438,23 +1441,23 @@
      */
     const state = {
       difficulty: 'normal',
-      mode: 'practice', // 'practice' | 'timeattack'
+      mode: 'practice',
       totalQuestions: 3,
       currentQuestion: 1,
-      slots: [], // null またはカードオブジェクト
+      slots: [],
       selectedIndex: null,
+      isTransitioning: false,
       startTime: 0,
       penaltyTime: 0,
       timerInterval: null,
       lastMergeTimestamp: 0,
       comboCount: 0,
-      history: [], // { initialExpr, finalExpr }
+      history: [],
       currentInitialExpr: '',
       lastResultData: null,
       scoreSubmitted: false
     };
 
-    // DOM参照
     const screens = {
       title: document.getElementById('titleScreen'),
       game: document.getElementById('gameScreen'),
@@ -1477,7 +1480,6 @@
       homeBtn.style.visibility = name === 'title' ? 'hidden' : 'visible';
     }
 
-    // 難易度選択
     document.querySelectorAll('.diff-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
@@ -1487,19 +1489,17 @@
       });
     });
 
-    // ミュート切替
     muteBtn.addEventListener('click', () => {
       const isMuted = SoundFX.toggleMute();
       muteBtn.textContent = isMuted ? '🔇 消音中' : '🔊 音あり';
     });
 
-    // ホームに戻る
     homeBtn.addEventListener('click', () => {
       stopTimer();
+      state.isTransitioning = false;
       showScreen('title');
     });
 
-    // モード開始
     document.getElementById('startPracticeBtn').addEventListener('click', () => startGame('practice'));
     document.getElementById('startTimeAttackBtn').addEventListener('click', () => startGame('timeattack'));
 
@@ -1512,6 +1512,7 @@
       state.comboCount = 0;
       state.lastMergeTimestamp = 0;
       state.scoreSubmitted = false;
+      state.isTransitioning = false;
 
       modeLabel.textContent = mode === 'timeattack' ? 'タイムアタック' : '練習';
       timerBadge.style.display = mode === 'timeattack' ? 'inline-block' : 'none';
@@ -1528,6 +1529,7 @@
     function startTimer() {
       stopTimer();
       state.timerInterval = setInterval(() => {
+        if (state.isTransitioning) return;
         const elapsed = getElapsedSeconds();
         timerBadge.textContent = `${elapsed.toFixed(1)}s`;
       }, 100);
@@ -1546,6 +1548,7 @@
     }
 
     function loadStage() {
+      state.isTransitioning = false;
       stageBadge.textContent = `${state.currentQuestion} / ${state.totalQuestions}`;
       feedbackBanner.textContent = '';
       state.selectedIndex = null;
@@ -1595,7 +1598,6 @@
       });
     }
 
-    // プチッと弾けるパーティクルエフェクト
     function spawnPopEffect(slotEl) {
       const ring = document.createElement('div');
       ring.className = 'pop-ring';
@@ -1617,17 +1619,17 @@
     }
 
     // 中央褒め言葉＆コンボ表示
-    function showPraisePopup(comboCount) {
+    function showPraisePopup(comboCount, customWord = null, isStageClear = false) {
       const layer = document.getElementById('centerPopupLayer');
       layer.innerHTML = '';
 
-      const word = CONFIG.PRAISE_WORDS[Math.floor(Math.random() * CONFIG.PRAISE_WORDS.length)];
+      const word = customWord || CONFIG.PRAISE_WORDS[Math.floor(Math.random() * CONFIG.PRAISE_WORDS.length)];
       const p = document.createElement('div');
-      p.className = 'praise-text';
+      p.className = isStageClear ? 'praise-text stage-clear-word' : 'praise-text';
       p.textContent = word;
       layer.appendChild(p);
 
-      if (comboCount >= 2) {
+      if (!isStageClear && comboCount >= 2) {
         const c = document.createElement('div');
         c.className = 'combo-badge';
         c.textContent = `${comboCount} COMBO!`;
@@ -1636,9 +1638,9 @@
     }
 
     function handleCardTap(idx, slotEl, cardEl) {
+      if (state.isTransitioning) return;
       feedbackBanner.textContent = '';
 
-      // 未選択状態 → 1枚目を選択
       if (state.selectedIndex === null) {
         state.selectedIndex = idx;
         SoundFX.playSelect();
@@ -1646,7 +1648,6 @@
         return;
       }
 
-      // 同じカードを再タップ → 選択解除
       if (state.selectedIndex === idx) {
         state.selectedIndex = null;
         SoundFX.playSelect();
@@ -1659,9 +1660,7 @@
       const firstCard = state.slots[firstIdx];
       const secondCard = state.slots[secondIdx];
 
-      // 同類項判定
       if (firstCard.base.key === secondCard.base.key) {
-        // コンボ判定
         const now = performance.now();
         if (now - state.lastMergeTimestamp <= CONFIG.COMBO_WINDOW_MS) {
           state.comboCount++;
@@ -1673,12 +1672,10 @@
         const newCoeff = firstCard.coeff + secondCard.coeff;
         const isZero = newCoeff === 0;
 
-        // 1枚目のスロット位置に破裂エフェクトを出すため座標を取得
         const firstSlotEl = cardGrid.children[firstIdx];
         if (firstSlotEl) spawnPopEffect(firstSlotEl);
         if (isZero) spawnPopEffect(slotEl);
 
-        // 1枚目を消去し、2枚目の位置に結果を入れる
         state.slots[firstIdx] = null;
         if (isZero) {
           state.slots[secondIdx] = null;
@@ -1695,7 +1692,6 @@
         renderBoard(isZero ? -1 : secondIdx);
         updateLiveExpression(true);
       } else {
-        // 不一致：ブルッと震えて解除
         state.comboCount = 0;
         SoundFX.playError();
         state.selectedIndex = null;
@@ -1715,7 +1711,6 @@
       }
     }
 
-    // 未整理の同類項が残っているかチェック
     function hasRemainingLikeTerms() {
       const seen = new Set();
       for (const card of state.slots) {
@@ -1728,6 +1723,8 @@
 
     // Answerボタン押下
     document.getElementById('answerBtn').addEventListener('click', () => {
+      if (state.isTransitioning) return;
+
       if (hasRemainingLikeTerms()) {
         SoundFX.playError();
         state.comboCount = 0;
@@ -1740,20 +1737,25 @@
         return;
       }
 
-      // ステージクリア！
+      // ステージクリア！中央に褒め言葉を表示してから次へ進む
+      state.isTransitioning = true;
       SoundFX.playStageClear();
+      showPraisePopup(0, null, true);
+
       const finalExpr = buildExpressionHTML(state.slots.filter(Boolean));
       state.history.push({
         initialExpr: state.currentInitialExpr,
         finalExpr
       });
 
-      if (state.currentQuestion < state.totalQuestions) {
-        state.currentQuestion++;
-        loadStage();
-      } else {
-        finishGame();
-      }
+      setTimeout(() => {
+        if (state.currentQuestion < state.totalQuestions) {
+          state.currentQuestion++;
+          loadStage();
+        } else {
+          finishGame();
+        }
+      }, 550);
     });
 
     function evaluateRank(difficulty, seconds) {
@@ -1766,6 +1768,7 @@
 
     async function finishGame() {
       stopTimer();
+      state.isTransitioning = false;
       SoundFX.playFanfare();
       showScreen('result');
 
@@ -1774,7 +1777,6 @@
       const rankingSection = document.getElementById('rankingSection');
       const resultTitle = document.getElementById('resultTitle');
 
-      // 全問プレイバック描画
       const historyList = document.getElementById('historyList');
       historyList.innerHTML = '';
       state.history.forEach((item, idx) => {
@@ -1815,7 +1817,6 @@
         submitBtn.textContent = '登録する';
         statusMsg.textContent = '';
 
-        // 現在の難易度のタブをアクティブ化
         setResultRankTab(state.difficulty);
         await RankingManager.fetchRankings();
         renderRankingList('resultRankingList', state.difficulty);
@@ -1827,7 +1828,6 @@
       }
     }
 
-    // ランキング描画ヘルパー
     function renderRankingList(ulId, diff) {
       const ul = document.getElementById(ulId);
       const list = RankingManager.getCached(diff);
@@ -1865,7 +1865,6 @@
         .replace(/"/g, '&quot;');
     }
 
-    // リザルト画面のランキングタブ切替
     function setResultRankTab(diff) {
       document.getElementById('resTabNormal').classList.toggle('active', diff === 'normal');
       document.getElementById('resTabHard').classList.toggle('active', diff === 'hard');
@@ -1875,7 +1874,6 @@
     document.getElementById('resTabNormal').addEventListener('click', () => setResultRankTab('normal'));
     document.getElementById('resTabHard').addEventListener('click', () => setResultRankTab('hard'));
 
-    // スコア送信処理
     document.getElementById('submitScoreBtn').addEventListener('click', async () => {
       if (state.scoreSubmitted || !state.lastResultData) return;
       const input = document.getElementById('playerNameInput');
@@ -1899,7 +1897,6 @@
       setResultRankTab(state.lastResultData.difficulty);
     });
 
-    // タイトル画面のランキングモーダル制御
     const rankingModal = document.getElementById('rankingModal');
 
     function setModalRankTab(diff) {
@@ -1927,7 +1924,6 @@
       if (e.target === rankingModal) rankingModal.classList.remove('open');
     });
 
-    // リトライ＆タイトルへ
     document.getElementById('retryBtn').addEventListener('click', () => startGame(state.mode));
     document.getElementById('backTitleBtn').addEventListener('click', () => showScreen('title'));
   </script>
