@@ -171,7 +171,7 @@
             <!-- コンボ＆撃破状況バー -->
             <div class="pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
                 <span class="text-slate-400">撃破数: <strong id="hud-kills-desktop" class="font-mono-code text-emerald-400">0機</strong></span>
-                <span id="hud-speed-rank-desktop" class="font-mono-code text-slate-400">SPD: LV.1</span>
+                <span id="hud-speed-rank-desktop" class="font-mono-code text-slate-400">MODE: EASY</span>
                 <span class="text-slate-400">コンボ: <strong id="hud-combo-desktop" class="font-mono-code text-amber-400">0連鎖</strong></span>
             </div>
         </div>
@@ -207,22 +207,22 @@
                 </button>
             </div>
 
-            <!-- 分子（y座標の大きさ |y|）1〜9 -->
+            <!-- 分子（y座標の大きさ |y|）1〜6：分母と完全に縦位置・横幅を統一 -->
             <div class="bg-[#060b19]/80 border border-slate-800 rounded-xl p-1.5 md:p-2">
                 <div class="flex items-center justify-between text-[11px] font-medium mb-1">
                     <span class="text-cyan-300">分子 <span class="text-[10px] font-normal text-slate-400">(y座標の大きさ |y|)</span></span>
                     <span id="num-display" class="font-mono-code font-bold text-cyan-300">1</span>
                 </div>
-                <div id="num-buttons" class="grid grid-cols-9 gap-1"></div>
+                <div id="num-buttons" class="grid grid-cols-6 gap-1 md:gap-1.5"></div>
             </div>
 
-            <!-- 分母（x²の大きさ）1〜6 -->
+            <!-- 分母（x²の大きさ）1〜6：分子と完全に縦位置・横幅を統一 -->
             <div class="bg-[#060b19]/80 border border-slate-800 rounded-xl p-1.5 md:p-2">
                 <div class="flex items-center justify-between text-[11px] font-medium mb-1">
                     <span class="text-emerald-300">分母 <span class="text-[10px] font-normal text-slate-400">(x² の大きさ / 整数は1)</span></span>
                     <span id="den-display" class="font-mono-code font-bold text-emerald-300">1</span>
                 </div>
-                <div id="den-buttons" class="grid grid-cols-6 gap-1"></div>
+                <div id="den-buttons" class="grid grid-cols-6 gap-1 md:gap-1.5"></div>
             </div>
 
             <!-- レーザー発射ボタン -->
@@ -264,7 +264,7 @@
                             <span class="text-xs md:text-sm font-bold text-emerald-300">🌱 イージー</span>
                             <span class="text-[10px] font-mono-code text-emerald-200/80">初級</span>
                         </div>
-                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">比例定数は整数のみ<br>攻撃まで：約21秒</p>
+                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">比例定数は整数のみ<br>速度：ゆっくり</p>
                     </button>
 
                     <button type="button" data-diff="normal" class="diff-select-btn sf-btn p-2.5 rounded-xl border-2 text-left flex flex-col gap-0.5 bg-slate-900 border-slate-700 hover:border-cyan-500/60">
@@ -272,7 +272,7 @@
                             <span class="text-xs md:text-sm font-bold text-cyan-300">🚀 ノーマル</span>
                             <span class="text-[10px] font-mono-code text-cyan-200/80">中級</span>
                         </div>
-                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">整数＋分数(分母2,3,4)<br>攻撃まで：約17秒</p>
+                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">整数＋分数(分母2〜4)<br>速度：ふつう</p>
                     </button>
 
                     <button type="button" data-diff="hard" class="diff-select-btn sf-btn p-2.5 rounded-xl border-2 text-left flex flex-col gap-0.5 bg-slate-900 border-slate-700 hover:border-amber-500/60">
@@ -280,7 +280,7 @@
                             <span class="text-xs md:text-sm font-bold text-amber-300">🔥 ハード</span>
                             <span class="text-[10px] font-mono-code text-amber-200/80">上級</span>
                         </div>
-                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">全格子点・全分数(分母2〜6)<br>攻撃まで：約13.5秒</p>
+                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">全格子点・全分数(分母2〜6)<br>速度：はやい</p>
                     </button>
                 </div>
             </div>
@@ -394,9 +394,8 @@
          * 2乗に比例レーザー・ディフェンス (Quadratic Laser Defense)
          *  - 関数: y = ax² (原点の砲台から放物線レーザーを発射)
          *  - 敵UFO: 画面外周から飛来 -> 格子点 (x, y) に停止 -> 徐々に速くなる点滅チャージ -> 攻撃
-         *  - 難易度3種 (easy / normal / hard) × ルール2種 (standard / endless)
-         *  - エンドレス加速: 55秒経過または18機撃破でトップスピード到達。
-         *    イージーは最短5.5秒・間隔0.95秒・最大5機まで加速し手応えのあるエンドレス体験を提供。
+         *  - キーパッド統一：分子・分母ともに 1〜6 の6列グリッドで縦位置を完全一致
+         *  - 比例定数 a = y / x² の約分後の分子・分母は常に 1〜6 の範囲内に制限
          * ============================================================================
          */
 
@@ -562,15 +561,15 @@
 
         // --- 3. ゲーム状態と難易度・ルール設定 ---
         const HALF_SPAN = 6; // -6 〜 +6 の固定座標平面
-        const STORAGE_KEY = 'quadratic_laser_defense_v3';
+        const STORAGE_KEY = 'quadratic_laser_defense_v4';
 
         const state = {
             difficulty: 'easy',  // 'easy' | 'normal' | 'hard'
-            rule: 'standard',    // 'standard' (通常60秒防衛) | 'endless' (無限・ハイペース加速)
+            rule: 'standard',    // 'standard' (通常60秒防衛) | 'endless' (無限・加速)
             status: 'title',     // 'title' | 'playing' | 'paused' | 'gameover' | 'clear'
             sign: 1,
-            numerator: 1,
-            denominator: 1,
+            numerator: 1,        // 1〜6
+            denominator: 1,      // 1〜6
             score: 0,
             kills: 0,
             combo: 0,
@@ -582,11 +581,11 @@
             elapsedTime: 0,
             overheatTimer: 0,
             overheatMax: 1.0,    // 空振り時のオーバーヒート時間：1.0秒
-            hitFlashAlpha: 0,    // 命中時のヒットストップ風フラッシュ演出
+            hitFlashAlpha: 0,
             spawnTimer: 0,
             ufos: [],
             lasers: [],
-            enemyBeams: [],      // UFOが攻撃した際の敵ビームエフェクト
+            enemyBeams: [],
             particles: [],
             floatingTexts: [],
             stars: [],
@@ -594,18 +593,16 @@
             lastFrameTime: 0
         };
 
-        // 難易度別設定（通常防衛時のベース値 ＋ エンドレスモード時のトップスピード上限値）
         const DIFFICULTY_CONFIG = {
             easy: {
                 name: 'イージー (初級)',
                 shortName: 'EASY',
                 badgeClass: 'bg-emerald-950 text-emerald-300 border-emerald-500/40',
-                summaryText: '選択中：イージー (初級) — 比例定数は整数のみ・攻撃まで約21秒',
+                summaryText: '選択中：イージー (初級) — 比例定数は整数のみ',
                 summaryColor: 'text-emerald-300',
                 spawnInterval: 4.5,
                 chargeDuration: 21.0,
                 maxConcurrent: 2,
-                // エンドレス終盤は整数でもスリルがあるよう猛加速
                 endlessMinCharge: 5.5,
                 endlessMinSpawn: 0.95,
                 endlessMaxConcurrent: 5
@@ -614,7 +611,7 @@
                 name: 'ノーマル (中級)',
                 shortName: 'NORMAL',
                 badgeClass: 'bg-cyan-950 text-cyan-300 border-cyan-500/40',
-                summaryText: '選択中：ノーマル (中級) — 整数＋分数(分母2,3,4)・攻撃まで約17秒',
+                summaryText: '選択中：ノーマル (中級) — 整数＋分数(分母2〜4)',
                 summaryColor: 'text-cyan-300',
                 spawnInterval: 4.0,
                 chargeDuration: 17.0,
@@ -627,7 +624,7 @@
                 name: 'ハード (上級)',
                 shortName: 'HARD',
                 badgeClass: 'bg-amber-950 text-amber-300 border-amber-500/40',
-                summaryText: '選択中：ハード (上級) — 全格子点・全分数(分母2〜6)・攻撃まで約13.5秒',
+                summaryText: '選択中：ハード (上級) — 全格子点・全分数(分母2〜6)',
                 summaryColor: 'text-amber-300',
                 spawnInterval: 3.5,
                 chargeDuration: 13.5,
@@ -730,32 +727,30 @@
             if (bestEndKills) bestEndKills.textContent = (rec[endKey] && rec[endKey].bestKills) || 0;
         }
 
-        // --- 5. 数式キーパッド＆リアルタイムプレビュー (y = ax²) ---
+        // --- 5. 数式キーパッド＆リアルタイムプレビュー (分子1〜6・分母1〜6 完全統一) ---
         function initKeypad() {
             const numBox = document.getElementById('num-buttons');
             const denBox = document.getElementById('den-buttons');
             numBox.innerHTML = '';
             denBox.innerHTML = '';
 
-            for (let i = 1; i <= 9; i++) {
+            for (let i = 1; i <= 6; i++) {
                 const bn = document.createElement('button');
                 bn.type = 'button';
                 bn.id = `btn-num-${i}`;
                 bn.textContent = i;
-                bn.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-semibold';
+                bn.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold';
                 bn.addEventListener('click', () => {
                     state.numerator = i;
                     updateEquationUI();
                 });
                 numBox.appendChild(bn);
-            }
 
-            for (let i = 1; i <= 6; i++) {
                 const bd = document.createElement('button');
                 bd.type = 'button';
                 bd.id = `btn-den-${i}`;
                 bd.textContent = i;
-                bd.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-semibold';
+                bd.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold';
                 bd.addEventListener('click', () => {
                     state.denominator = i;
                     updateEquationUI();
@@ -790,23 +785,24 @@
                 btnMinus.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-xl text-sm md:text-base font-semibold border-2 bg-amber-950/60 border-amber-400 text-amber-200 shadow-[0_0_12px_rgba(251,191,36,0.35)]';
             }
 
-            for (let i = 1; i <= 9; i++) {
-                const bn = document.getElementById(`btn-num-${i}`);
-                if (!bn) continue;
-                if (i === state.numerator) {
-                    bn.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-bold bg-cyan-500 border-cyan-200 text-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.75)]';
-                } else {
-                    bn.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 border-cyan-500/30 text-slate-200';
-                }
-            }
-
             for (let i = 1; i <= 6; i++) {
+                const bn = document.getElementById(`btn-num-${i}`);
                 const bd = document.getElementById(`btn-den-${i}`);
-                if (!bd) continue;
-                if (i === state.denominator) {
-                    bd.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-bold bg-emerald-500 border-emerald-200 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.75)]';
-                } else {
-                    bd.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 border-emerald-500/30 text-slate-200';
+
+                if (bn) {
+                    if (i === state.numerator) {
+                        bn.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-black bg-cyan-500 border-cyan-200 text-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.75)]';
+                    } else {
+                        bn.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold bg-slate-800 hover:bg-slate-700 border-cyan-500/30 text-slate-200';
+                    }
+                }
+
+                if (bd) {
+                    if (i === state.denominator) {
+                        bd.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-black bg-emerald-500 border-emerald-200 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.75)]';
+                    } else {
+                        bd.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold bg-slate-800 hover:bg-slate-700 border-emerald-500/30 text-slate-200';
+                    }
                 }
             }
 
@@ -825,7 +821,7 @@
             document.getElementById('a-value-badge').textContent = `a = ${aText}`;
         }
 
-        // --- 6. 有効な格子点 (x, y) の生成（a = y / x² がキーパッドで入力可能な約分値になるもの） ---
+        // --- 6. 有効な格子点 (x, y) の生成（a = y / x² が分子1〜6・分母1〜6で入力可能になるもの） ---
         function getValidQuadraticPoints(difficulty) {
             const validPoints = [];
             for (let x = -HALF_SPAN; x <= HALF_SPAN; x++) {
@@ -838,21 +834,18 @@
                     const reducedNum = Math.abs(y) / g;
                     const reducedDen = x2 / g;
 
-                    // キーパッド(分子1〜9、分母1〜6)で入力可能であることを保証
-                    if (reducedNum < 1 || reducedNum > 9 || reducedDen < 1 || reducedDen > 6) {
+                    // 分子・分母どちらも 1〜6 のキーパッドで入力可能であることを保証
+                    if (reducedNum < 1 || reducedNum > 6 || reducedDen < 1 || reducedDen > 6) {
                         continue;
                     }
 
                     let allowed = false;
                     if (difficulty === 'easy') {
-                        // 整数のみ (a = ±1, ±2, ±3, ±4, ±5, ±6)
                         allowed = (reducedDen === 1 && reducedNum <= 6);
                     } else if (difficulty === 'normal') {
-                        // 整数 ＋ 簡単な分数 (分母 2, 3, 4)
                         allowed = (reducedDen <= 4 && reducedNum <= 6);
                     } else if (difficulty === 'hard') {
-                        // 全格子点・全分数 (分母 2〜6)
-                        allowed = (reducedDen <= 6 && reducedNum <= 9);
+                        allowed = (reducedDen <= 6 && reducedNum <= 6);
                     }
 
                     if (allowed) {
@@ -941,7 +934,7 @@
                 slopeDen: slopeDen,
                 phase: 'entering',       // 'entering' (飛来中) -> 'charging' (停止・点滅チャージ中)
                 enterTimer: 0,
-                enterDuration: 0.95,     // 外周から格子点へ飛来して停止するまでの時間
+                enterDuration: 0.95,
                 chargeTimer: 0,
                 chargeDuration: chargeDuration,
                 blinkPhase: 0,
@@ -1644,7 +1637,6 @@
             let interval = dCfg.spawnInterval;
             let maxOnScreen = dCfg.maxConcurrent;
             if (state.rule === 'endless') {
-                // 55秒経過または18機撃破で進行度MAXに到達（イージーは最短0.95秒・最大5機）
                 const prog = getEndlessProgress();
                 const startSpawn = 4.2;
                 interval = startSpawn - prog * (startSpawn - dCfg.endlessMinSpawn);
@@ -1664,7 +1656,6 @@
                 if (ufo.phase === 'entering') {
                     ufo.enterTimer += dt;
                     const t = Math.min(1, ufo.enterTimer / ufo.enterDuration);
-                    // EaseOutCubic で格子点へピタッと停止
                     const ease = 1 - Math.pow(1 - t, 3);
                     ufo.x = ufo.entryX + (ufo.targetX - ufo.entryX) * ease;
                     ufo.y = ufo.entryY + (ufo.targetY - ufo.entryY) * ease;
@@ -1675,24 +1666,20 @@
                     }
                     surviving.push(ufo);
                 } else {
-                    // 停止後の点滅チャージ進行（時間経過ほど点滅速度が加速）
                     ufo.chargeTimer += dt;
                     const ratio = Math.min(1, ufo.chargeTimer / ufo.chargeDuration);
 
-                    // 点滅周波数: 序盤 1.2Hz → 終盤 9.8Hz へ二次関数的に加速
                     const freq = 1.2 + Math.pow(ratio, 2) * 8.6;
                     ufo.blinkPhase += dt * freq;
                     const halfCycle = Math.floor(ufo.blinkPhase * 2);
                     ufo.isLit = (halfCycle % 2 === 0);
 
-                    // 終盤(70%以降)は点滅に合わせて警告ビープ音を鳴らす
                     if (ratio >= 0.7 && halfCycle > ufo.lastBlinkHalfCycle && ufo.isLit) {
                         sfx.playWarningTick(ratio);
                     }
                     ufo.lastBlinkHalfCycle = halfCycle;
 
                     if (ufo.chargeTimer >= ufo.chargeDuration) {
-                        // チャージ完了：自機 O(0, 0) へ破壊ビーム攻撃！
                         state.lives--;
                         state.combo = 0;
                         state.screenShake = 16;
@@ -2000,7 +1987,7 @@
             document.getElementById('btn-retry').addEventListener('click', () => startGame(state.rule));
             document.getElementById('btn-to-title').addEventListener('click', showTitle);
 
-            // PCキーボード操作サポート
+            // PCキーボード操作サポート（1〜6キー対応）
             window.addEventListener('keydown', (e) => {
                 if (state.status !== 'playing') return;
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -2012,7 +1999,7 @@
                 } else if (e.key === '-') {
                     state.sign = -1;
                     updateEquationUI();
-                } else if (e.key >= '1' && e.key <= '9') {
+                } else if (e.key >= '1' && e.key <= '6') {
                     state.numerator = parseInt(e.key, 10);
                     updateEquationUI();
                 } else if (e.key === 'c' || e.key === 'C' || e.key === 'Escape') {
