@@ -7,7 +7,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap');
 
         * {
             box-sizing: border-box;
@@ -195,8 +195,8 @@
                             a=1, b=2
                         </span>
                     </div>
-                    <button type="button" id="btn-reset-input" class="sf-btn px-2 py-1.5 md:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-200" title="傾き a = 1 にリセット">
-                        リセット
+                    <button type="button" id="btn-reset-input" class="sf-btn px-2 py-1.5 md:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-200" title="傾き a = 1 にリセット (C)">
+                        C
                     </button>
                 </div>
             </div>
@@ -211,22 +211,22 @@
                 </button>
             </div>
 
-            <!-- 分子（yの増加量 |y - b|）1〜9 -->
+            <!-- 分子（yの増加量 |y - b|）1〜6：分母と完全に縦位置・横幅を統一 -->
             <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-1.5 md:p-2">
                 <div class="flex items-center justify-between text-[11px] font-medium mb-1">
                     <span class="text-sky-300">分子 <span class="text-[10px] font-normal text-slate-400">(yの増加量 |y - b|)</span></span>
                     <span id="num-display" class="font-mono-code font-bold text-sky-300">1</span>
                 </div>
-                <div id="num-buttons" class="grid grid-cols-9 gap-1"></div>
+                <div id="num-buttons" class="grid grid-cols-6 gap-1 md:gap-1.5"></div>
             </div>
 
-            <!-- 分母（xの増加量 |x|）1〜6 -->
+            <!-- 分母（xの増加量 |x|）1〜6：分子と完全に縦位置・横幅を統一 -->
             <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-1.5 md:p-2">
                 <div class="flex items-center justify-between text-[11px] font-medium mb-1">
                     <span class="text-purple-300">分母 <span class="text-[10px] font-normal text-slate-400">(xの増加量 / 整数は1)</span></span>
                     <span id="den-display" class="font-mono-code font-bold text-purple-300">1</span>
                 </div>
-                <div id="den-buttons" class="grid grid-cols-6 gap-1"></div>
+                <div id="den-buttons" class="grid grid-cols-6 gap-1 md:gap-1.5"></div>
             </div>
 
             <!-- レーザー発射ボタン -->
@@ -246,7 +246,7 @@
                 <span class="inline-block px-3 py-0.5 rounded-full bg-amber-950/90 border border-amber-400/50 text-amber-300 text-[11px] font-semibold tracking-wider mb-1.5">
                     LINEAR FUNCTION : y = ax + b
                 </span>
-                <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-amber-300 via-cyan-200 to-fuchsia-400 bg-clip-text text-transparent">
+                <h1 class="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-amber-300 via-cyan-200 to-fuchsia-400 bg-clip-text text-transparent">
                     1次関数レーザー・ディフェンス
                 </h1>
                 <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">
@@ -267,7 +267,7 @@
                             <span class="text-xs md:text-sm font-bold text-emerald-300">🌱 イージー</span>
                             <span class="text-[10px] font-mono-code text-emerald-200/80">初級</span>
                         </div>
-                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">傾きは整数のみ<br>速度：ゆっくり (約22秒)</p>
+                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">傾きは整数のみ<br>速度：ゆっくり</p>
                     </button>
 
                     <button type="button" data-diff="normal" class="diff-select-btn sf-btn p-2.5 rounded-xl border-2 text-left flex flex-col gap-0.5 bg-slate-900 border-slate-700 hover:border-sky-500/60">
@@ -275,7 +275,7 @@
                             <span class="text-xs md:text-sm font-bold text-sky-300">🚀 ノーマル</span>
                             <span class="text-[10px] font-mono-code text-sky-200/80">中級</span>
                         </div>
-                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">整数＋簡単な分数<br>速度：ふつう (約18秒)</p>
+                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">整数＋分数(分母2〜4)<br>速度：ふつう</p>
                     </button>
 
                     <button type="button" data-diff="hard" class="diff-select-btn sf-btn p-2.5 rounded-xl border-2 text-left flex flex-col gap-0.5 bg-slate-900 border-slate-700 hover:border-purple-500/60">
@@ -283,7 +283,7 @@
                             <span class="text-xs md:text-sm font-bold text-purple-300">🔥 ハード</span>
                             <span class="text-[10px] font-mono-code text-purple-200/80">上級</span>
                         </div>
-                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">全格子点・全分数<br>速度：はやい (約15秒)</p>
+                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">全格子点・全分数(分母2〜6)<br>速度：はやい</p>
                     </button>
                 </div>
             </div>
@@ -296,12 +296,12 @@
                     <!-- 通常防衛 (60秒) -->
                     <button type="button" data-rule="standard" class="rule-start-btn sf-btn text-left p-3.5 rounded-2xl border-2 border-cyan-500/60 hover:border-cyan-300 bg-gradient-to-br from-cyan-950/80 to-slate-900 flex flex-col justify-between gap-1.5 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
                         <div class="flex items-center justify-between w-full">
-                            <span class="text-base font-bold text-cyan-300">🛡️ 通常防衛 (60秒)</span>
+                            <span class="text-base font-bold text-cyan-300">🛡️ 通常防衛</span>
                             <span id="badge-rule-standard" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">未クリア</span>
                         </div>
                         <p class="text-[11px] text-slate-300 leading-relaxed">
-                            切片 <span class="font-mono-code text-amber-300">(0, b)</span> を60秒間守り抜けばクリア！<br>
-                            まずはじっくり計算に慣れたい人向け。
+                            60秒間 基地を守りきれ！<br>
+                            同じ直線上のUFOを同時に貫くとコンボボーナス！
                         </p>
                         <div class="flex items-center justify-between w-full pt-1 border-t border-cyan-500/20">
                             <span class="font-mono-code text-xs font-semibold text-cyan-400">BEST: <span id="best-rule-standard">0</span> pts</span>
@@ -313,10 +313,11 @@
                     <button type="button" data-rule="endless" class="rule-start-btn sf-btn text-left p-3.5 rounded-2xl border-2 border-rose-500/60 hover:border-rose-300 bg-gradient-to-br from-rose-950/80 to-slate-900 flex flex-col justify-between gap-1.5 shadow-[0_0_20px_rgba(244,63,94,0.15)]">
                         <div class="flex items-center justify-between w-full">
                             <span class="text-base font-bold text-rose-300">♾️ エンドレス</span>
-                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-900/70 text-rose-200 border border-rose-500/40">5機ごとにシフト</span>
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-900/70 text-rose-200 border border-rose-500/40">記録挑戦</span>
                         </div>
                         <p class="text-[11px] text-slate-300 leading-relaxed">
-                            <span class="text-amber-300 font-semibold">5機撃破ごとに座標平面がスライド</span>して切片 <span class="font-mono-code text-amber-300">b</span> が変化！序盤はゆっくりで徐々に加速。
+                            <span class="text-amber-300 font-semibold">5機撃破ごとに切片 b が移動！</span><br>
+                            限界まで撃破してハイスコアを目指せ！
                         </p>
                         <div class="flex items-center justify-between w-full pt-1 border-t border-rose-500/20">
                             <span class="font-mono-code text-xs font-semibold text-rose-400">BEST: <span id="best-rule-endless-kills">0</span>機 (<span id="best-rule-endless">0</span> pts)</span>
@@ -396,8 +397,8 @@
          * 1次関数レーザー・ディフェンス (Linear Function Laser Defense)
          *  - STEP 1: 難易度選択 (easy / normal / hard)
          *  - STEP 2: ルール選択 (standard: 通常60秒防衛 / endless: 5機撃破ごとに切片シフト)
-         *  - カメラ中心固定型：自機ロボットは常にキャンバス中心 (0, b) に固定、座標グリッドが上下スライド
-         *  - 座標・UFO重なり防止＆エンドレス段階加速カーブ実装
+         *  - キーパッド統一：分子・分母ともに 1〜6 の6列グリッドで縦位置を完全一致
+         *  - 傾き a = (y - b) / x の約分後の分子・分母は常に 1〜6 の範囲内に制限
          * ============================================================================
          */
 
@@ -564,7 +565,7 @@
 
         // --- 3. ゲーム状態と難易度・ルール設定 ---
         const HALF_SPAN = 6; // 中心 (0, b) から上下左右に ±6 マス（12×12グリッド）
-        const STORAGE_KEY = 'linear_laser_diff_rule_v3';
+        const STORAGE_KEY = 'linear_laser_diff_rule_v4';
         const WARP_KILL_INTERVAL = 5; // エンドレスモード：5機撃破ごとに座標シフト
 
         const state = {
@@ -574,8 +575,8 @@
             interceptB: 2,       // 目標切片 b ∈ {-4, -3, -2, -1, 1, 2, 3, 4}
             visualCenterY: 2,    // 滑らかにカメラ移動させるための描画用中心y座標 (lerp)
             sign: 1,
-            numerator: 1,
-            denominator: 1,
+            numerator: 1,        // 1〜6
+            denominator: 1,      // 1〜6
             score: 0,
             kills: 0,
             killsSinceWarp: 0,
@@ -600,16 +601,15 @@
             lastFrameTime: 0
         };
 
-        // 思考時間をしっかり確保したスピードバランス設定
         const DIFFICULTY_CONFIG = {
             easy: {
                 name: 'イージー (初級)',
                 shortName: 'EASY',
                 badgeClass: 'bg-emerald-950 text-emerald-300 border-emerald-500/40',
-                summaryText: '選択中：イージー (初級) — 傾きは整数のみ・ゆっくり接近',
+                summaryText: '選択中：イージー (初級) — 傾きは整数のみ',
                 summaryColor: 'text-emerald-300',
                 spawnInterval: 5.2,
-                reachTime: 22.0,     // 外周から中央基地まで約22秒
+                reachTime: 22.0,
                 maxConcurrent: 2,
                 bPool: [-3, -2, -1, 1, 2, 3]
             },
@@ -617,10 +617,10 @@
                 name: 'ノーマル (中級)',
                 shortName: 'NORMAL',
                 badgeClass: 'bg-sky-950 text-sky-300 border-sky-500/40',
-                summaryText: '選択中：ノーマル (中級) — 整数＋簡単な分数(分母2〜4)・ふつうの速さ',
+                summaryText: '選択中：ノーマル (中級) — 整数＋分数(分母2〜4)',
                 summaryColor: 'text-sky-300',
                 spawnInterval: 4.5,
-                reachTime: 18.0,     // 外周から中央基地まで約18秒
+                reachTime: 18.0,
                 maxConcurrent: 3,
                 bPool: [-4, -3, -2, -1, 1, 2, 3, 4]
             },
@@ -628,10 +628,10 @@
                 name: 'ハード (上級)',
                 shortName: 'HARD',
                 badgeClass: 'bg-purple-950 text-purple-300 border-purple-500/40',
-                summaryText: '選択中：ハード (上級) — 全格子点・全分数(分母2〜6)・はやい接近',
+                summaryText: '選択中：ハード (上級) — 全格子点・全分数(分母2〜6)',
                 summaryColor: 'text-purple-300',
                 spawnInterval: 3.8,
-                reachTime: 15.0,     // 外周から中央基地まで約15秒
+                reachTime: 15.0,
                 maxConcurrent: 4,
                 bPool: [-4, -3, -2, -1, 1, 2, 3, 4]
             }
@@ -722,32 +722,30 @@
             if (bestEndKills) bestEndKills.textContent = (rec[endKey] && rec[endKey].bestKills) || 0;
         }
 
-        // --- 5. 数式キーパッド＆リアルタイムプレビュー (y = ax + b) ---
+        // --- 5. 数式キーパッド＆リアルタイムプレビュー (分子1〜6・分母1〜6 完全統一) ---
         function initKeypad() {
             const numBox = document.getElementById('num-buttons');
             const denBox = document.getElementById('den-buttons');
             numBox.innerHTML = '';
             denBox.innerHTML = '';
 
-            for (let i = 1; i <= 9; i++) {
+            for (let i = 1; i <= 6; i++) {
                 const bn = document.createElement('button');
                 bn.type = 'button';
                 bn.id = `btn-num-${i}`;
                 bn.textContent = i;
-                bn.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-semibold';
+                bn.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold';
                 bn.addEventListener('click', () => {
                     state.numerator = i;
                     updateEquationUI();
                 });
                 numBox.appendChild(bn);
-            }
 
-            for (let i = 1; i <= 6; i++) {
                 const bd = document.createElement('button');
                 bd.type = 'button';
                 bd.id = `btn-den-${i}`;
                 bd.textContent = i;
-                bd.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-semibold';
+                bd.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold';
                 bd.addEventListener('click', () => {
                     state.denominator = i;
                     updateEquationUI();
@@ -786,23 +784,24 @@
                 btnMinus.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-xl text-sm md:text-base font-semibold border-2 bg-pink-950/60 border-pink-400 text-pink-200 shadow-[0_0_12px_rgba(244,114,182,0.35)]';
             }
 
-            for (let i = 1; i <= 9; i++) {
-                const bn = document.getElementById(`btn-num-${i}`);
-                if (!bn) continue;
-                if (i === state.numerator) {
-                    bn.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-bold bg-sky-500 border-sky-200 text-white shadow-[0_0_10px_rgba(14,165,233,0.7)]';
-                } else {
-                    bn.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 border-sky-500/30 text-slate-200';
-                }
-            }
-
             for (let i = 1; i <= 6; i++) {
+                const bn = document.getElementById(`btn-num-${i}`);
                 const bd = document.getElementById(`btn-den-${i}`);
-                if (!bd) continue;
-                if (i === state.denominator) {
-                    bd.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-bold bg-purple-600 border-purple-200 text-white shadow-[0_0_10px_rgba(168,85,247,0.7)]';
-                } else {
-                    bd.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 border-purple-500/30 text-slate-200';
+
+                if (bn) {
+                    if (i === state.numerator) {
+                        bn.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-black bg-sky-500 border-sky-200 text-white shadow-[0_0_10px_rgba(14,165,233,0.7)]';
+                    } else {
+                        bn.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold bg-slate-800 hover:bg-slate-700 border-sky-500/30 text-slate-200';
+                    }
+                }
+
+                if (bd) {
+                    if (i === state.denominator) {
+                        bd.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-black bg-purple-600 border-purple-200 text-white shadow-[0_0_10px_rgba(168,85,247,0.7)]';
+                    } else {
+                        bd.className = 'sf-btn font-mono-code py-1.5 md:py-2.5 rounded-lg border text-sm md:text-base font-bold bg-slate-800 hover:bg-slate-700 border-purple-500/30 text-slate-200';
+                    }
                 }
             }
 
@@ -855,7 +854,7 @@
             updateEquationUI();
         }
 
-        // --- 7. 12×12 表示窓の外周格子点（|x0| = 6 または |y0 - b| = 6）候補生成 ---
+        // --- 7. 12×12 表示窓の外周格子点（約分後の分子 <= 6, 分母 <= 6 を保証）候補生成 ---
         function getBoundarySpawnPoints(difficulty, b) {
             const outerPoints = [];
             const yMin = b - HALF_SPAN;
@@ -874,7 +873,8 @@
                     const reducedNum = Math.abs(dy) / g;
                     const reducedDen = Math.abs(x) / g;
 
-                    if (reducedNum > 9 || reducedDen > 6) continue;
+                    // 分子・分母どちらも 1〜6 のキーパッドで入力可能であることを保証
+                    if (reducedNum < 1 || reducedNum > 6 || reducedDen < 1 || reducedDen > 6) continue;
 
                     let allowed = false;
                     if (difficulty === 'easy') {
@@ -882,7 +882,7 @@
                     } else if (difficulty === 'normal') {
                         allowed = (reducedDen <= 4 && reducedNum <= 6);
                     } else if (difficulty === 'hard') {
-                        allowed = (reducedDen <= 6 && reducedNum <= 9);
+                        allowed = (reducedDen <= 6 && reducedNum <= 6);
                     }
 
                     if (allowed) {
@@ -2024,7 +2024,7 @@
                 } else if (e.key === '-') {
                     state.sign = -1;
                     updateEquationUI();
-                } else if (e.key >= '1' && e.key <= '9') {
+                } else if (e.key >= '1' && e.key <= '6') {
                     state.numerator = parseInt(e.key, 10);
                     updateEquationUI();
                 } else if (e.key === 'c' || e.key === 'C' || e.key === 'Escape') {
