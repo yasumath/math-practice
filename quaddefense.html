@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2乗に比例レーザー・ディフェンス | Quadratic Laser Defense</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100dvh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #060b19;
+            color: #f8fafc;
+            font-family: 'Inter', 'Noto Sans JP', system-ui, sans-serif;
+            font-weight: 500;
+        }
+
+        .font-mono-code {
+            font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+        }
+
+        /* SF風ボタングロー＆押し心地 */
+        .sf-btn {
+            transition: transform 0.08s ease, box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+        }
+        .sf-btn:active:not(:disabled) {
+            transform: scale(0.96);
+        }
+
+        .fire-btn {
+            background: linear-gradient(135deg, #0284c7 0%, #06b6d4 50%, #10b981 100%);
+            box-shadow: 0 0 22px rgba(6, 182, 212, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+        .fire-btn:hover:not(:disabled) {
+            box-shadow: 0 0 32px rgba(16, 185, 129, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        }
+        .fire-btn:disabled {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.32s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-[100dvh] w-full overflow-hidden bg-[#060b19]">
+
+    <!-- =========================================================================
+         モバイル縦画面用：上部スリムHUDバー (< 768px)
+         ========================================================================= -->
+    <header class="md:hidden flex items-center justify-between px-2.5 h-11 shrink-0 bg-[#080f24]/95 border-b border-cyan-500/30 z-20">
+        <div class="flex items-center gap-1.5">
+            <button type="button" id="btn-home-mobile" class="sf-btn px-2 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-200 flex items-center gap-1">
+                <span>🏠</span><span>MENU</span>
+            </button>
+            <span id="hud-mode-mobile" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                EASY・通常
+            </span>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+            <div class="text-center leading-none">
+                <div id="hud-timer-lbl-mobile" class="text-[8px] font-semibold text-slate-400 tracking-wider">TIME</div>
+                <div id="hud-timer-mobile" class="font-mono-code text-sm font-bold text-amber-400">60.0s</div>
+            </div>
+            <div class="h-5 w-px bg-slate-800"></div>
+            <div class="text-center leading-none">
+                <div class="text-[8px] font-semibold text-slate-400 tracking-wider">SCORE</div>
+                <div id="hud-score-mobile" class="font-mono-code text-sm font-bold text-cyan-400">0</div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-0.5 bg-slate-900 px-1.5 py-0.5 rounded-lg border border-slate-700 text-xs">
+                <span id="m-life-1">🛡️</span>
+                <span id="m-life-2">🛡️</span>
+                <span id="m-life-3">🛡️</span>
+            </div>
+            <button type="button" id="btn-mute-mobile" class="sf-btn p-1.5 rounded-lg bg-slate-800 border border-slate-600 text-xs" title="効果音 ON/OFF">🔊</button>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         左側（モバイルでは上部）：特大正方形の座標平面エリア（原点 O(0,0) 固定）
+         ========================================================================= -->
+    <section id="canvas-stage" class="flex-1 min-w-0 min-h-0 flex items-center justify-center p-1.5 md:p-3 relative">
+        <div id="canvas-frame" class="relative rounded-2xl overflow-hidden border-2 border-cyan-500/45 shadow-[0_0_40px_rgba(6,182,212,0.18)] bg-[#060b19] flex items-center justify-center">
+            <canvas id="gameCanvas" class="block w-full h-full"></canvas>
+
+            <!-- オーバーヒート警告バナー（1.0秒クールダウン） -->
+            <div id="overheat-banner" class="hidden pointer-events-none absolute top-9 left-1/2 -translate-x-1/2 bg-rose-950/95 border-2 border-rose-500 text-rose-100 px-3.5 py-1.5 rounded-full shadow-lg flex flex-col items-center gap-1 whitespace-nowrap z-10">
+                <div class="text-xs font-semibold flex items-center gap-1.5">
+                    <span>⚠️ ミスショット！冷却中...</span>
+                    <span id="overheat-sec" class="font-mono-code text-amber-300 font-bold">1.0</span>s
+                </div>
+                <div class="w-full h-1 bg-rose-950 rounded-full overflow-hidden">
+                    <div id="overheat-bar" class="h-full bg-rose-400 w-full"></div>
+                </div>
+            </div>
+
+            <!-- 左上：関数タイプ表示バッジ -->
+            <div class="pointer-events-none absolute top-2 left-2 bg-[#060b19]/90 border border-amber-400/50 rounded-lg px-2 py-0.5 text-[11px] text-amber-200 font-medium shadow">
+                放物線砲台: <span class="font-mono-code font-bold text-amber-300">y = ax²</span>
+            </div>
+
+            <!-- 右上：比例定数公式バッジ -->
+            <div class="pointer-events-none absolute top-2 right-2 bg-[#060b19]/90 border border-cyan-500/40 rounded-lg px-2 py-0.5 text-[11px] text-slate-300 shadow">
+                比例定数: <span class="font-mono-code font-bold text-cyan-400">a = y / x²</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         右側（モバイルでは下部）：デスクトップHUD ＋ 操作コントロールパネル
+         ========================================================================= -->
+    <aside class="w-full md:w-[365px] lg:w-[405px] shrink-0 flex flex-col justify-between bg-[#0a1126]/95 border-t md:border-t-0 md:border-l border-cyan-500/30 p-2 md:p-4 gap-1.5 md:gap-2.5 z-10">
+
+        <!-- デスクトップ／タブレット横画面用HUD (>= 768px) -->
+        <div class="hidden md:flex flex-col gap-2 bg-[#060b19]/90 border border-slate-800 rounded-2xl p-3">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btn-home-desktop" class="sf-btn px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-200 flex items-center gap-1">
+                        <span>🏠</span><span>モード選択</span>
+                    </button>
+                    <span id="hud-mode-desktop" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                        EASY・通常防衛
+                    </span>
+                </div>
+                <button type="button" id="btn-mute-desktop" class="sf-btn px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm" title="効果音 ON/OFF">🔊</button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 pt-1.5 border-t border-slate-800/80 items-center text-center">
+                <div>
+                    <div id="hud-timer-lbl-desktop" class="text-[10px] font-semibold text-slate-400 tracking-wider">TIME LEFT</div>
+                    <div id="hud-timer-desktop" class="font-mono-code text-lg font-bold text-amber-400">60.0s</div>
+                </div>
+                <div class="border-x border-slate-800">
+                    <div class="text-[10px] font-semibold text-slate-400 tracking-wider">SCORE</div>
+                    <div id="hud-score-desktop" class="font-mono-code text-lg font-bold text-cyan-400">0</div>
+                </div>
+                <div>
+                    <div class="text-[10px] font-semibold text-slate-400 tracking-wider mb-0.5">SHIELD</div>
+                    <div class="flex items-center justify-center gap-0.5 text-base">
+                        <span id="d-life-1">🛡️</span>
+                        <span id="d-life-2">🛡️</span>
+                        <span id="d-life-3">🛡️</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- コンボ＆撃破状況バー -->
+            <div class="pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                <span class="text-slate-400">撃破数: <strong id="hud-kills-desktop" class="font-mono-code text-emerald-400">0機</strong></span>
+                <span id="hud-speed-rank-desktop" class="font-mono-code text-slate-400">SPD: LV.1</span>
+                <span class="text-slate-400">コンボ: <strong id="hud-combo-desktop" class="font-mono-code text-amber-400">0連鎖</strong></span>
+            </div>
+        </div>
+
+        <!-- 数式入力＆レーザー発射コントロール -->
+        <div id="control-panel" class="flex flex-col gap-1.5 md:gap-2">
+            <!-- リアルタイム数式プレビュー窓 (y = ax²) -->
+            <div class="bg-[#060b19] border border-cyan-500/35 rounded-xl px-3 py-1.5 md:py-2 flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                    <div class="text-[9px] font-semibold text-slate-400 tracking-widest">QUADRATIC EQUATION (y = ax²)</div>
+                    <div id="equation-preview" class="font-mono-code text-lg md:text-2xl font-bold text-cyan-300 leading-tight truncate">y = x²</div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="text-right">
+                        <div class="text-[9px] text-slate-400">比例定数 a</div>
+                        <span id="a-value-badge" class="inline-block font-mono-code text-[11px] font-semibold text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-md">
+                            a = 1
+                        </span>
+                    </div>
+                    <button type="button" id="btn-reset-input" class="sf-btn px-2 py-1.5 md:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-200" title="y = x² にリセット (C)">
+                        C
+                    </button>
+                </div>
+            </div>
+
+            <!-- 比例定数の符号 ＋ / － トグル -->
+            <div class="grid grid-cols-2 gap-1.5 md:gap-2">
+                <button type="button" id="btn-sign-plus" class="sf-btn font-mono-code py-1.5 md:py-2 rounded-xl text-sm md:text-base font-semibold border-2 bg-cyan-950/60 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.3)]">
+                    ＋ (上に開く)
+                </button>
+                <button type="button" id="btn-sign-minus" class="sf-btn font-mono-code py-1.5 md:py-2 rounded-xl text-sm md:text-base font-semibold border-2 bg-slate-800 border-slate-700 text-slate-400">
+                    － (下に開く)
+                </button>
+            </div>
+
+            <!-- 分子（y座標の大きさ |y|）1〜9 -->
+            <div class="bg-[#060b19]/80 border border-slate-800 rounded-xl p-1.5 md:p-2">
+                <div class="flex items-center justify-between text-[11px] font-medium mb-1">
+                    <span class="text-cyan-300">分子 <span class="text-[10px] font-normal text-slate-400">(y座標の大きさ |y|)</span></span>
+                    <span id="num-display" class="font-mono-code font-bold text-cyan-300">1</span>
+                </div>
+                <div id="num-buttons" class="grid grid-cols-9 gap-1"></div>
+            </div>
+
+            <!-- 分母（x²の大きさ）1〜6 -->
+            <div class="bg-[#060b19]/80 border border-slate-800 rounded-xl p-1.5 md:p-2">
+                <div class="flex items-center justify-between text-[11px] font-medium mb-1">
+                    <span class="text-emerald-300">分母 <span class="text-[10px] font-normal text-slate-400">(x² の大きさ / 整数は1)</span></span>
+                    <span id="den-display" class="font-mono-code font-bold text-emerald-300">1</span>
+                </div>
+                <div id="den-buttons" class="grid grid-cols-6 gap-1"></div>
+            </div>
+
+            <!-- レーザー発射ボタン -->
+            <button type="button" id="btn-fire" class="sf-btn fire-btn w-full py-2.5 md:py-3 rounded-xl border-2 border-cyan-200/80 text-white font-bold text-base md:text-lg tracking-wider flex items-center justify-center gap-2">
+                <span>⚡</span>
+                <span id="btn-fire-text">FIRE! 放物線発射</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- =========================================================================
+         タイトル／2段階選択モーダル（STEP 1: 難易度選択 → STEP 2: ルール選択）
+         ========================================================================= -->
+    <div id="title-modal" class="fixed inset-0 bg-[#060b19]/95 backdrop-blur-md z-40 flex items-center justify-center p-3 overflow-y-auto">
+        <div class="w-full max-w-2xl bg-[#0c142c] border-2 border-cyan-500/50 rounded-3xl p-4 md:p-6 shadow-[0_0_55px_rgba(6,182,212,0.22)] flex flex-col gap-3.5 my-auto">
+            <div class="text-center">
+                <span class="inline-block px-3 py-0.5 rounded-full bg-amber-950/90 border border-amber-400/50 text-amber-300 text-[11px] font-semibold tracking-wider mb-1.5">
+                    QUADRATIC FUNCTION : y = ax²
+                </span>
+                <h1 class="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-cyan-300 via-emerald-200 to-amber-300 bg-clip-text text-transparent">
+                    2乗に比例レーザー・ディフェンス
+                </h1>
+                <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                    外周から飛来して格子点 <span class="font-mono-code font-semibold text-amber-300">(x, y)</span> に停止するUFOの点滅が速くなる前に、<br>
+                    比例定数 <span class="font-mono-code font-semibold text-emerald-300">a = y / x²</span> を求めて放物線レーザーで撃退せよ！
+                </p>
+            </div>
+
+            <!-- STEP 1: 難易度選択 (3段階) -->
+            <div class="bg-[#060b19]/85 border border-slate-800 rounded-2xl p-3 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-cyan-300 tracking-wider">STEP 1. 難易度を選択</span>
+                    <span id="selected-diff-summary" class="text-[11px] font-medium text-emerald-300">選択中：イージー (初級)</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" data-diff="easy" class="diff-select-btn sf-btn p-2.5 rounded-xl border-2 text-left flex flex-col gap-0.5 bg-emerald-950/70 border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.25)]">
+                        <div class="flex items-center justify-between w-full">
+                            <span class="text-xs md:text-sm font-bold text-emerald-300">🌱 イージー</span>
+                            <span class="text-[10px] font-mono-code text-emerald-200/80">初級</span>
+                        </div>
+                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">比例定数は整数のみ<br>攻撃まで：約21秒</p>
+                    </button>
+
+                    <button type="button" data-diff="normal" class="diff-select-btn sf-btn p-2.5 rounded-xl border-2 text-left flex flex-col gap-0.5 bg-slate-900 border-slate-700 hover:border-cyan-500/60">
+                        <div class="flex items-center justify-between w-full">
+                            <span class="text-xs md:text-sm font-bold text-cyan-300">🚀 ノーマル</span>
+                            <span class="text-[10px] font-mono-code text-cyan-200/80">中級</span>
+                        </div>
+                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">整数＋分数(分母2,3,4)<br>攻撃まで：約17秒</p>
+                    </button>
+
+                    <button type="button" data-diff="hard" class="diff-select-btn sf-btn p-2.5 rounded-xl border-2 text-left flex flex-col gap-0.5 bg-slate-900 border-slate-700 hover:border-amber-500/60">
+                        <div class="flex items-center justify-between w-full">
+                            <span class="text-xs md:text-sm font-bold text-amber-300">🔥 ハード</span>
+                            <span class="text-[10px] font-mono-code text-amber-200/80">上級</span>
+                        </div>
+                        <p class="text-[10px] md:text-[11px] text-slate-300 leading-snug">全格子点・全分数(分母2〜6)<br>攻撃まで：約13.5秒</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 2: ゲームルール選択（通常防衛 / エンドレス） -->
+            <div class="bg-[#060b19]/85 border border-slate-800 rounded-2xl p-3 flex flex-col gap-2">
+                <div class="text-xs font-bold text-amber-300 tracking-wider">STEP 2. ルールを選んで出撃！</div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <!-- 通常防衛 (60秒) -->
+                    <button type="button" data-rule="standard" class="rule-start-btn sf-btn text-left p-3.5 rounded-2xl border-2 border-cyan-500/60 hover:border-cyan-300 bg-gradient-to-br from-cyan-950/80 to-slate-900 flex flex-col justify-between gap-1.5 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
+                        <div class="flex items-center justify-between w-full">
+                            <span class="text-base font-bold text-cyan-300">🛡️ 通常防衛</span>
+                            <span id="badge-rule-standard" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">未クリア</span>
+                        </div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            60秒間 基地を守りきれ！<br>
+                            左右対称の2機を同時に撃ち抜くと高得点！
+                        </p>
+                        <div class="flex items-center justify-between w-full pt-1 border-t border-cyan-500/20">
+                            <span class="font-mono-code text-xs font-semibold text-cyan-400">BEST: <span id="best-rule-standard">0</span> pts</span>
+                            <span class="text-xs font-bold text-cyan-200">▶ 出撃する</span>
+                        </div>
+                    </button>
+
+                    <!-- エンドレス -->
+                    <button type="button" data-rule="endless" class="rule-start-btn sf-btn text-left p-3.5 rounded-2xl border-2 border-amber-500/60 hover:border-amber-300 bg-gradient-to-br from-amber-950/75 to-slate-900 flex flex-col justify-between gap-1.5 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
+                        <div class="flex items-center justify-between w-full">
+                            <span class="text-base font-bold text-amber-300">♾️ エンドレス</span>
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-900/70 text-amber-200 border border-amber-500/40">記録挑戦</span>
+                        </div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            限界まで撃破してハイスコアを目指せ！<br>
+                            次々と現れるUFOをどれだけ倒せるか挑戦しよう。
+                        </p>
+                        <div class="flex items-center justify-between w-full pt-1 border-t border-amber-500/20">
+                            <span class="font-mono-code text-xs font-semibold text-amber-400">BEST: <span id="best-rule-endless-kills">0</span>機 (<span id="best-rule-endless">0</span> pts)</span>
+                            <span class="text-xs font-bold text-amber-200">▶ 挑戦する</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         リザルトモーダル
+         ========================================================================= -->
+    <div id="result-modal" class="hidden pointer-events-none fixed inset-0 bg-[#060b19]/90 backdrop-blur-md z-40 flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-[#0c142c] border-2 border-cyan-500/60 rounded-3xl p-6 text-center shadow-2xl flex flex-col gap-4">
+            <div id="result-icon" class="text-5xl">🏆</div>
+            <div>
+                <div id="result-subtitle" class="text-xs font-semibold text-cyan-400 tracking-widest">MISSION COMPLETE</div>
+                <h2 id="result-title" class="text-2xl font-bold mt-1">防衛ミッション成功！</h2>
+            </div>
+
+            <div id="new-record-badge" class="hidden mx-auto bg-amber-500/20 border border-amber-400 text-amber-200 text-xs font-semibold px-3 py-1 rounded-full">
+                🎉 NEW RECORD! ハイスコア更新！
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 bg-[#060b19] border border-slate-800 rounded-2xl p-4">
+                <div>
+                    <div class="text-xs text-slate-400">最終スコア</div>
+                    <div id="res-score" class="font-mono-code text-2xl font-bold text-cyan-400">0</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">撃破UFO数</div>
+                    <div id="res-kills" class="font-mono-code text-2xl font-bold text-emerald-400">0機</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">最大コンボ</div>
+                    <div id="res-combo" class="font-mono-code text-lg font-bold text-amber-400">0連鎖</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">命中率</div>
+                    <div id="res-accuracy" class="font-mono-code text-lg font-bold text-sky-300">100%</div>
+                </div>
+            </div>
+
+            <div class="flex gap-2.5">
+                <button type="button" id="btn-retry" class="sf-btn flex-1 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold text-sm">
+                    🔄 もう一度遊ぶ
+                </button>
+                <button type="button" id="btn-to-title" class="sf-btn flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-semibold text-sm">
+                    🏠 モード選択
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         中断確認ダイアログ
+         ========================================================================= -->
+    <div id="confirm-modal" class="hidden pointer-events-none fixed inset-0 bg-[#060b19]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-xs bg-[#0c142c] border border-slate-600 rounded-2xl p-5 text-center shadow-xl">
+            <p class="text-sm font-semibold mb-4">作戦を中断してモード選択に戻りますか？</p>
+            <div class="flex gap-2.5">
+                <button type="button" id="btn-confirm-cancel" class="sf-btn flex-1 py-2.5 rounded-xl bg-slate-800 border border-slate-600 text-sm font-semibold">
+                    続ける
+                </button>
+                <button type="button" id="btn-confirm-abort" class="sf-btn flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold">
+                    タイトルへ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ============================================================================
+         * 2乗に比例レーザー・ディフェンス (Quadratic Laser Defense)
+         *  - 関数: y = ax² (原点の砲台から放物線レーザーを発射)
+         *  - 敵UFO: 画面外周から飛来 -> 格子点 (x, y) に停止 -> 徐々に速くなる点滅チャージ -> 攻撃
+         *  - 難易度3種 (easy / normal / hard) × ルール2種 (standard / endless)
+         *  - エンドレス加速: 55秒経過または18機撃破でトップスピード到達。
+         *    イージーは最短5.5秒・間隔0.95秒・最大5機まで加速し手応えのあるエンドレス体験を提供。
+         * ============================================================================
+         */
+
+        // --- 1. Web Audio API 効果音エンジン ---
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+            init() {
+                try {
+                    if (!this.ctx) {
+                        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                        if (AudioCtx) this.ctx = new AudioCtx();
+                    }
+                    if (this.ctx && this.ctx.state === 'suspended') {
+                        this.ctx.resume().catch(() => {});
+                    }
+                } catch (e) {}
+            }
+            playLaser(hit = true) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = hit ? 'sawtooth' : 'triangle';
+                    osc.frequency.setValueAtTime(hit ? 1060 : 480, now);
+                    osc.frequency.exponentialRampToValueAtTime(hit ? 160 : 170, now + 0.22);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } catch (e) {}
+            }
+            playExplosion(combo = 1) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(Math.min(310 + combo * 45, 700), now);
+                    osc.frequency.exponentialRampToValueAtTime(45, now + 0.28);
+                    gain.gain.setValueAtTime(0.22, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.31);
+
+                    // 命中コンボチャイム
+                    const bell = this.ctx.createOscillator();
+                    const bellGain = this.ctx.createGain();
+                    bell.type = 'sine';
+                    bell.frequency.setValueAtTime(660 + Math.min(combo, 8) * 75, now + 0.04);
+                    bell.frequency.exponentialRampToValueAtTime(1320, now + 0.22);
+                    bellGain.gain.setValueAtTime(0.14, now + 0.04);
+                    bellGain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+                    bell.connect(bellGain);
+                    bellGain.connect(this.ctx.destination);
+                    bell.start(now + 0.04);
+                    bell.stop(now + 0.25);
+                } catch (e) {}
+            }
+            playWarningTick(urgency = 0.5) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(720 + urgency * 420, now);
+                    gain.gain.setValueAtTime(0.045, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.06);
+                } catch (e) {}
+            }
+            playError() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(145, now);
+                    osc.frequency.linearRampToValueAtTime(100, now + 0.25);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.27);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.28);
+                } catch (e) {}
+            }
+            playDamage() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(195, now);
+                    osc.frequency.exponentialRampToValueAtTime(36, now + 0.45);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                } catch (e) {}
+            }
+            playClear() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const now = this.ctx.currentTime + idx * 0.11;
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now);
+                        gain.gain.setValueAtTime(0.2, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.36);
+                    });
+                } catch (e) {}
+            }
+        }
+
+        const sfx = new SoundEngine();
+
+        // --- 2. 数学ヘルパー ---
+        function gcd(a, b) {
+            a = Math.abs(a);
+            b = Math.abs(b);
+            while (b !== 0) {
+                const t = b;
+                b = a % b;
+                a = t;
+            }
+            return a;
+        }
+
+        // --- 3. ゲーム状態と難易度・ルール設定 ---
+        const HALF_SPAN = 6; // -6 〜 +6 の固定座標平面
+        const STORAGE_KEY = 'quadratic_laser_defense_v3';
+
+        const state = {
+            difficulty: 'easy',  // 'easy' | 'normal' | 'hard'
+            rule: 'standard',    // 'standard' (通常60秒防衛) | 'endless' (無限・ハイペース加速)
+            status: 'title',     // 'title' | 'playing' | 'paused' | 'gameover' | 'clear'
+            sign: 1,
+            numerator: 1,
+            denominator: 1,
+            score: 0,
+            kills: 0,
+            combo: 0,
+            maxCombo: 0,
+            shotsFired: 0,
+            shotsHit: 0,
+            lives: 3,
+            timeLeft: 60.0,
+            elapsedTime: 0,
+            overheatTimer: 0,
+            overheatMax: 1.0,    // 空振り時のオーバーヒート時間：1.0秒
+            hitFlashAlpha: 0,    // 命中時のヒットストップ風フラッシュ演出
+            spawnTimer: 0,
+            ufos: [],
+            lasers: [],
+            enemyBeams: [],      // UFOが攻撃した際の敵ビームエフェクト
+            particles: [],
+            floatingTexts: [],
+            stars: [],
+            screenShake: 0,
+            lastFrameTime: 0
+        };
+
+        // 難易度別設定（通常防衛時のベース値 ＋ エンドレスモード時のトップスピード上限値）
+        const DIFFICULTY_CONFIG = {
+            easy: {
+                name: 'イージー (初級)',
+                shortName: 'EASY',
+                badgeClass: 'bg-emerald-950 text-emerald-300 border-emerald-500/40',
+                summaryText: '選択中：イージー (初級) — 比例定数は整数のみ・攻撃まで約21秒',
+                summaryColor: 'text-emerald-300',
+                spawnInterval: 4.5,
+                chargeDuration: 21.0,
+                maxConcurrent: 2,
+                // エンドレス終盤は整数でもスリルがあるよう猛加速
+                endlessMinCharge: 5.5,
+                endlessMinSpawn: 0.95,
+                endlessMaxConcurrent: 5
+            },
+            normal: {
+                name: 'ノーマル (中級)',
+                shortName: 'NORMAL',
+                badgeClass: 'bg-cyan-950 text-cyan-300 border-cyan-500/40',
+                summaryText: '選択中：ノーマル (中級) — 整数＋分数(分母2,3,4)・攻撃まで約17秒',
+                summaryColor: 'text-cyan-300',
+                spawnInterval: 4.0,
+                chargeDuration: 17.0,
+                maxConcurrent: 3,
+                endlessMinCharge: 6.8,
+                endlessMinSpawn: 1.35,
+                endlessMaxConcurrent: 4
+            },
+            hard: {
+                name: 'ハード (上級)',
+                shortName: 'HARD',
+                badgeClass: 'bg-amber-950 text-amber-300 border-amber-500/40',
+                summaryText: '選択中：ハード (上級) — 全格子点・全分数(分母2〜6)・攻撃まで約13.5秒',
+                summaryColor: 'text-amber-300',
+                spawnInterval: 3.5,
+                chargeDuration: 13.5,
+                maxConcurrent: 4,
+                endlessMinCharge: 6.8,
+                endlessMinSpawn: 1.35,
+                endlessMaxConcurrent: 4
+            }
+        };
+
+        // エンドレスモードの進行度（0.0 ～ 1.0）を計算：55秒経過または18機撃破で進行度MAX
+        function getEndlessProgress() {
+            const timeProg = state.elapsedTime / 55.0;
+            const killProg = state.kills / 18.0;
+            return Math.min(1.0, Math.max(timeProg, killProg));
+        }
+
+        // --- 4. ハイスコア永続化（全6通り個別記録） ---
+        function createDefaultRecords() {
+            return {
+                easy_standard: { cleared: false, bestScore: 0 },
+                easy_endless: { bestScore: 0, bestKills: 0 },
+                normal_standard: { cleared: false, bestScore: 0 },
+                normal_endless: { bestScore: 0, bestKills: 0 },
+                hard_standard: { cleared: false, bestScore: 0 },
+                hard_endless: { bestScore: 0, bestKills: 0 }
+            };
+        }
+
+        const fallbackRecords = createDefaultRecords();
+
+        function loadRecords() {
+            try {
+                const raw = window.localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const p = JSON.parse(raw);
+                    const base = createDefaultRecords();
+                    Object.keys(base).forEach(k => {
+                        if (p && p[k]) base[k] = { ...base[k], ...p[k] };
+                    });
+                    return base;
+                }
+            } catch (e) {}
+            return JSON.parse(JSON.stringify(fallbackRecords));
+        }
+
+        function saveRecords(rec) {
+            Object.assign(fallbackRecords, rec);
+            try {
+                window.localStorage.setItem(STORAGE_KEY, JSON.stringify(rec));
+            } catch (e) {}
+        }
+
+        function updateTitleSelectionUI() {
+            const diff = state.difficulty;
+            const dCfg = DIFFICULTY_CONFIG[diff];
+
+            const styleMap = {
+                easy: 'bg-emerald-950/75 border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.28)]',
+                normal: 'bg-cyan-950/75 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.28)]',
+                hard: 'bg-amber-950/75 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.28)]'
+            };
+
+            document.querySelectorAll('.diff-select-btn').forEach(btn => {
+                const bDiff = btn.getAttribute('data-diff');
+                if (bDiff === diff) {
+                    btn.className = `diff-select-btn sf-btn p-2.5 rounded-xl border-2 text-left flex flex-col gap-0.5 ${styleMap[bDiff]}`;
+                } else {
+                    btn.className = 'diff-select-btn sf-btn p-2.5 rounded-xl border-2 text-left flex flex-col gap-0.5 bg-slate-900/90 border-slate-700/80 opacity-75 hover:opacity-100';
+                }
+            });
+
+            const summaryEl = document.getElementById('selected-diff-summary');
+            if (summaryEl) {
+                summaryEl.textContent = dCfg.summaryText;
+                summaryEl.className = `text-[11px] font-medium ${dCfg.summaryColor}`;
+            }
+
+            const rec = loadRecords();
+            const stdKey = `${diff}_standard`;
+            const endKey = `${diff}_endless`;
+
+            const badgeStd = document.getElementById('badge-rule-standard');
+            if (badgeStd) {
+                if (rec[stdKey] && rec[stdKey].cleared) {
+                    badgeStd.textContent = '★ CLEAR!';
+                    badgeStd.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/50';
+                } else {
+                    badgeStd.textContent = '未クリア';
+                    badgeStd.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400';
+                }
+            }
+
+            const bestStd = document.getElementById('best-rule-standard');
+            if (bestStd) bestStd.textContent = ((rec[stdKey] && rec[stdKey].bestScore) || 0).toLocaleString();
+
+            const bestEnd = document.getElementById('best-rule-endless');
+            const bestEndKills = document.getElementById('best-rule-endless-kills');
+            if (bestEnd) bestEnd.textContent = ((rec[endKey] && rec[endKey].bestScore) || 0).toLocaleString();
+            if (bestEndKills) bestEndKills.textContent = (rec[endKey] && rec[endKey].bestKills) || 0;
+        }
+
+        // --- 5. 数式キーパッド＆リアルタイムプレビュー (y = ax²) ---
+        function initKeypad() {
+            const numBox = document.getElementById('num-buttons');
+            const denBox = document.getElementById('den-buttons');
+            numBox.innerHTML = '';
+            denBox.innerHTML = '';
+
+            for (let i = 1; i <= 9; i++) {
+                const bn = document.createElement('button');
+                bn.type = 'button';
+                bn.id = `btn-num-${i}`;
+                bn.textContent = i;
+                bn.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-semibold';
+                bn.addEventListener('click', () => {
+                    state.numerator = i;
+                    updateEquationUI();
+                });
+                numBox.appendChild(bn);
+            }
+
+            for (let i = 1; i <= 6; i++) {
+                const bd = document.createElement('button');
+                bd.type = 'button';
+                bd.id = `btn-den-${i}`;
+                bd.textContent = i;
+                bd.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-semibold';
+                bd.addEventListener('click', () => {
+                    state.denominator = i;
+                    updateEquationUI();
+                });
+                denBox.appendChild(bd);
+            }
+            updateEquationUI();
+        }
+
+        function formatQuadraticEquation(sign, num, den) {
+            const g = gcd(num, den);
+            const rNum = num / g;
+            const rDen = den / g;
+            const sStr = sign === -1 ? '-' : '';
+
+            if (rDen === 1) {
+                return rNum === 1 ? `y = ${sStr}x²` : `y = ${sStr}${rNum}x²`;
+            } else {
+                return `y = ${sStr}${rNum}/${rDen} x²`;
+            }
+        }
+
+        function updateEquationUI() {
+            const btnPlus = document.getElementById('btn-sign-plus');
+            const btnMinus = document.getElementById('btn-sign-minus');
+
+            if (state.sign === 1) {
+                btnPlus.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-xl text-sm md:text-base font-semibold border-2 bg-cyan-950/60 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.35)]';
+                btnMinus.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-xl text-sm md:text-base font-semibold border-2 bg-slate-800 border-slate-700 text-slate-400';
+            } else {
+                btnPlus.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-xl text-sm md:text-base font-semibold border-2 bg-slate-800 border-slate-700 text-slate-400';
+                btnMinus.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-xl text-sm md:text-base font-semibold border-2 bg-amber-950/60 border-amber-400 text-amber-200 shadow-[0_0_12px_rgba(251,191,36,0.35)]';
+            }
+
+            for (let i = 1; i <= 9; i++) {
+                const bn = document.getElementById(`btn-num-${i}`);
+                if (!bn) continue;
+                if (i === state.numerator) {
+                    bn.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-bold bg-cyan-500 border-cyan-200 text-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.75)]';
+                } else {
+                    bn.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 border-cyan-500/30 text-slate-200';
+                }
+            }
+
+            for (let i = 1; i <= 6; i++) {
+                const bd = document.getElementById(`btn-den-${i}`);
+                if (!bd) continue;
+                if (i === state.denominator) {
+                    bd.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-bold bg-emerald-500 border-emerald-200 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.75)]';
+                } else {
+                    bd.className = 'sf-btn font-mono-code py-1.5 md:py-2 rounded-lg border text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 border-emerald-500/30 text-slate-200';
+                }
+            }
+
+            document.getElementById('num-display').textContent = state.numerator;
+            document.getElementById('den-display').textContent = state.denominator;
+
+            const g = gcd(state.numerator, state.denominator);
+            const rNum = state.numerator / g;
+            const rDen = state.denominator / g;
+            const sStr = state.sign === -1 ? '-' : '';
+            const aText = rDen === 1 ? `${sStr}${rNum}` : `${sStr}${rNum}/${rDen}`;
+
+            document.getElementById('equation-preview').textContent = formatQuadraticEquation(
+                state.sign, state.numerator, state.denominator
+            );
+            document.getElementById('a-value-badge').textContent = `a = ${aText}`;
+        }
+
+        // --- 6. 有効な格子点 (x, y) の生成（a = y / x² がキーパッドで入力可能な約分値になるもの） ---
+        function getValidQuadraticPoints(difficulty) {
+            const validPoints = [];
+            for (let x = -HALF_SPAN; x <= HALF_SPAN; x++) {
+                if (x === 0) continue;
+                const x2 = x * x;
+                for (let y = -HALF_SPAN; y <= HALF_SPAN; y++) {
+                    if (y === 0) continue;
+
+                    const g = gcd(Math.abs(y), x2);
+                    const reducedNum = Math.abs(y) / g;
+                    const reducedDen = x2 / g;
+
+                    // キーパッド(分子1〜9、分母1〜6)で入力可能であることを保証
+                    if (reducedNum < 1 || reducedNum > 9 || reducedDen < 1 || reducedDen > 6) {
+                        continue;
+                    }
+
+                    let allowed = false;
+                    if (difficulty === 'easy') {
+                        // 整数のみ (a = ±1, ±2, ±3, ±4, ±5, ±6)
+                        allowed = (reducedDen === 1 && reducedNum <= 6);
+                    } else if (difficulty === 'normal') {
+                        // 整数 ＋ 簡単な分数 (分母 2, 3, 4)
+                        allowed = (reducedDen <= 4 && reducedNum <= 6);
+                    } else if (difficulty === 'hard') {
+                        // 全格子点・全分数 (分母 2〜6)
+                        allowed = (reducedDen <= 6 && reducedNum <= 9);
+                    }
+
+                    if (allowed) {
+                        validPoints.push({ x, y });
+                    }
+                }
+            }
+            return validPoints;
+        }
+
+        // 外周の進入開始座標を計算（ターゲット格子点へスムーズに飛来）
+        function computeEntrySpawnPosition(tx, ty) {
+            const dirX = Math.sign(tx);
+            const dirY = Math.sign(ty);
+            if (Math.abs(tx) >= Math.abs(ty)) {
+                return {
+                    x: dirX * (HALF_SPAN + 1.2),
+                    y: ty + dirY * 1.1
+                };
+            } else {
+                return {
+                    x: tx + dirX * 1.1,
+                    y: dirY * (HALF_SPAN + 1.2)
+                };
+            }
+        }
+
+        // --- 7. UFOスポーン＆放物線レーザー発射・当たり判定 ---
+        function spawnUFO() {
+            const dCfg = DIFFICULTY_CONFIG[state.difficulty];
+            const candidates = getValidQuadraticPoints(state.difficulty);
+            if (candidates.length === 0) return;
+
+            // 重なり防止：既存UFOから距離2.2マス以内、または同じ比例定数 a（同一放物線上）を優先的に除外
+            const nonOverlappingPool = candidates.filter(p => {
+                const x2 = p.x * p.x;
+                const g = gcd(Math.abs(p.y), x2);
+                const sNum = (p.y / g);
+                const sDen = x2 / g;
+
+                for (const u of state.ufos) {
+                    const distTarget = Math.hypot(p.x - u.targetX, p.y - u.targetY);
+                    const distCurr = Math.hypot(p.x - u.x, p.y - u.y);
+                    if (distTarget <= 2.2 || distCurr <= 2.2) {
+                        return false;
+                    }
+                    if (u.slopeNum === sNum && u.slopeDen === sDen) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+
+            let pool = nonOverlappingPool;
+            if (pool.length === 0) {
+                const farPool = candidates.filter(p =>
+                    state.ufos.every(u => Math.hypot(p.x - u.targetX, p.y - u.targetY) > 2.2)
+                );
+                pool = farPool.length > 0 ? farPool : candidates;
+            }
+
+            const chosen = pool[Math.floor(Math.random() * pool.length)];
+            const x2 = chosen.x * chosen.x;
+            const g = gcd(Math.abs(chosen.y), x2);
+            const slopeNum = chosen.y / g; // 符号付き分子
+            const slopeDen = x2 / g;       // 正の分母
+
+            // エンドレスモード：初期21.0秒からスタートし、進行度(55秒または18機撃破)で難易度ごとの最短値へ加速
+            let chargeDuration = dCfg.chargeDuration;
+            if (state.rule === 'endless') {
+                const prog = getEndlessProgress();
+                const startCharge = 21.0;
+                chargeDuration = startCharge - prog * (startCharge - dCfg.endlessMinCharge);
+            }
+
+            const entry = computeEntrySpawnPosition(chosen.x, chosen.y);
+
+            state.ufos.push({
+                entryX: entry.x,
+                entryY: entry.y,
+                targetX: chosen.x,
+                targetY: chosen.y,
+                x: entry.x,
+                y: entry.y,
+                slopeNum: slopeNum,
+                slopeDen: slopeDen,
+                phase: 'entering',       // 'entering' (飛来中) -> 'charging' (停止・点滅チャージ中)
+                enterTimer: 0,
+                enterDuration: 0.95,     // 外周から格子点へ飛来して停止するまでの時間
+                chargeTimer: 0,
+                chargeDuration: chargeDuration,
+                blinkPhase: 0,
+                isLit: true,
+                lastBlinkHalfCycle: 0,
+                isFraction: slopeDen > 1
+            });
+        }
+
+        function fireLaser() {
+            if (state.status !== 'playing' || state.overheatTimer > 0) return;
+
+            sfx.init();
+            state.shotsFired++;
+
+            const g = gcd(state.numerator, state.denominator);
+            const playerNum = state.sign * (state.numerator / g);
+            const playerDen = state.denominator / g;
+            const playerA = playerNum / playerDen;
+
+            const hitUfos = [];
+            const survivedUfos = [];
+
+            state.ufos.forEach(ufo => {
+                const exactMatch = (ufo.slopeNum === playerNum && ufo.slopeDen === playerDen);
+                const expectedY = playerA * (ufo.targetX * ufo.targetX);
+                const geomMatch = Math.abs(ufo.y - expectedY) < 0.28 && Math.abs(ufo.x - ufo.targetX) < 0.48;
+
+                if (exactMatch || geomMatch) {
+                    hitUfos.push(ufo);
+                } else {
+                    survivedUfos.push(ufo);
+                }
+            });
+
+            const isHit = hitUfos.length > 0;
+
+            state.lasers.push({
+                a: playerA,
+                isHit: isHit,
+                life: 0.42,
+                maxLife: 0.42
+            });
+
+            if (isHit) {
+                state.shotsHit++;
+                state.ufos = survivedUfos;
+                state.combo += hitUfos.length;
+                if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+
+                sfx.playLaser(true);
+                sfx.playExplosion(state.combo);
+                state.screenShake = Math.min(5 + hitUfos.length * 3, 13);
+                state.hitFlashAlpha = 0.24;
+
+                hitUfos.forEach((ufo, idx) => {
+                    const basePts = ufo.isFraction ? 150 : 100;
+                    const comboBonus = (state.combo - 1) * 25;
+                    const multiBonus = idx * 120;
+                    const earned = basePts + comboBonus + multiBonus;
+                    state.score += earned;
+                    state.kills++;
+
+                    createExplosion(ufo.x, ufo.y, ufo.isFraction ? '#fbbf24' : '#34d399');
+                    addFloatingText(ufo.x, ufo.y, `+${earned}`, '#34d399');
+                });
+
+                if (hitUfos.length >= 2) {
+                    addFloatingText(0, 1.4, `${hitUfos.length}体同時放物線貫通！`, '#fbbf24');
+                }
+
+                if (state.ufos.length === 0) {
+                    state.spawnTimer = Math.min(state.spawnTimer, 0.45);
+                }
+            } else {
+                // 空振りミス：1.0秒オーバーヒート
+                state.combo = 0;
+                state.overheatTimer = state.overheatMax;
+                sfx.playLaser(false);
+                sfx.playError();
+
+                const panel = document.getElementById('control-panel');
+                panel.classList.remove('animate-shake');
+                void panel.offsetWidth;
+                panel.classList.add('animate-shake');
+
+                addFloatingText(0, 1.15, 'MISS! オーバーヒート', '#fb7185');
+            }
+
+            updateHUD();
+        }
+
+        function createExplosion(gx, gy, color) {
+            for (let i = 0; i < 26; i++) {
+                const angle = (Math.PI * 2 * i) / 26 + (Math.random() - 0.5) * 0.25;
+                const speed = 1.6 + Math.random() * 4.5;
+                state.particles.push({
+                    x: gx,
+                    y: gy,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 0.45 + Math.random() * 0.25,
+                    maxLife: 0.7,
+                    color: i % 3 === 0 ? '#ffffff' : color,
+                    size: 2.5 + Math.random() * 3.0
+                });
+            }
+        }
+
+        function addFloatingText(gx, gy, text, color) {
+            state.floatingTexts.push({
+                x: gx,
+                y: gy,
+                text: text,
+                color: color,
+                life: 0.95,
+                maxLife: 0.95
+            });
+        }
+
+        // --- 8. 固定 12×12 座標平面キャンバス描画システム ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let canvasSize = 420;
+
+        function initStars() {
+            state.stars = [];
+            for (let i = 0; i < 75; i++) {
+                state.stars.push({
+                    x: Math.random(),
+                    y: Math.random(),
+                    r: 0.6 + Math.random() * 1.35,
+                    alpha: 0.2 + Math.random() * 0.55,
+                    speed: 1 + Math.random() * 2.5,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function resizeCanvas() {
+            const stage = document.getElementById('canvas-stage');
+            const frame = document.getElementById('canvas-frame');
+            if (!stage || !frame) return;
+
+            const rect = stage.getBoundingClientRect();
+            const availW = rect.width > 20 ? rect.width : window.innerWidth - 16;
+            const availH = rect.height > 20 ? rect.height : Math.max(260, window.innerHeight * 0.55);
+            const size = Math.max(240, Math.floor(Math.min(availW, availH) - 4));
+
+            canvasSize = size;
+            frame.style.width = `${size}px`;
+            frame.style.height = `${size}px`;
+
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function toPixel(gx, gy) {
+            const pad = Math.max(24, canvasSize * 0.055);
+            const plot = canvasSize - pad * 2;
+            const half = plot / 2;
+            const cx = canvasSize / 2;
+            const cy = canvasSize / 2;
+            return {
+                x: cx + (gx / HALF_SPAN) * half,
+                y: cy - (gy / HALF_SPAN) * half
+            };
+        }
+
+        function drawScene(dt) {
+            if (!ctx || canvasSize <= 0) return;
+
+            const cx = canvasSize / 2;
+            const cy = canvasSize / 2;
+            const pad = Math.max(24, canvasSize * 0.055);
+            const halfPlot = (canvasSize - pad * 2) / 2;
+
+            const leftEdge = cx - halfPlot;
+            const rightEdge = cx + halfPlot;
+            const topEdge = cy - halfPlot;
+            const bottomEdge = cy + halfPlot;
+
+            ctx.save();
+
+            if (state.screenShake > 0) {
+                ctx.translate((Math.random() - 0.5) * state.screenShake, (Math.random() - 0.5) * state.screenShake);
+                state.screenShake = Math.max(0, state.screenShake - dt * 45);
+            }
+
+            // 1. ダークスペース・レーダー背景 (#060b19) ＆ 星空
+            const bgGrad = ctx.createRadialGradient(cx, cy, 12, cx, cy, canvasSize * 0.72);
+            bgGrad.addColorStop(0, '#0c1836');
+            bgGrad.addColorStop(1, '#060b19');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+            state.stars.forEach(s => {
+                s.phase += dt * s.speed;
+                const a = s.alpha * (0.65 + 0.35 * Math.sin(s.phase));
+                ctx.fillStyle = `rgba(186, 230, 253, ${a})`;
+                ctx.beginPath();
+                ctx.arc(s.x * canvasSize, s.y * canvasSize, s.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // レーダー同心円アクセント
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.08)';
+            ctx.lineWidth = 1;
+            [0.33, 0.66, 1.0].forEach(scale => {
+                ctx.beginPath();
+                ctx.arc(cx, cy, halfPlot * scale, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+
+            // 2. 12×12 グリッド線 (-6 .. +6)
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(leftEdge - 2, topEdge - 2, halfPlot * 2 + 4, halfPlot * 2 + 4);
+            ctx.clip();
+
+            for (let i = -HALF_SPAN; i <= HALF_SPAN; i++) {
+                if (i === 0) continue;
+                const pX = toPixel(i, 0);
+                const pY = toPixel(0, i);
+                const isMajor = (Math.abs(i) % 2 === 0 || Math.abs(i) === HALF_SPAN);
+
+                ctx.strokeStyle = isMajor
+                    ? 'rgba(34, 211, 238, 0.34)'
+                    : 'rgba(34, 211, 238, 0.18)';
+                ctx.lineWidth = isMajor ? 1.25 : 1;
+
+                ctx.beginPath();
+                ctx.moveTo(pX.x, topEdge);
+                ctx.lineTo(pX.x, bottomEdge);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(leftEdge, pY.y);
+                ctx.lineTo(rightEdge, pY.y);
+                ctx.stroke();
+            }
+
+            // 整数格子点の光点マーカー
+            ctx.fillStyle = 'rgba(103, 232, 249, 0.42)';
+            for (let gx = -HALF_SPAN; gx <= HALF_SPAN; gx++) {
+                if (gx === 0) continue;
+                for (let gy = -HALF_SPAN; gy <= HALF_SPAN; gy++) {
+                    if (gy === 0) continue;
+                    const gp = toPixel(gx, gy);
+                    ctx.beginPath();
+                    ctx.arc(gp.x, gp.y, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+
+            // 3. 座標軸 (x軸・y軸・矢印・目盛り数字・原点 O)
+            const tickFont = Math.max(11, Math.floor(canvasSize * 0.027));
+
+            ctx.strokeStyle = '#67e8f9';
+            ctx.lineWidth = 2.4;
+
+            // x軸
+            ctx.beginPath();
+            ctx.moveTo(leftEdge - 6, cy);
+            ctx.lineTo(rightEdge + 12, cy);
+            ctx.stroke();
+
+            ctx.fillStyle = '#67e8f9';
+            ctx.beginPath();
+            ctx.moveTo(rightEdge + 15, cy);
+            ctx.lineTo(rightEdge + 7, cy - 4.5);
+            ctx.lineTo(rightEdge + 7, cy + 4.5);
+            ctx.closePath();
+            ctx.fill();
+
+            // y軸
+            ctx.beginPath();
+            ctx.moveTo(cx, bottomEdge + 6);
+            ctx.lineTo(cx, topEdge - 12);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(cx, topEdge - 15);
+            ctx.lineTo(cx - 4.5, topEdge - 7);
+            ctx.lineTo(cx + 4.5, topEdge - 7);
+            ctx.closePath();
+            ctx.fill();
+
+            // x目盛り
+            ctx.font = `700 ${tickFont}px 'JetBrains Mono', monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let gx = -HALF_SPAN; gx <= HALF_SPAN; gx++) {
+                if (gx === 0) continue;
+                const px = toPixel(gx, 0);
+                ctx.strokeStyle = '#67e8f9';
+                ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                ctx.moveTo(px.x, cy - 3.5);
+                ctx.lineTo(px.x, cy + 3.5);
+                ctx.stroke();
+
+                ctx.fillStyle = '#f1f5f9';
+                ctx.fillText(gx.toString(), px.x, cy + 5);
+            }
+
+            // y目盛り
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let gy = -HALF_SPAN; gy <= HALF_SPAN; gy++) {
+                if (gy === 0) continue;
+                const py = toPixel(0, gy);
+                ctx.strokeStyle = '#67e8f9';
+                ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                ctx.moveTo(cx - 3.5, py.y);
+                ctx.lineTo(cx + 3.5, py.y);
+                ctx.stroke();
+
+                ctx.fillStyle = '#f1f5f9';
+                ctx.fillText(gy.toString(), cx - 6, py.y);
+            }
+
+            // 原点 O および軸ラベル x, y
+            ctx.fillStyle = '#22d3ee';
+            ctx.font = `800 ${tickFont + 2}px 'JetBrains Mono', monospace`;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillText('O', cx - 6, cy + 5);
+            ctx.fillText('x', rightEdge + 15, cy + 6);
+            ctx.fillText('y', cx - 7, topEdge - 15);
+
+            // 4. 照準プレビュー放物線 (y = ax²)
+            if (state.status === 'playing') {
+                const g = gcd(state.numerator, state.denominator);
+                const aVal = state.sign * (state.numerator / g) / (state.denominator / g);
+                drawParabolaCurve(aVal, 'rgba(34, 211, 238, 0.36)', 1.9, [6, 5]);
+            }
+
+            // 5. 敵攻撃ビーム描画
+            state.enemyBeams.forEach(eb => {
+                const pStart = toPixel(eb.x, eb.y);
+                const alpha = eb.life / eb.maxLife;
+                ctx.save();
+                ctx.shadowBlur = 18;
+                ctx.shadowColor = '#f43f5e';
+                ctx.strokeStyle = `rgba(244, 63, 94, ${alpha})`;
+                ctx.lineWidth = 6 * alpha + 1.5;
+                ctx.beginPath();
+                ctx.moveTo(pStart.x, pStart.y);
+                ctx.lineTo(cx, cy);
+                ctx.stroke();
+
+                ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.lineWidth = 2 * alpha;
+                ctx.beginPath();
+                ctx.moveTo(pStart.x, pStart.y);
+                ctx.lineTo(cx, cy);
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // 6. UFOの描画（格子点停止・加速点滅・チャージゲージ・重なり回避座標タグ）
+            const placedTagRects = [];
+            state.ufos.forEach(ufo => {
+                const currPt = toPixel(ufo.x, ufo.y);
+                const targetPt = toPixel(ufo.targetX, ufo.targetY);
+                const chargeRatio = ufo.phase === 'charging'
+                    ? Math.min(1, ufo.chargeTimer / ufo.chargeDuration)
+                    : 0;
+                const danger = chargeRatio >= 0.65;
+                const accent = danger ? '#fb7185' : (ufo.isFraction ? '#fbbf24' : '#34d399');
+                const glow = danger ? '#f43f5e' : (ufo.isFraction ? '#f59e0b' : '#10b981');
+
+                // (A) 座標読み取り用の軸投影破線ガイド (x軸・y軸へ)
+                ctx.save();
+                ctx.strokeStyle = danger
+                    ? 'rgba(251, 113, 133, 0.55)'
+                    : (ufo.isFraction ? 'rgba(251, 191, 36, 0.38)' : 'rgba(52, 211, 153, 0.38)');
+                ctx.lineWidth = 1.25;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(currPt.x, currPt.y);
+                ctx.lineTo(cx, currPt.y);
+                ctx.moveTo(currPt.x, currPt.y);
+                ctx.lineTo(currPt.x, cy);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // ターゲット格子点のロックオン十字
+                ctx.strokeStyle = accent;
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(targetPt.x - 5, targetPt.y);
+                ctx.lineTo(targetPt.x + 5, targetPt.y);
+                ctx.moveTo(targetPt.x, targetPt.y - 5);
+                ctx.lineTo(targetPt.x, targetPt.y + 5);
+                ctx.stroke();
+                ctx.restore();
+
+                // (B) UFO本体＆チャージ・点滅警告リング
+                const ufoR = Math.min(14.5, Math.max(10, canvasSize * 0.021));
+                const blinkAlpha = ufo.phase === 'entering'
+                    ? 0.9
+                    : (ufo.isLit ? 1.0 : 0.26);
+
+                ctx.save();
+                ctx.translate(currPt.x, currPt.y);
+
+                // チャージ進行アーク（時計回りに満タンになると攻撃）
+                if (ufo.phase === 'charging') {
+                    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+                    ctx.lineWidth = 2.4;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, ufoR * 1.42, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    ctx.strokeStyle = danger ? '#fb7185' : (ufo.isFraction ? '#fbbf24' : '#34d399');
+                    ctx.lineWidth = 2.6;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, ufoR * 1.42, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * chargeRatio);
+                    ctx.stroke();
+
+                    // 点滅パルス波紋
+                    if (ufo.isLit) {
+                        ctx.strokeStyle = danger
+                            ? 'rgba(244, 63, 94, 0.7)'
+                            : (ufo.isFraction ? 'rgba(251, 191, 36, 0.55)' : 'rgba(52, 211, 153, 0.55)');
+                        ctx.lineWidth = 1.6;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, ufoR * (1.55 + chargeRatio * 0.35), 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+
+                // UFO円盤本体（点滅明暗切り替え）
+                ctx.save();
+                ctx.globalAlpha = blinkAlpha;
+                ctx.shadowBlur = ufo.isLit ? (danger ? 18 : 11) : 2;
+                ctx.shadowColor = glow;
+
+                // ドーム部分
+                ctx.fillStyle = danger ? '#fecdd3' : (ufo.isFraction ? '#fde68a' : '#a7f3d0');
+                ctx.beginPath();
+                ctx.arc(0, -ufoR * 0.18, ufoR * 0.46, Math.PI, 0);
+                ctx.fill();
+
+                // 円盤ボディ
+                const bodyGrad = ctx.createLinearGradient(-ufoR, 0, ufoR, 0);
+                if (danger) {
+                    bodyGrad.addColorStop(0, '#be123c');
+                    bodyGrad.addColorStop(0.5, '#fb7185');
+                    bodyGrad.addColorStop(1, '#be123c');
+                } else if (ufo.isFraction) {
+                    bodyGrad.addColorStop(0, '#b45309');
+                    bodyGrad.addColorStop(0.5, '#fbbf24');
+                    bodyGrad.addColorStop(1, '#b45309');
+                } else {
+                    bodyGrad.addColorStop(0, '#047857');
+                    bodyGrad.addColorStop(0.5, '#34d399');
+                    bodyGrad.addColorStop(1, '#047857');
+                }
+                ctx.fillStyle = bodyGrad;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, ufoR, ufoR * 0.38, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // 中心ターゲット十字照準＆コア（消灯時も座標位置がはっきり見えるよう常時表示）
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.3;
+                ctx.beginPath();
+                ctx.moveTo(-4, 0);
+                ctx.lineTo(4, 0);
+                ctx.moveTo(0, -4);
+                ctx.lineTo(0, 4);
+                ctx.stroke();
+
+                ctx.fillStyle = danger ? '#fbbf24' : '#ffffff';
+                ctx.beginPath();
+                ctx.arc(0, 0, 1.9, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+
+                // (C) 座標ラベル (x, y) と重なり防止オフセット
+                const lblSize = Math.max(10, Math.floor(canvasSize * 0.024));
+                ctx.font = `700 ${lblSize}px 'JetBrains Mono', monospace`;
+                const coordStr = `(${ufo.targetX},${ufo.targetY})`;
+                const tw = ctx.measureText(coordStr).width;
+                const bw = tw + 8;
+                const bh = lblSize + 5;
+
+                let lx = targetPt.x;
+                let ly = targetPt.y - ufoR - 14;
+                if (ufo.targetY >= 5) ly = targetPt.y + ufoR + 15;
+                if (ufo.targetX <= -5) lx = Math.max(lx, bw / 2 + 4);
+                if (ufo.targetX >= 5) lx = Math.min(lx, canvasSize - bw / 2 - 4);
+
+                for (let attempt = 0; attempt < 4; attempt++) {
+                    const overlaps = placedTagRects.some(r =>
+                        Math.abs(lx - r.x) < (bw + r.w) * 0.52 &&
+                        Math.abs(ly - r.y) < (bh + r.h) * 0.65
+                    );
+                    if (!overlaps) break;
+                    const shiftDir = (ly > canvasSize / 2) ? -1 : 1;
+                    ly = Math.max(bh / 2 + 4, Math.min(canvasSize - bh / 2 - 4, ly + shiftDir * (bh + 4)));
+                }
+                placedTagRects.push({ x: lx, y: ly, w: bw, h: bh });
+
+                ctx.save();
+                ctx.fillStyle = 'rgba(6, 11, 25, 0.92)';
+                ctx.strokeStyle = danger
+                    ? 'rgba(251, 113, 133, 0.9)'
+                    : (ufo.isFraction ? 'rgba(251, 191, 36, 0.8)' : 'rgba(52, 211, 153, 0.8)');
+                ctx.lineWidth = 1.1;
+                roundRect(ctx, lx - bw / 2, ly - bh / 2, bw, bh, 5);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#f8fafc';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(coordStr, lx, ly);
+                ctx.restore();
+            });
+
+            // 7. 放物線レーザービーム描画 (y = ax²)
+            state.lasers.forEach(l => {
+                const alpha = l.life / l.maxLife;
+                const outer = l.isHit ? `rgba(34, 211, 238, ${alpha})` : `rgba(251, 113, 133, ${alpha * 0.78})`;
+                const inner = l.isHit ? `rgba(255, 255, 255, ${alpha})` : `rgba(254, 205, 211, ${alpha * 0.85})`;
+
+                ctx.save();
+                ctx.shadowBlur = l.isHit ? 24 : 10;
+                ctx.shadowColor = l.isHit ? '#22d3ee' : '#f43f5e';
+                drawParabolaCurve(l.a, outer, l.isHit ? 8 * alpha + 2 : 3.5);
+                drawParabolaCurve(l.a, inner, l.isHit ? 3 * alpha + 1 : 1.3);
+                ctx.restore();
+            });
+
+            // 8. 原点 O(0, 0) の防衛ロボット砲台描画
+            drawPlayerRobot(cx, cy);
+
+            // 9. 爆発パーティクル
+            state.particles.forEach(p => {
+                const pt = toPixel(p.x, p.y);
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // 10. フローティングスコア表示
+            state.floatingTexts.forEach(ft => {
+                const pt = toPixel(ft.x, ft.y);
+                const alpha = Math.max(0, ft.life / ft.maxLife);
+                const lift = (1 - alpha) * 26;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.font = `700 ${Math.max(13, Math.floor(canvasSize * 0.03))}px 'JetBrains Mono', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#060b19';
+                ctx.fillText(ft.text, pt.x + 1.5, pt.y - lift + 1.5);
+                ctx.fillStyle = ft.color;
+                ctx.fillText(ft.text, pt.x, pt.y - lift);
+                ctx.restore();
+            });
+
+            // 11. ヒットストップ風の画面フラッシュ演出
+            if (state.hitFlashAlpha > 0) {
+                ctx.fillStyle = `rgba(34, 211, 238, ${state.hitFlashAlpha})`;
+                ctx.fillRect(0, 0, canvasSize, canvasSize);
+                state.hitFlashAlpha = Math.max(0, state.hitFlashAlpha - dt * 1.4);
+            }
+
+            ctx.restore();
+        }
+
+        // 放物線 y = a * x² を座標平面内にクリッピングして滑らかに描画
+        function drawParabolaCurve(a, strokeStyle, width, dash = []) {
+            const cx = canvasSize / 2;
+            const cy = canvasSize / 2;
+            const pad = Math.max(24, canvasSize * 0.055);
+            const halfPlot = (canvasSize - pad * 2) / 2;
+
+            const maxX = Math.abs(a) > 1e-6
+                ? Math.min(HALF_SPAN, Math.sqrt(HALF_SPAN / Math.abs(a)))
+                : HALF_SPAN;
+
+            const steps = 96;
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(cx - halfPlot, cy - halfPlot, halfPlot * 2, halfPlot * 2);
+            ctx.clip();
+
+            ctx.strokeStyle = strokeStyle;
+            ctx.lineWidth = width;
+            if (dash.length) ctx.setLineDash(dash);
+
+            ctx.beginPath();
+            for (let i = 0; i <= steps; i++) {
+                const t = -1 + (2 * i) / steps;
+                const gx = t * maxX;
+                const gy = a * gx * gx;
+                const pt = toPixel(gx, gy);
+                if (i === 0) {
+                    ctx.moveTo(pt.x, pt.y);
+                } else {
+                    ctx.lineTo(pt.x, pt.y);
+                }
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawPlayerRobot(cx, cy) {
+            const r = Math.min(18, Math.max(12, canvasSize * 0.027));
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            const shieldColors = ['rgba(244,63,94,0.75)', 'rgba(251,191,36,0.7)', 'rgba(52,211,153,0.65)', 'rgba(34,211,238,0.65)'];
+            ctx.strokeStyle = state.overheatTimer > 0
+                ? 'rgba(244, 63, 94, 0.85)'
+                : (shieldColors[state.lives] || shieldColors[3]);
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.4, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#22d3ee';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 0.85);
+            ctx.lineTo(0, -r * 1.25);
+            ctx.stroke();
+            ctx.fillStyle = state.overheatTimer > 0 ? '#f43f5e' : '#34d399';
+            ctx.beginPath();
+            ctx.arc(0, -r * 1.3, 2.6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#0f172a';
+            ctx.strokeStyle = state.overheatTimer > 0 ? '#fb7185' : '#22d3ee';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.88, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = state.overheatTimer > 0 ? '#f43f5e' : '#22d3ee';
+            ctx.shadowBlur = 9;
+            ctx.shadowColor = state.overheatTimer > 0 ? '#f43f5e' : '#22d3ee';
+            roundRect(ctx, -r * 0.52, -r * 0.22, r * 1.04, r * 0.36, 3);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        // --- 9. ゲーム更新＆メインループ ---
+        function update(dt) {
+            if (state.status !== 'playing') return;
+
+            state.elapsedTime += dt;
+            const dCfg = DIFFICULTY_CONFIG[state.difficulty];
+
+            if (state.rule === 'standard') {
+                state.timeLeft -= dt;
+                if (state.timeLeft <= 0) {
+                    state.timeLeft = 0;
+                    finishGame(true);
+                    return;
+                }
+            }
+
+            if (state.overheatTimer > 0) {
+                state.overheatTimer = Math.max(0, state.overheatTimer - dt);
+            }
+
+            state.spawnTimer -= dt;
+            let interval = dCfg.spawnInterval;
+            let maxOnScreen = dCfg.maxConcurrent;
+            if (state.rule === 'endless') {
+                // 55秒経過または18機撃破で進行度MAXに到達（イージーは最短0.95秒・最大5機）
+                const prog = getEndlessProgress();
+                const startSpawn = 4.2;
+                interval = startSpawn - prog * (startSpawn - dCfg.endlessMinSpawn);
+                const startMax = 2;
+                maxOnScreen = Math.round(startMax + prog * (dCfg.endlessMaxConcurrent - startMax));
+            }
+
+            if (state.spawnTimer <= 0) {
+                if (state.ufos.length < maxOnScreen) {
+                    spawnUFO();
+                }
+                state.spawnTimer = interval;
+            }
+
+            const surviving = [];
+            for (const ufo of state.ufos) {
+                if (ufo.phase === 'entering') {
+                    ufo.enterTimer += dt;
+                    const t = Math.min(1, ufo.enterTimer / ufo.enterDuration);
+                    // EaseOutCubic で格子点へピタッと停止
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    ufo.x = ufo.entryX + (ufo.targetX - ufo.entryX) * ease;
+                    ufo.y = ufo.entryY + (ufo.targetY - ufo.entryY) * ease;
+                    if (t >= 1) {
+                        ufo.x = ufo.targetX;
+                        ufo.y = ufo.targetY;
+                        ufo.phase = 'charging';
+                    }
+                    surviving.push(ufo);
+                } else {
+                    // 停止後の点滅チャージ進行（時間経過ほど点滅速度が加速）
+                    ufo.chargeTimer += dt;
+                    const ratio = Math.min(1, ufo.chargeTimer / ufo.chargeDuration);
+
+                    // 点滅周波数: 序盤 1.2Hz → 終盤 9.8Hz へ二次関数的に加速
+                    const freq = 1.2 + Math.pow(ratio, 2) * 8.6;
+                    ufo.blinkPhase += dt * freq;
+                    const halfCycle = Math.floor(ufo.blinkPhase * 2);
+                    ufo.isLit = (halfCycle % 2 === 0);
+
+                    // 終盤(70%以降)は点滅に合わせて警告ビープ音を鳴らす
+                    if (ratio >= 0.7 && halfCycle > ufo.lastBlinkHalfCycle && ufo.isLit) {
+                        sfx.playWarningTick(ratio);
+                    }
+                    ufo.lastBlinkHalfCycle = halfCycle;
+
+                    if (ufo.chargeTimer >= ufo.chargeDuration) {
+                        // チャージ完了：自機 O(0, 0) へ破壊ビーム攻撃！
+                        state.lives--;
+                        state.combo = 0;
+                        state.screenShake = 16;
+                        sfx.playDamage();
+
+                        state.enemyBeams.push({
+                            x: ufo.targetX,
+                            y: ufo.targetY,
+                            life: 0.42,
+                            maxLife: 0.42
+                        });
+
+                        createExplosion(0, 0, '#f43f5e');
+                        addFloatingText(0, 1.25, 'ATTACKED! SHIELD DAMAGE!', '#f43f5e');
+
+                        if (state.lives <= 0) {
+                            state.lives = 0;
+                            updateHUD();
+                            finishGame(false);
+                            return;
+                        }
+                    } else {
+                        surviving.push(ufo);
+                    }
+                }
+            }
+            state.ufos = surviving;
+
+            state.lasers = state.lasers.filter(l => (l.life -= dt) > 0);
+            state.enemyBeams = state.enemyBeams.filter(eb => (eb.life -= dt) > 0);
+            state.particles = state.particles.filter(p => {
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                return (p.life -= dt) > 0;
+            });
+            state.floatingTexts = state.floatingTexts.filter(ft => (ft.life -= dt) > 0);
+
+            updateHUD();
+        }
+
+        function updateHUD() {
+            const tMobile = document.getElementById('hud-timer-mobile');
+            const tDesktop = document.getElementById('hud-timer-desktop');
+            const lblMobile = document.getElementById('hud-timer-lbl-mobile');
+            const lblDesktop = document.getElementById('hud-timer-lbl-desktop');
+            const speedRankEl = document.getElementById('hud-speed-rank-desktop');
+
+            if (state.rule === 'endless') {
+                lblMobile.textContent = 'KILLS';
+                lblDesktop.textContent = 'SURVIVAL TIME';
+                tMobile.textContent = `${state.kills}機`;
+                tDesktop.textContent = `${state.elapsedTime.toFixed(1)}s`;
+                tMobile.className = 'font-mono-code text-sm font-bold text-amber-400';
+                tDesktop.className = 'font-mono-code text-lg font-bold text-amber-400';
+
+                if (speedRankEl) {
+                    const prog = getEndlessProgress();
+                    const lv = Math.min(10, Math.floor(prog * 9) + 1);
+                    speedRankEl.textContent = lv >= 10 ? 'SPD: MAX' : `SPD: LV.${lv}`;
+                    speedRankEl.className = lv >= 8
+                        ? 'font-mono-code font-bold text-rose-400'
+                        : 'font-mono-code text-amber-300';
+                }
+            } else {
+                lblMobile.textContent = 'TIME';
+                lblDesktop.textContent = 'TIME LEFT';
+                const txt = `${state.timeLeft.toFixed(1)}s`;
+                tMobile.textContent = txt;
+                tDesktop.textContent = txt;
+                const urgent = state.timeLeft <= 10;
+                tMobile.className = `font-mono-code text-sm font-bold ${urgent ? 'text-rose-400 animate-pulse' : 'text-amber-400'}`;
+                tDesktop.className = `font-mono-code text-lg font-bold ${urgent ? 'text-rose-400 animate-pulse' : 'text-amber-400'}`;
+
+                if (speedRankEl) {
+                    speedRankEl.textContent = `MODE: ${DIFFICULTY_CONFIG[state.difficulty].shortName}`;
+                    speedRankEl.className = 'font-mono-code text-slate-400';
+                }
+            }
+
+            const scoreStr = state.score.toLocaleString();
+            document.getElementById('hud-score-mobile').textContent = scoreStr;
+            document.getElementById('hud-score-desktop').textContent = scoreStr;
+            document.getElementById('hud-kills-desktop').textContent = `${state.kills}機`;
+            document.getElementById('hud-combo-desktop').textContent = `${state.combo}連鎖`;
+
+            for (let i = 1; i <= 3; i++) {
+                const active = i <= state.lives;
+                ['m', 'd'].forEach(prefix => {
+                    const el = document.getElementById(`${prefix}-life-${i}`);
+                    if (el) {
+                        el.style.opacity = active ? '1' : '0.2';
+                        el.style.filter = active ? 'none' : 'grayscale(100%)';
+                    }
+                });
+            }
+
+            const fireBtn = document.getElementById('btn-fire');
+            const fireTxt = document.getElementById('btn-fire-text');
+            const banner = document.getElementById('overheat-banner');
+            const secSpan = document.getElementById('overheat-sec');
+            const barEl = document.getElementById('overheat-bar');
+
+            if (state.overheatTimer > 0) {
+                fireBtn.disabled = true;
+                fireTxt.textContent = `OVERHEAT (${state.overheatTimer.toFixed(1)}s)`;
+                banner.classList.remove('hidden');
+                secSpan.textContent = state.overheatTimer.toFixed(1);
+                barEl.style.width = `${(state.overheatTimer / state.overheatMax) * 100}%`;
+            } else {
+                fireBtn.disabled = false;
+                fireTxt.textContent = 'FIRE! 放物線発射';
+                banner.classList.add('hidden');
+            }
+        }
+
+        function gameLoop(ts) {
+            if (!state.lastFrameTime) state.lastFrameTime = ts;
+            const dt = Math.min((ts - state.lastFrameTime) / 1000, 0.1);
+            state.lastFrameTime = ts;
+
+            update(dt);
+            drawScene(dt);
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- 10. モーダル開閉＆ゲーム開始・終了 ---
+        function setModalVisible(id, visible) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (visible) {
+                el.classList.remove('hidden', 'pointer-events-none');
+            } else {
+                el.classList.add('hidden', 'pointer-events-none');
+            }
+        }
+
+        function startGame(rule) {
+            sfx.init();
+            state.rule = (rule === 'endless') ? 'endless' : 'standard';
+            state.status = 'playing';
+
+            state.sign = 1;
+            state.numerator = 1;
+            state.denominator = 1;
+            state.score = 0;
+            state.kills = 0;
+            state.combo = 0;
+            state.maxCombo = 0;
+            state.shotsFired = 0;
+            state.shotsHit = 0;
+            state.lives = 3;
+            state.elapsedTime = 0;
+            state.overheatTimer = 0;
+            state.hitFlashAlpha = 0;
+            state.ufos = [];
+            state.lasers = [];
+            state.enemyBeams = [];
+            state.particles = [];
+            state.floatingTexts = [];
+            state.screenShake = 0;
+            state.lastFrameTime = performance.now();
+
+            const dCfg = DIFFICULTY_CONFIG[state.difficulty];
+            state.timeLeft = (state.rule === 'standard') ? 60.0 : Infinity;
+            state.spawnTimer = 0.25;
+
+            const ruleShort = state.rule === 'endless' ? 'ENDLESS' : '通常防衛';
+            const badgeM = document.getElementById('hud-mode-mobile');
+            const badgeD = document.getElementById('hud-mode-desktop');
+            badgeM.textContent = `${dCfg.shortName}・${ruleShort}`;
+            badgeM.className = `px-2 py-0.5 rounded-md text-[10px] font-semibold border ${dCfg.badgeClass}`;
+            badgeD.textContent = `${dCfg.shortName}・${ruleShort}`;
+            badgeD.className = `px-2.5 py-1 rounded-lg text-xs font-semibold border ${dCfg.badgeClass}`;
+
+            setModalVisible('title-modal', false);
+            setModalVisible('result-modal', false);
+            setModalVisible('confirm-modal', false);
+
+            updateEquationUI();
+            resizeCanvas();
+            updateHUD();
+            drawScene(0);
+        }
+
+        function finishGame(isClear) {
+            state.status = isClear ? 'clear' : 'gameover';
+            const rec = loadRecords();
+            const key = `${state.difficulty}_${state.rule}`;
+            let isNewRecord = false;
+
+            if (state.rule === 'endless') {
+                if (state.score > rec[key].bestScore) {
+                    rec[key].bestScore = state.score;
+                    isNewRecord = true;
+                }
+                if (state.kills > rec[key].bestKills) {
+                    rec[key].bestKills = state.kills;
+                    isNewRecord = true;
+                }
+            } else {
+                if (isClear) rec[key].cleared = true;
+                if (state.score > rec[key].bestScore) {
+                    rec[key].bestScore = state.score;
+                    isNewRecord = true;
+                }
+            }
+            saveRecords(rec);
+
+            if (isClear) sfx.playClear();
+
+            const dCfg = DIFFICULTY_CONFIG[state.difficulty];
+            document.getElementById('result-icon').textContent = isClear ? '🏆' : '💥';
+            document.getElementById('result-subtitle').textContent = `${dCfg.shortName} / ${state.rule === 'endless' ? 'ENDLESS' : '通常防衛'}`;
+            document.getElementById('result-title').textContent = isClear
+                ? '防衛ミッション成功！'
+                : (state.rule === 'endless' ? 'エンドレス記録達成！' : 'シールド突破...');
+
+            document.getElementById('new-record-badge').classList.toggle('hidden', !isNewRecord);
+            document.getElementById('res-score').textContent = state.score.toLocaleString();
+            document.getElementById('res-kills').textContent = `${state.kills}機`;
+            document.getElementById('res-combo').textContent = `${state.maxCombo}連鎖`;
+
+            const acc = state.shotsFired > 0 ? Math.round((state.shotsHit / state.shotsFired) * 100) : 100;
+            document.getElementById('res-accuracy').textContent = `${acc}%`;
+
+            setModalVisible('result-modal', true);
+        }
+
+        function showTitle() {
+            state.status = 'title';
+            updateTitleSelectionUI();
+            setModalVisible('result-modal', false);
+            setModalVisible('confirm-modal', false);
+            setModalVisible('title-modal', true);
+        }
+
+        function toggleMute() {
+            sfx.muted = !sfx.muted;
+            const icon = sfx.muted ? '🔇' : '🔊';
+            document.getElementById('btn-mute-mobile').textContent = icon;
+            document.getElementById('btn-mute-desktop').textContent = icon;
+        }
+
+        function requestAbort() {
+            if (state.status !== 'playing') {
+                showTitle();
+            } else {
+                state.status = 'paused';
+                setModalVisible('confirm-modal', true);
+            }
+        }
+
+        // --- 11. イベントバインド＆起動 ---
+        function bootstrap() {
+            initStars();
+            initKeypad();
+            updateTitleSelectionUI();
+
+            document.querySelectorAll('.diff-select-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const diff = btn.getAttribute('data-diff');
+                    if (DIFFICULTY_CONFIG[diff]) {
+                        state.difficulty = diff;
+                        updateTitleSelectionUI();
+                    }
+                });
+            });
+
+            document.querySelectorAll('.rule-start-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    startGame(btn.getAttribute('data-rule'));
+                });
+            });
+
+            document.getElementById('btn-sign-plus').addEventListener('click', () => {
+                state.sign = 1;
+                updateEquationUI();
+            });
+            document.getElementById('btn-sign-minus').addEventListener('click', () => {
+                state.sign = -1;
+                updateEquationUI();
+            });
+            document.getElementById('btn-reset-input').addEventListener('click', () => {
+                state.sign = 1;
+                state.numerator = 1;
+                state.denominator = 1;
+                updateEquationUI();
+            });
+            document.getElementById('btn-fire').addEventListener('click', fireLaser);
+
+            document.getElementById('btn-home-mobile').addEventListener('click', requestAbort);
+            document.getElementById('btn-home-desktop').addEventListener('click', requestAbort);
+            document.getElementById('btn-mute-mobile').addEventListener('click', toggleMute);
+            document.getElementById('btn-mute-desktop').addEventListener('click', toggleMute);
+
+            document.getElementById('btn-confirm-cancel').addEventListener('click', () => {
+                setModalVisible('confirm-modal', false);
+                if (state.status === 'paused') {
+                    state.status = 'playing';
+                    state.lastFrameTime = performance.now();
+                }
+            });
+            document.getElementById('btn-confirm-abort').addEventListener('click', showTitle);
+
+            document.getElementById('btn-retry').addEventListener('click', () => startGame(state.rule));
+            document.getElementById('btn-to-title').addEventListener('click', showTitle);
+
+            // PCキーボード操作サポート
+            window.addEventListener('keydown', (e) => {
+                if (state.status !== 'playing') return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    fireLaser();
+                } else if (e.key === '+' || e.key === '=') {
+                    state.sign = 1;
+                    updateEquationUI();
+                } else if (e.key === '-') {
+                    state.sign = -1;
+                    updateEquationUI();
+                } else if (e.key >= '1' && e.key <= '9') {
+                    state.numerator = parseInt(e.key, 10);
+                    updateEquationUI();
+                } else if (e.key === 'c' || e.key === 'C' || e.key === 'Escape') {
+                    state.sign = 1;
+                    state.numerator = 1;
+                    state.denominator = 1;
+                    updateEquationUI();
+                }
+            });
+
+            const stageEl = document.getElementById('canvas-stage');
+            if (window.ResizeObserver && stageEl) {
+                const ro = new ResizeObserver(() => resizeCanvas());
+                ro.observe(stageEl);
+            }
+            window.addEventListener('resize', resizeCanvas);
+
+            resizeCanvas();
+            requestAnimationFrame(gameLoop);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootstrap);
+        } else {
+            bootstrap();
+        }
+    </script>
+</body>
+</html>
